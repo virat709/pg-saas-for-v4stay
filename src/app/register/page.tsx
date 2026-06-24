@@ -4,6 +4,8 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,31 +22,51 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, password }),
-      });
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Registration failed");
-      }
-
-      // Auto login after registration
-      const loginRes = await signIn("credentials", {
+      const res = await signIn("credentials", {
         redirect: false,
-        email,
-        password,
+        idToken,
+        name,
+        phone,
+        action: "register"
       });
 
-      if (loginRes?.error) {
-        throw new Error("Login after registration failed");
+      if (res?.error) {
+        throw new Error(res.error);
       }
 
       router.push("/onboarding/property");
     } catch (err: any) {
-      setError(err.message);
+      console.error(err);
+      setError(err.message || "Registration failed");
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const idToken = await userCredential.user.getIdToken();
+
+      const res = await signIn("credentials", {
+        redirect: false,
+        idToken,
+        action: "register_google"
+      });
+
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+
+      router.push("/onboarding/property");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Google sign-up failed");
       setLoading(false);
     }
   };
@@ -58,6 +80,32 @@ export default function RegisterPage() {
         </div>
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: '1rem', textAlign: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>{error}</div>}
+
+        <button 
+          onClick={handleGoogleSignUp} 
+          disabled={loading}
+          type="button"
+          className="w-full mb-4 flex items-center justify-center gap-2"
+          style={{ 
+            backgroundColor: '#fff', 
+            color: '#333', 
+            border: '1px solid #ddd', 
+            padding: '0.75rem', 
+            borderRadius: 'var(--radius-md)',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 18, height: 18 }} />
+          Sign up with Google
+        </button>
+
+        <div className="flex items-center my-4">
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
+          <span style={{ padding: '0 10px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>or</span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
+        </div>
 
         <form onSubmit={handleSubmit} className="flex-col flex">
           <div className="input-group">
@@ -114,7 +162,7 @@ export default function RegisterPage() {
           </div>
 
           <button type="submit" className="btn-primary w-full mt-4" disabled={loading}>
-            {loading ? "Creating Account..." : "Create Account"}
+            {loading ? "Creating Account..." : "Create Account with Email"}
           </button>
         </form>
 

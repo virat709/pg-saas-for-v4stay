@@ -1,42 +1,54 @@
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { adminDb } from "@/lib/firebaseAdmin";
 
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "owner@example.com" },
-        password: { label: "Password", type: "password" }
+        idToken: { label: "ID Token", type: "text" },
+        name: { label: "Name", type: "text" },
+        phone: { label: "Phone", type: "text" },
+        action: { label: "Action", type: "text" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.idToken) {
           return null;
         }
 
-        const ownersRef = adminDb.collection("owners");
-        const snapshot = await ownersRef.where("email", "==", credentials.email).get();
+        try {
+          const { adminAuth, adminDb } = await import("@/lib/firebaseAdmin");
+          const decodedToken = await adminAuth.verifyIdToken(credentials.idToken);
+          const { uid, email, name: tokenName } = decodedToken;
 
-        if (snapshot.empty) {
+          const ownersRef = adminDb.collection("owners");
+          const ownerDoc = await ownersRef.doc(uid).get();
+
+          let ownerData: any = null;
+
+          if (!ownerDoc.exists) {
+            // Check if it's a registration action or Google Sign-In where we auto-create
+            ownerData = {
+              email: email || credentials.email || "",
+              name: credentials.name || tokenName || "Owner",
+              phone: credentials.phone || "",
+              created_at: new Date(),
+              updated_at: new Date(),
+            };
+            await ownersRef.doc(uid).set(ownerData);
+          } else {
+            ownerData = ownerDoc.data();
+          }
+
+          return {
+            id: uid,
+            email: ownerData?.email || email,
+            name: ownerData?.name || tokenName,
+          };
+        } catch (error) {
+          console.error("Firebase auth verification error:", error);
           return null;
         }
-
-        const ownerDoc = snapshot.docs[0];
-        const owner = { id: ownerDoc.id, ...ownerDoc.data() } as any;
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, owner.password_hash);
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
-        return {
-          id: owner.id,
-          email: owner.email,
-          name: owner.name,
-        };
       }
     })
   ],

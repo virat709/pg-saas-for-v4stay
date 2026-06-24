@@ -4,6 +4,8 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,17 +19,49 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const res = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
 
-    if (res?.error) {
-      setError("Invalid email or password");
-      setLoading(false);
-    } else {
+      const res = await signIn("credentials", {
+        redirect: false,
+        idToken,
+      });
+
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+
       router.push("/dashboard");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Invalid email or password");
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const idToken = await userCredential.user.getIdToken();
+
+      const res = await signIn("credentials", {
+        redirect: false,
+        idToken,
+      });
+
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Google sign-in failed");
+      setLoading(false);
     }
   };
 
@@ -40,6 +74,31 @@ export default function LoginPage() {
         </div>
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: '1rem', textAlign: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>{error}</div>}
+
+        <button 
+          onClick={handleGoogleSignIn} 
+          disabled={loading}
+          className="w-full mb-4 flex items-center justify-center gap-2"
+          style={{ 
+            backgroundColor: '#fff', 
+            color: '#333', 
+            border: '1px solid #ddd', 
+            padding: '0.75rem', 
+            borderRadius: 'var(--radius-md)',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 18, height: 18 }} />
+          Continue with Google
+        </button>
+
+        <div className="flex items-center my-4">
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
+          <span style={{ padding: '0 10px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>or</span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
+        </div>
 
         <form onSubmit={handleSubmit} className="flex-col flex">
           <div className="input-group">
@@ -69,7 +128,7 @@ export default function LoginPage() {
           </div>
 
           <button type="submit" className="btn-primary w-full mt-4" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Signing in..." : "Sign In with Email"}
           </button>
         </form>
 
