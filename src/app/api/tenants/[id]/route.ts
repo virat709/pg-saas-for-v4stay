@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
 
 export const dynamic = 'force-dynamic';
@@ -28,11 +28,11 @@ export async function GET(req: Request) {
         if (tSnap.exists) {
           const tData = tSnap.data();
           let bedData = null;
-          if (tData.roomId && tData.bedId) {
-            const bedRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tData.roomId).collection("beds").doc(tData.bedId);
+          if (tData?.roomId && tData?.bedId) {
+            const bedRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tData!.roomId).collection("beds").doc(tData!.bedId);
             const bSnap = await bedRef.get();
             if (bSnap.exists) {
-               const roomRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tData.roomId);
+               const roomRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tData!.roomId);
                const rSnap = await roomRef.get();
                bedData = { id: bSnap.id, ...bSnap.data(), room: rSnap.exists ? { id: rSnap.id, ...rSnap.data() } : null };
             }

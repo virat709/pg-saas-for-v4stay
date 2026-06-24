@@ -29,6 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (!tenantSnap || !propertyId) return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
 
     const tenantData = tenantSnap.data();
+    if (!tenantData) return NextResponse.json({ message: "Tenant data missing" }, { status: 404 });
 
     // Block access for vacated tenants — portal is permanently disabled
     if (tenantData.status === "vacated") {

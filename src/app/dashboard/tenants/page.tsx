@@ -92,18 +92,7 @@ export default function TenantsPage() {
       let photoUrl = null;
       let idProofUrl = null;
 
-      const uploadWithTimeout = (refObj: any, fileObj: File) => {
-        return new Promise<any>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error("Upload timed out after 60 seconds. Please check your Firebase Storage Rules and CORS configuration.")), 60000);
-          uploadBytes(refObj, fileObj).then(snap => {
-            clearTimeout(timeout);
-            resolve(snap);
-          }).catch(err => {
-            clearTimeout(timeout);
-            reject(err);
-          });
-        });
-      };
+
 
       // Temporarily bypass file uploads to Firebase Storage
       if (photoFile) {
