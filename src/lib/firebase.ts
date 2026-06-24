@@ -16,8 +16,23 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
+const hasClientConfig = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
 // Initialize Firebase only once
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const app = getApps().length === 0 
+  ? initializeApp(
+      hasClientConfig 
+        ? firebaseConfig 
+        : {
+            apiKey: "dummy-api-key",
+            authDomain: "dummy.firebaseapp.com",
+            projectId: "dummy-project",
+            storageBucket: "dummy.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:123456789",
+          }
+    ) 
+  : getApps()[0];
 
 // Initialize Storage (for Tenant KYC documents and Property photos)
 export const storage = getStorage(app);

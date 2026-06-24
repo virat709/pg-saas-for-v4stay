@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function GET(req: Request) {
   try {
-    const propertiesRef = collection(db, "properties");
-    const pSnap = await getDocs(propertiesRef);
+    const propertiesRef = adminDb.collection("properties");
+    const pSnap = await propertiesRef.get();
     
     let activeTenants: any[] = [];
     
     for (const p of pSnap.docs) {
       const pData = p.data();
-      const tenantsRef = collection(db, "properties", p.id, "tenants");
-      const tQ = query(tenantsRef, where("status", "==", "active"));
-      const tSnap = await getDocs(tQ);
+      const tenantsRef = adminDb.collection("properties").doc(p.id).collection("tenants");
+      const tSnap = await tenantsRef.where("status", "==", "active").get();
       
       tSnap.forEach(t => {
          activeTenants.push({
