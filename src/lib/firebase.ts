@@ -1,19 +1,28 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp, getApps } from "firebase/app";
-import { getAnalytics, isSupported } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
+import { getAnalytics, isSupported } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
+// Safely read env variables first so Next.js Webpack inline string replacement works reliably
+const envApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+const envAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+const envProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const envStorageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+const envMessagingSenderId = process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
+const envAppId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
+const envMeasurementId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
+
+const clean = (val?: string) => val ? val.replace(/['"]/g, '').trim() : undefined;
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.replace(/['"]/g, '').trim(),
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.replace(/['"]/g, '').trim(),
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.replace(/['"]/g, '').trim(),
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.replace(/['"]/g, '').trim(),
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.replace(/['"]/g, '').trim(),
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID?.replace(/['"]/g, '').trim(),
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID?.replace(/['"]/g, '').trim(),
+  apiKey: clean(envApiKey) || "AIzaSyDummyKeyForBuilds", // Dummy fallback so build doesn't crash
+  authDomain: clean(envAuthDomain) || "dummy.firebaseapp.com",
+  projectId: clean(envProjectId) || "dummy-project",
+  storageBucket: clean(envStorageBucket) || "dummy.appspot.com",
+  messagingSenderId: clean(envMessagingSenderId) || "123456789",
+  appId: clean(envAppId) || "1:123456789:web:123456789",
+  measurementId: clean(envMeasurementId),
 };
 
 // Initialize Firebase only once
