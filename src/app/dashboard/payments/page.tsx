@@ -1,0 +1,382 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+type Tenant = { id: string; name: string; rent_amount: number };
+type Payment = {
+  id: string;
+  type: string;
+  amount: number;
+  amount_paid: number;
+  method: string;
+  status: string;
+  reference?: string;
+  payment_date: any;
+  tenant: Tenant;
+};
+
+export default function PaymentsPage() {
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [upiId, setUpiId] = useState("");
+  const [savingUpi, setSavingUpi] = useState(false);
+
+  // Form state
+  const [tenantId, setTenantId] = useState("");
+  const [type, setType] = useState("rent");
+  const [amount, setAmount] = useState("");
+  const [amountPaid, setAmountPaid] = useState("");
+  const [method, setMethod] = useState("UPI");
+  const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null);
+
+  const formatDate = (dateVal: any) => {
+    if (!dateVal) return "-";
+    if (typeof dateVal === "object") {
+      if (typeof dateVal.seconds === "number") {
+        return new Date(dateVal.seconds * 1000).toLocaleDateString();
+      }
+      if (typeof dateVal._seconds === "number") {
+        return new Date(dateVal._seconds * 1000).toLocaleDateString();
+      }
+    }
+    return new Date(dateVal).toLocaleDateString();
+  };
+
+  const fetchData = async () => {
+    try {
+      const [payRes, tenRes, upiRes] = await Promise.all([
+        fetch("/api/payments"),
+        fetch("/api/tenants"),
+        fetch("/api/property/upi")
+      ]);
+      
+      if (payRes.ok) setPayments(await payRes.json());
+      if (upiRes.ok) {
+        const uData = await upiRes.json();
+        setUpiId(uData.upi_id || "");
+      }
+      if (tenRes.ok) {
+        const tData = await tenRes.json();
+        setTenants(tData);
+        if (tData.length > 0) {
+          setTenantId(tData[0].id);
+          setAmount(tData[0].rent_amount.toString());
+          setAmountPaid(tData[0].rent_amount.toString());
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleTenantChange = (id: string) => {
+    setTenantId(id);
+    const tenant = tenants.find(t => t.id === id);
+    if (tenant && type === "rent") {
+      setAmount(tenant.rent_amount.toString());
+      setAmountPaid(tenant.rent_amount.toString());
+    }
+  };
+
+  const handleTypeChange = (newType: string) => {
+    setType(newType);
+    const tenant = tenants.find(t => t.id === tenantId);
+    if (tenant && newType === "rent") {
+      setAmount(tenant.rent_amount.toString());
+      setAmountPaid(tenant.rent_amount.toString());
+    } else {
+      setAmount("");
+      setAmountPaid("");
+    }
+  };
+
+  const handleAddPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId, type, amount, amount_paid: amountPaid, method })
+      });
+      if (res.ok) {
+        setShowAddForm(false);
+        fetchData();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveUpi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingUpi(true);
+    try {
+      const res = await fetch("/api/property/upi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ upi_id: upiId })
+      });
+      if (res.ok) {
+        alert("UPI ID saved successfully!");
+      } else {
+        alert("Failed to save UPI ID.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error saving UPI ID.");
+    } finally {
+      setSavingUpi(false);
+    }
+  };
+
+  // Calculate summary
+  const currentMonthPayments = payments.filter(p => {
+    if (!p.payment_date) return false;
+    let pDate: Date;
+    if (typeof p.payment_date === "object") {
+      if (typeof p.payment_date.seconds === "number") {
+        pDate = new Date(p.payment_date.seconds * 1000);
+      } else if (typeof p.payment_date._seconds === "number") {
+        pDate = new Date(p.payment_date._seconds * 1000);
+      } else {
+        pDate = new Date(p.payment_date);
+      }
+    } else {
+      pDate = new Date(p.payment_date);
+    }
+    if (isNaN(pDate.getTime())) return false;
+    const today = new Date();
+    return pDate.getMonth() === today.getMonth() && pDate.getFullYear() === today.getFullYear();
+  });
+
+  const totalExpectedRent = tenants.reduce((acc, t) => acc + (t.rent_amount || 0), 0);
+  const totalCollectedThisMonth = currentMonthPayments.reduce((acc, p) => acc + (p.amount_paid || 0), 0);
+  const totalDueThisMonth = Math.max(0, totalExpectedRent - totalCollectedThisMonth);
+
+  return (
+    <div>
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #print-receipt, #print-receipt * {
+            visibility: visible;
+          }
+          #print-receipt {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+        }
+      `}</style>
+      <div className="flex justify-between items-center mb-8">
+        <h1>Payments</h1>
+        <button className="btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
+          {showAddForm ? "Cancel" : "Record Payment"}
+        </button>
+      </div>
+
+      <div className="card mb-8 animate-fade-in" style={{ padding: '1.5rem', backgroundColor: 'var(--surface-color)', borderLeft: '4px solid var(--primary)' }}>
+        <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          📱 Set Up UPI Payments
+        </h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+          Enter your UPI ID below. When tenants click "Pay Online" in their portal, it will automatically open their Google Pay / PhonePe with your UPI ID and the rent amount pre-filled.
+        </p>
+        <form onSubmit={handleSaveUpi} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className="input-group" style={{ marginBottom: 0, flex: 1, minWidth: '250px' }}>
+            <label className="input-label">Your UPI ID (e.g. 9876543210@ybl, name@oksbi)</label>
+            <input 
+              type="text" 
+              className="input-field" 
+              value={upiId} 
+              onChange={e => setUpiId(e.target.value)} 
+              placeholder="Enter UPI ID to enable intent payments"
+            />
+          </div>
+          <button type="submit" className="btn-primary" disabled={savingUpi} style={{ height: '46px' }}>
+            {savingUpi ? "Saving..." : "Save UPI ID"}
+          </button>
+        </form>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div className="card" style={{ borderLeft: '4px solid var(--success)' }}>
+          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, textTransform: 'uppercase' }}>Collected This Month</h3>
+          <div style={{ fontSize: '2rem', fontWeight: 700, margin: '0.5rem 0', color: 'var(--success)' }}>
+            ₹{totalCollectedThisMonth.toLocaleString()}
+          </div>
+        </div>
+        <div className="card" style={{ borderLeft: totalDueThisMonth > 0 ? '4px solid var(--danger)' : '4px solid var(--text-main)' }}>
+          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, textTransform: 'uppercase' }}>Due This Month</h3>
+          <div style={{ fontSize: '2rem', fontWeight: 700, margin: '0.5rem 0', color: totalDueThisMonth > 0 ? 'var(--danger)' : 'var(--text-main)' }}>
+            ₹{totalDueThisMonth.toLocaleString()}
+          </div>
+        </div>
+      </div>
+
+      {receiptPayment && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div id="print-receipt" className="card" style={{ width: '400px', backgroundColor: '#fff', color: '#000', padding: '2rem' }}>
+            <h2 style={{ textAlign: 'center', marginBottom: '1rem', color: 'var(--primary)' }}>PG.V4Stay Receipt</h2>
+            <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: '1rem', marginBottom: '1rem' }}>
+              <p><strong>Receipt ID:</strong> {receiptPayment.id.substring(0, 8).toUpperCase()}</p>
+              <p><strong>Date:</strong> {formatDate(receiptPayment.payment_date)}</p>
+              <p><strong>Tenant:</strong> {receiptPayment.tenant?.name}</p>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <p><strong>Payment Type:</strong> <span style={{ textTransform: 'capitalize' }}>{receiptPayment.type}</span></p>
+              <p><strong>Amount Paid:</strong> ₹{receiptPayment.amount_paid}</p>
+              <p><strong>Method:</strong> {receiptPayment.method}</p>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.875rem', color: '#666' }}>
+              <p>Thank you for your payment!</p>
+            </div>
+            <div className="flex justify-between" style={{ marginTop: '2rem' }}>
+              <button className="btn-secondary no-print" onClick={() => setReceiptPayment(null)}>Close</button>
+              <button className="btn-primary no-print" onClick={() => window.print()}>Print Receipt</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddForm && (
+        <div className="card mb-8 animate-fade-in">
+          <h3>Record New Payment</h3>
+          <form onSubmit={handleAddPayment} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div className="input-group mb-0">
+              <label className="input-label">Tenant</label>
+              <select className="input-field" value={tenantId} onChange={e => handleTenantChange(e.target.value)} required>
+                {tenants.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="input-group mb-0">
+              <label className="input-label">Payment Type</label>
+              <select className="input-field" value={type} onChange={e => handleTypeChange(e.target.value)} required>
+                <option value="rent">Rent</option>
+                <option value="deposit">Security Deposit</option>
+                <option value="refund">Refund</option>
+              </select>
+            </div>
+            <div className="input-group mb-0">
+              <label className="input-label">Expected Amount (₹)</label>
+              <input type="number" className="input-field" value={amount} onChange={e => setAmount(e.target.value)} required />
+            </div>
+            <div className="input-group mb-0">
+              <label className="input-label">Amount Paid (₹)</label>
+              <input type="number" className="input-field" value={amountPaid} onChange={e => setAmountPaid(e.target.value)} required />
+            </div>
+            <div className="input-group mb-0">
+              <label className="input-label">Payment Method</label>
+              <select className="input-field" value={method} onChange={e => setMethod(e.target.value)} required>
+                <option value="UPI">UPI</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+              </select>
+            </div>
+            <div className="flex items-center" style={{ marginTop: '1.5rem' }}>
+              <button type="submit" className="btn-primary w-full">Save Payment</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {loading ? (
+        <p>Loading payments...</p>
+      ) : payments.length === 0 ? (
+        <div className="card text-center" style={{ padding: '3rem' }}>
+          <p>No payments recorded yet.</p>
+        </div>
+      ) : (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
+              <tr>
+                <th style={{ padding: '1rem', fontWeight: 600 }}>Date</th>
+                <th style={{ padding: '1rem', fontWeight: 600 }}>Tenant</th>
+                <th style={{ padding: '1rem', fontWeight: 600 }}>Type</th>
+                <th style={{ padding: '1rem', fontWeight: 600 }}>Amount</th>
+                <th style={{ padding: '1rem', fontWeight: 600 }}>Method</th>
+                <th style={{ padding: '1rem', fontWeight: 600 }}>Status</th>
+                <th style={{ padding: '1rem', fontWeight: 600 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map(payment => (
+                <tr key={payment.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '1rem' }}>
+                    {formatDate(payment.payment_date)}
+                  </td>
+                  <td style={{ padding: '1rem', fontWeight: 500 }}>
+                    {payment.tenant?.name || "Unknown"}
+                  </td>
+                  <td style={{ padding: '1rem', textTransform: 'capitalize' }}>
+                    {payment.type}
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    <div style={{ fontWeight: 600 }}>₹{payment.amount_paid}</div>
+                    {payment.amount_paid < payment.amount && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--danger)' }}>
+                        ₹{payment.amount - payment.amount_paid} due
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    <div style={{ textTransform: 'capitalize' }}>{payment.method}</div>
+                    {payment.reference && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                        {payment.reference.startsWith('http') ? (
+                          <a href={payment.reference} target="_blank" rel="noopener noreferrer" title="Click to view full screenshot">
+                            <img 
+                              src={payment.reference} 
+                              alt="Payment Proof" 
+                              style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-color)', cursor: 'pointer' }}
+                            />
+                          </a>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Ref: {payment.reference}</span>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    <span style={{ 
+                      padding: '4px 8px', 
+                      borderRadius: '12px', 
+                      fontSize: '0.75rem', 
+                      fontWeight: 500,
+                      backgroundColor: payment.status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                      color: payment.status === 'paid' ? 'var(--success)' : 'var(--warning)'
+                    }}>
+                      {payment.status?.toUpperCase() ?? '-'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    <button 
+                      onClick={() => setReceiptPayment(payment)}
+                      style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'var(--primary)', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none' }}
+                    >
+                      Receipt
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
