@@ -8,53 +8,56 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{name: string, price: number} | null>(null);
 
-  const handleSubscribe = async () => {
+  const handleSelectPlan = async (name: string, price: number) => {
     setLoading(true);
+    setSelectedPlan({ name, price });
     
     try {
-      await fetch("/api/auth/subscription", {
+      const res = await fetch("/api/payments/phonepe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: selectedPlan?.name || "1 Year", status: "active" }),
+        body: JSON.stringify({ planName: name, price }),
       });
       
-      router.push("/dashboard");
+      if (!res.ok) throw new Error("Payment initiation failed");
+      const data = await res.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No redirect URL returned");
+      }
     } catch (e) {
+      console.error(e);
+      alert("Error initiating payment. Please try again.");
       setLoading(false);
+      setSelectedPlan(null);
     }
   };
 
-  if (selectedPlan) {
-    // Payment Gateway view
+  if (selectedPlan && loading) {
     return (
       <div className="flex items-center justify-center w-full" style={{ minHeight: '100vh', padding: '1rem', backgroundColor: 'var(--bg-color)' }}>
-        <div className="card animate-fade-in text-center" style={{ maxWidth: '400px', width: '100%', padding: '3rem' }}>
-          <h2>Complete Payment</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-            Pay <strong>₹{selectedPlan.price.toLocaleString()}</strong> for the <strong>{selectedPlan.name}</strong> plan.
+        <div className="card animate-fade-in text-center" style={{ maxWidth: '400px', width: '100%', padding: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{
+            width: "50px",
+            height: "50px",
+            border: "4px solid var(--border-color)",
+            borderTop: "4px solid var(--primary)",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            marginBottom: "1.5rem"
+          }} />
+          <h2>Redirecting to PhonePe</h2>
+          <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+            Connecting to secure checkout for the <strong>{selectedPlan.name}</strong> plan (₹{selectedPlan.price.toLocaleString()})...
           </p>
-
-          <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ color: '#000', marginBottom: '0.5rem' }}>Scan or Pay via UPI</h3>
-            <p style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '1rem' }}>
-              9652172595@axl
-            </p>
-            {/* Generate a QR code using an open API for UPI string */}
-            <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=9652172595@axl&pn=PG%20V4Stay&am=${selectedPlan.price}&cu=INR`} 
-              alt="UPI QR Code" 
-              style={{ width: '200px', height: '200px', margin: '0 auto', display: 'block' }} 
-            />
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <button className="btn-primary w-full" onClick={handleSubscribe} disabled={loading}>
-              {loading ? 'Processing...' : 'I Have Paid'}
-            </button>
-            <button className="btn-secondary w-full" onClick={() => setSelectedPlan(null)} disabled={loading} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', cursor: 'pointer' }}>
-              Cancel
-            </button>
-          </div>
+          <style jsx>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       </div>
     );
@@ -80,7 +83,7 @@ export default function SubscriptionPage() {
               <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>Tenant Portal Links</li>
               <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>Complaints Management</li>
             </ul>
-            <button className="btn-primary w-full" onClick={() => setSelectedPlan({ name: '6 Months', price: 6999 })}>
+            <button className="btn-primary w-full" onClick={() => handleSelectPlan('6 Months', 6999)} disabled={loading}>
               Select Plan
             </button>
           </div>
@@ -97,7 +100,7 @@ export default function SubscriptionPage() {
               <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>Complaints Management</li>
               <li style={{ padding: '0.5rem 0', color: 'var(--success)', fontWeight: 500 }}>Save ₹3,999 vs 6-mo plan</li>
             </ul>
-            <button className="btn-primary w-full" onClick={() => setSelectedPlan({ name: '1 Year', price: 9999 })}>
+            <button className="btn-primary w-full" onClick={() => handleSelectPlan('1 Year', 9999)} disabled={loading}>
               Select Plan
             </button>
           </div>

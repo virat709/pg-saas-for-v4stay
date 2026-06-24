@@ -130,6 +130,10 @@ export default function LoginPage() {
           <button type="submit" className="btn-primary w-full mt-4" disabled={loading}>
             {loading ? "Signing in..." : "Sign In with Email"}
           </button>
+          
+          <div className="mt-4 p-2 bg-gray-100 text-[10px] break-all border border-gray-200 rounded">
+            DEBUG API KEY: {auth?.app?.options?.apiKey || 'MISSING'}
+          </div>
         </form>
 
         <div className="text-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border-color)', marginTop: '1.5rem' }}>
