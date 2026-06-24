@@ -8,15 +8,23 @@ let app: App;
 const hasCredentials = 
   process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID && 
   process.env.FIREBASE_CLIENT_EMAIL && 
-  process.env.FIREBASE_PRIVATE_KEY;
+  (process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY_BASE64);
 
 if (!getApps().length) {
   if (hasCredentials) {
     let privateKey = process.env.FIREBASE_PRIVATE_KEY || "";
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-      privateKey = privateKey.slice(1, -1);
+    if (process.env.FIREBASE_PRIVATE_KEY_BASE64) {
+      try {
+        privateKey = Buffer.from(process.env.FIREBASE_PRIVATE_KEY_BASE64, 'base64').toString('utf8');
+      } catch (err) {
+        console.error("Failed to decode FIREBASE_PRIVATE_KEY_BASE64:", err);
+      }
+    } else {
+      if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        privateKey = privateKey.slice(1, -1);
+      }
+      privateKey = privateKey.replace(/\\n/g, "\n");
     }
-    privateKey = privateKey.replace(/\\n/g, "\n");
 
     try {
       app = initializeApp({
