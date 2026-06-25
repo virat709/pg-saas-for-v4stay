@@ -4,6 +4,12 @@ import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
 import crypto from "crypto";
 
+// Known valid plan names and their prices (paise) — prevents arbitrary amounts
+const VALID_PLANS: Record<string, number> = {
+  "6 Months": 6999,
+  "1 Year": 9999,
+};
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,26 +19,65 @@ export async function POST(req: Request) {
     }
 
     const { planName, price } = await req.json();
-    if (!planName || typeof price !== "number") {
-      return NextResponse.json({ message: "Invalid parameters" }, { status: 400 });
+
+    // ── Server-side plan validation ───────────────────────────────────────
+    if (!planName || !(planName in VALID_PLANS)) {
+      return NextResponse.json(
+        { message: "Invalid plan name. Choose '6 Months' or '1 Year'." },
+        { status: 400 }
+      );
+    }
+    const expectedPrice = VALID_PLANS[planName];
+    if (typeof price !== "number" || price !== expectedPrice) {
+      return NextResponse.json(
+        { message: "Price mismatch for the selected plan." },
+        { status: 400 }
+      );
+    }
+
+    // ── Check owner doesn't already have an active subscription ───────────
+    const ownerDoc = await adminDb.collection("owners").doc(session.user.id).get();
+    if (ownerDoc.exists) {
+      const ownerData = ownerDoc.data();
+      if (ownerData?.subscription_status === "active") {
+        return NextResponse.json(
+          { message: "Subscription already active." },
+          { status: 409 }
+        );
+      }
     }
 
     // Generate unique transaction ID
-    const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const transactionId = `TXN_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase()}`;
 
-    // Store pending payment in database
-    await adminDb.collection("payments").doc(transactionId).set({
-      ownerId: session.user.id,
-      transactionId: transactionId,
-      amount: price,
-      planName: planName,
-      status: "pending",
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
+    // ── Store pending payment with a callback secret ───────────────────────
+    // The secret is stored in DB and echoed back by the mock checkout in the
+    // X-Mock-Secret header — prevents arbitrary POST to the callback endpoint.
+    const callbackSecret = crypto
+      .createHmac("sha256", process.env.NEXTAUTH_SECRET || "fallback-secret")
+      .update(transactionId)
+      .digest("hex");
+
+    await adminDb
+      .collection("payments")
+      .doc(transactionId)
+      .set({
+        ownerId: session.user.id,
+        transactionId,
+        amount: price,
+        planName,
+        status: "pending",
+        callbackSecret,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
 
     const host = req.headers.get("host") || "localhost:3000";
-    const protocol = host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https";
+    const protocol =
+      host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https";
     const baseUrl = `${protocol}://${host}`;
 
     // Check if PhonePe configuration exists
@@ -42,15 +87,15 @@ export async function POST(req: Request) {
     const hostUrl = process.env.PHONEPE_HOST_URL;
 
     if (merchantId && saltKey && saltIndex && hostUrl) {
-      // Official PhonePe PG integration (e.g. Sandbox or Production)
+      // Official PhonePe PG integration (Sandbox or Production)
       const payload = {
-        merchantId: merchantId,
+        merchantId,
         merchantTransactionId: transactionId,
         merchantUserId: session.user.id,
         amount: price * 100, // PhonePe expects amount in paise
-        redirectUrl: `${baseUrl}/api/payments/phonepe-callback?transactionId=${transactionId}&tier=${encodeURIComponent(planName)}`,
-        redirectMode: "POST",
-        callbackUrl: `${baseUrl}/api/payments/phonepe-callback?transactionId=${transactionId}&tier=${encodeURIComponent(planName)}`,
+        redirectUrl: `${baseUrl}/payments/status?transactionId=${transactionId}`,
+        redirectMode: "GET",
+        callbackUrl: `${baseUrl}/api/payments/phonepe-callback?transactionId=${transactionId}`,
         paymentInstrument: {
           type: "PAY_PAGE",
         },
@@ -68,14 +113,17 @@ export async function POST(req: Request) {
           headers: {
             "Content-Type": "application/json",
             "X-VERIFY": checksum,
-            "accept": "application/json",
+            accept: "application/json",
           },
           body: JSON.stringify({ request: base64Payload }),
         });
 
         const data = await response.json();
         if (data.success && data.data?.instrumentResponse?.redirectInfo?.url) {
-          return NextResponse.json({ url: data.data.instrumentResponse.redirectInfo.url }, { status: 200 });
+          return NextResponse.json(
+            { url: data.data.instrumentResponse.redirectInfo.url },
+            { status: 200 }
+          );
         } else {
           console.error("PhonePe API initiation failed:", data);
         }
@@ -84,10 +132,9 @@ export async function POST(req: Request) {
       }
     }
 
-    // Default Fallback: Redirect to local Mock PhonePe checkout page
+    // Fallback: Redirect to local Mock PhonePe checkout page
     const mockRedirectUrl = `${baseUrl}/payments/phonepe-mock?transactionId=${transactionId}&amount=${price}&tier=${encodeURIComponent(planName)}`;
     return NextResponse.json({ url: mockRedirectUrl }, { status: 200 });
-
   } catch (error) {
     console.error("PhonePe payment initiation error:", error);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });

@@ -90,12 +90,31 @@ export const authOptions: AuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    async jwt({ token }) {
+      // Refresh subscriptionStatus from Firestore on each token refresh.
+      // This runs server-side (not Edge), so Firestore Admin SDK is available.
+      if (token.sub) {
+        try {
+          const { adminDb } = await import("@/lib/firebaseAdmin");
+          const ownerDoc = await adminDb.collection("owners").doc(token.sub).get();
+          if (ownerDoc.exists) {
+            const data = ownerDoc.data();
+            token.subscriptionStatus = data?.subscription_status ?? "inactive";
+          }
+        } catch (err) {
+          console.error("[AUTH][JWT] Failed to read subscription status:", err);
+        }
+      }
+      return token;
+    },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.sub as string;
+        // Expose subscriptionStatus to client session (non-sensitive metadata)
+        (session.user as any).subscriptionStatus = token.subscriptionStatus;
       }
       return session;
-    }
+    },
   },
   pages: {
     signIn: "/login",
