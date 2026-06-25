@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  transpilePackages: ["jose", "jwks-rsa"],
+  serverExternalPackages: ["firebase-admin"],
 };
 
 export default nextConfig;
