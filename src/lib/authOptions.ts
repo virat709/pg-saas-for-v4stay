@@ -17,6 +17,15 @@ export const authOptions: AuthOptions = {
         }
 
         try {
+          console.log("[AUTH DEBUG] Init credentials verification:", {
+            hasProjectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+            hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+            hasPrivateKeyBase64: !!process.env.FIREBASE_PRIVATE_KEY_BASE64,
+          });
+
           const { adminAuth, adminDb } = await import("@/lib/firebaseAdmin");
           const decodedToken = await adminAuth.verifyIdToken(credentials.idToken);
           const { uid, email, name: tokenName } = decodedToken;
