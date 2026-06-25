@@ -18,35 +18,59 @@ export async function GET(req: Request) {
     const complaintsRef = adminDb.collection("properties").doc(propertyId).collection("maintenanceRequests");
     const cSnap = await complaintsRef.get();
     
-    const complaints = await Promise.all(cSnap.docs.map(async (cDoc) => {
-      const cData = cDoc.data();
-      let tenantData = null;
-      
-      if (cData.tenantId) {
-        const tenantRef = adminDb.collection("properties").doc(propertyId).collection("tenants").doc(cData.tenantId);
-        const tSnap = await tenantRef.get();
-        if (tSnap.exists) {
-          const tData = tSnap.data();
-          let bedData = null;
-          if (tData?.roomId && tData?.bedId) {
-            const bedRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tData!.roomId).collection("beds").doc(tData!.bedId);
-            const bSnap = await bedRef.get();
-            if (bSnap.exists) {
-               const roomRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tData!.roomId);
-               const rSnap = await roomRef.get();
-               bedData = { id: bSnap.id, ...bSnap.data(), room: rSnap.exists ? { id: rSnap.id, ...rSnap.data() } : null };
-            }
-          }
-          tenantData = { id: tSnap.id, ...tData, bed: bedData };
-        }
+    // Fetch all tenants, rooms, and beds in parallel to construct mapping maps
+    const [tSnap, rSnap] = await Promise.all([
+      adminDb.collection("properties").doc(propertyId).collection("tenants").get(),
+      adminDb.collection("properties").doc(propertyId).collection("rooms").get(),
+    ]);
+
+    const tenantsMap: Record<string, any> = {};
+    tSnap.docs.forEach((tDoc) => {
+      tenantsMap[tDoc.id] = { id: tDoc.id, ...tDoc.data(), bed: null };
+    });
+
+    const roomsMap: Record<string, any> = {};
+    const bedsMap: Record<string, any> = {};
+
+    await Promise.all(
+      rSnap.docs.map(async (rDoc) => {
+        roomsMap[rDoc.id] = { id: rDoc.id, ...rDoc.data() };
+        const bSnap = await adminDb
+          .collection("properties")
+          .doc(propertyId)
+          .collection("rooms")
+          .doc(rDoc.id)
+          .collection("beds")
+          .get();
+        
+        bSnap.docs.forEach((bDoc) => {
+          bedsMap[bDoc.id] = {
+            id: bDoc.id,
+            ...bDoc.data(),
+            room: roomsMap[rDoc.id],
+          };
+        });
+      })
+    );
+
+    // Map beds to tenants in memory
+    Object.keys(tenantsMap).forEach((tId) => {
+      const t = tenantsMap[tId];
+      if (t.bedId) {
+        t.bed = bedsMap[t.bedId] || null;
       }
-      
+    });
+
+    // Construct final complaints list with populated tenant and bed data
+    const complaints = cSnap.docs.map((cDoc) => {
+      const cData = cDoc.data();
+      const tenantData = cData.tenantId ? (tenantsMap[cData.tenantId] || null) : null;
       return {
         id: cDoc.id,
         ...cData,
-        tenant: tenantData
+        tenant: tenantData,
       };
-    }));
+    });
 
     complaints.sort((a: any, b: any) => {
       if (a.status !== b.status) {

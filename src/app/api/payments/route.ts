@@ -18,24 +18,27 @@ export async function GET(req: Request) {
     const paymentsRef = adminDb.collection("properties").doc(propertyId).collection("payments");
     const paySnap = await paymentsRef.get();
     
-    const payments = await Promise.all(paySnap.docs.map(async (payDoc) => {
+    // Fetch all tenants once to map them in memory
+    const tSnap = await adminDb
+      .collection("properties")
+      .doc(propertyId)
+      .collection("tenants")
+      .get();
+    
+    const tenantsMap: Record<string, any> = {};
+    tSnap.docs.forEach((tDoc) => {
+      tenantsMap[tDoc.id] = { id: tDoc.id, ...tDoc.data() };
+    });
+
+    const payments = paySnap.docs.map((payDoc) => {
       const payData = payDoc.data();
-      let tenantData = null;
-      
-      if (payData.tenantId) {
-        const tenantRef = adminDb.collection("properties").doc(propertyId).collection("tenants").doc(payData.tenantId);
-        const tSnap = await tenantRef.get();
-        if (tSnap.exists) {
-          tenantData = { id: tSnap.id, ...tSnap.data() };
-        }
-      }
-      
+      const tenantData = payData.tenantId ? (tenantsMap[payData.tenantId] || null) : null;
       return {
         id: payDoc.id,
         ...payData,
-        tenant: tenantData
+        tenant: tenantData,
       };
-    }));
+    });
 
     // Sort descending by created_at approx
     payments.sort((a: any, b: any) => {

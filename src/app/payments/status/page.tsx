@@ -50,9 +50,20 @@ function PaymentStatusContent() {
 
         if (data.activated === true) {
           setState("success");
-          setMessage("Payment confirmed! Taking you to your dashboard…");
+          setMessage("Payment confirmed! Updating session and taking you to your dashboard…");
           cleanup();
-          setTimeout(() => router.push("/dashboard"), 1800);
+          
+          // Trigger a session refresh so Next-Auth updates the JWT cookie with active status.
+          // This allows the middleware to instantly fast-path on subsequent dashboard route requests.
+          fetch("/api/auth/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          })
+            .catch((err) => console.error("[status page] Session update failed:", err))
+            .finally(() => {
+              setTimeout(() => router.push("/dashboard"), 1500);
+            });
           return;
         }
 

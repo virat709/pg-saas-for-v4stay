@@ -90,16 +90,31 @@ export const authOptions: AuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token }) {
-      // Refresh subscriptionStatus from Firestore on each token refresh.
-      // This runs server-side (not Edge), so Firestore Admin SDK is available.
-      if (token.sub) {
+    async jwt({ token, trigger }) {
+      // Time-based check to prevent querying Firestore on every single API request.
+      const now = Date.now();
+      const lastChecked = (token.lastCheckedSub as number) || 0;
+
+      // Check DB if:
+      // a) Explicitly updated (trigger === "update")
+      // b) No subscription status in token
+      // c) Inactive and checked > 30s ago (to detect fast updates)
+      // d) Active and checked > 5 minutes ago (for sanity refresh)
+      const shouldCheck =
+        trigger === "update" ||
+        !token.subscriptionStatus ||
+        (token.subscriptionStatus !== "active" && now - lastChecked > 30000) ||
+        (token.subscriptionStatus === "active" && now - lastChecked > 300000);
+
+      if (token.sub && shouldCheck) {
         try {
           const { adminDb } = await import("@/lib/firebaseAdmin");
           const ownerDoc = await adminDb.collection("owners").doc(token.sub).get();
           if (ownerDoc.exists) {
             const data = ownerDoc.data();
             token.subscriptionStatus = data?.subscription_status ?? "inactive";
+            token.lastCheckedSub = now;
+            console.log(`[AUTH][JWT] Refreshed subscription status: ${token.subscriptionStatus}`);
           }
         } catch (err) {
           console.error("[AUTH][JWT] Failed to read subscription status:", err);

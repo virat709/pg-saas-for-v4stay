@@ -80,26 +80,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Sharing type must be a number between 1 and 20" }, { status: 400 });
     }
 
-    const roomDoc = await adminDb.collection("properties").doc(propertyId).collection("rooms").add({
+    const batch = adminDb.batch();
+    const roomRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc();
+    
+    const roomData = {
       room_number,
       floor,
       sharing_type: sharingTypeNum,
       created_at: new Date()
-    });
+    };
+    
+    batch.set(roomRef, roomData);
 
     const beds = [];
     for (let i = 0; i < sharingTypeNum; i++) {
-      const bedDoc = await adminDb.collection("properties").doc(propertyId).collection("rooms").doc(roomDoc.id).collection("beds").add({
+      const bedRef = adminDb
+        .collection("properties")
+        .doc(propertyId)
+        .collection("rooms")
+        .doc(roomRef.id)
+        .collection("beds")
+        .doc();
+        
+      const bedData = {
         bed_label: `Bed ${i + 1}`,
         status: "vacant",
         tenant: null,
         created_at: new Date()
-      });
-      beds.push({ id: bedDoc.id, bed_label: `Bed ${i + 1}`, status: "vacant" });
+      };
+      
+      batch.set(bedRef, bedData);
+      beds.push({ id: bedRef.id, bed_label: bedData.bed_label, status: bedData.status });
     }
 
+    await batch.commit();
+
     return NextResponse.json({
-      id: roomDoc.id,
+      id: roomRef.id,
       room_number,
       floor,
       sharing_type: sharingTypeNum,

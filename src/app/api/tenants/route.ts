@@ -17,28 +17,40 @@ export async function GET(req: Request) {
 
     const tSnap = await adminDb.collection("properties").doc(propertyId).collection("tenants").get();
     
-    const tenants = await Promise.all(tSnap.docs.map(async (tDoc) => {
-      const tData = tDoc.data();
-      let bedData = null;
-      
-      if (tData.roomId && tData.bedId) {
-        const bSnap = await adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tData.roomId).collection("beds").doc(tData.bedId).get();
-        if (bSnap.exists) {
-          const rSnap = await adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tData.roomId).get();
-          bedData = {
-            id: bSnap.id,
-            ...bSnap.data(),
-            room: rSnap.exists ? { id: rSnap.id, ...rSnap.data() } : null
+    const rSnap = await adminDb.collection("properties").doc(propertyId).collection("rooms").get();
+    const roomsMap: Record<string, any> = {};
+    const bedsMap: Record<string, any> = {};
+
+    await Promise.all(
+      rSnap.docs.map(async (rDoc) => {
+        roomsMap[rDoc.id] = { id: rDoc.id, ...rDoc.data() };
+        const bSnap = await adminDb
+          .collection("properties")
+          .doc(propertyId)
+          .collection("rooms")
+          .doc(rDoc.id)
+          .collection("beds")
+          .get();
+        
+        bSnap.docs.forEach((bDoc) => {
+          bedsMap[bDoc.id] = {
+            id: bDoc.id,
+            ...bDoc.data(),
+            room: roomsMap[rDoc.id],
           };
-        }
-      }
-      
+        });
+      })
+    );
+
+    const tenants = tSnap.docs.map((tDoc) => {
+      const tData = tDoc.data();
+      const bedData = tData.bedId ? (bedsMap[tData.bedId] || null) : null;
       return {
         id: tDoc.id,
         ...tData,
-        bed: bedData
+        bed: bedData,
       };
-    }));
+    });
 
     // Sort descending by created_at
     tenants.sort((a: any, b: any) => {
