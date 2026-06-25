@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { useIsReturningUser } from "@/hooks/useIsReturningUser";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { markAsLoggedIn } = useIsReturningUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -32,6 +34,8 @@ export default function LoginPage() {
         throw new Error(res.error);
       }
 
+      // Mark login so the welcome-back animation plays on their next login
+      markAsLoggedIn(userCredential.user.displayName || email.split("@")[0]);
       router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
@@ -57,6 +61,8 @@ export default function LoginPage() {
         throw new Error(res.error);
       }
 
+      // Mark login so the welcome-back animation plays on their next login
+      markAsLoggedIn(userCredential.user.displayName || userCredential.user.email?.split("@")[0] || "");
       router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
@@ -131,9 +137,7 @@ export default function LoginPage() {
             {loading ? "Signing in..." : "Sign In with Email"}
           </button>
           
-          <div className="mt-4 p-2 bg-gray-100 text-[10px] break-all border border-gray-200 rounded">
-            DEBUG API KEY: {auth?.app?.options?.apiKey || 'MISSING'}
-          </div>
+
         </form>
 
         <div className="text-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border-color)', marginTop: '1.5rem' }}>

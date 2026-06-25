@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { useIsReturningUser } from "@/hooks/useIsReturningUser";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { markAsLoggedIn } = useIsReturningUser();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -37,6 +39,8 @@ export default function RegisterPage() {
         throw new Error(res.error);
       }
 
+      // Store name for welcome-back greeting on future logins
+      markAsLoggedIn(name || userCredential.user.email?.split("@")[0] || "");
       router.push("/onboarding/property");
     } catch (err: any) {
       console.error(err);
@@ -63,6 +67,8 @@ export default function RegisterPage() {
         throw new Error(res.error);
       }
 
+      // Store name for welcome-back greeting on future logins
+      markAsLoggedIn(userCredential.user.displayName || userCredential.user.email?.split("@")[0] || "");
       router.push("/onboarding/property");
     } catch (err: any) {
       console.error(err);
