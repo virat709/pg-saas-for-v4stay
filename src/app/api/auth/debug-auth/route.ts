@@ -1,6 +1,6 @@
 /**
  * Diagnostic endpoint — REMOVE AFTER DEBUGGING.
- * Tests each step of the auth flow independently and returns a JSON report.
+ * Tests each step of the auth flow independently.
  * Hit: GET /api/auth/debug-auth?token=<firebase-id-token>
  */
 import { NextRequest, NextResponse } from "next/server";
@@ -23,7 +23,36 @@ export async function GET(req: NextRequest) {
     NODE_VERSION: process.version,
   };
 
-  // 2. Token verification test (only if token provided)
+  // 2. Private key validation (without exposing the key itself)
+  const keyReport: Record<string, unknown> = {};
+  if (process.env.FIREBASE_PRIVATE_KEY_BASE64) {
+    try {
+      const decoded = Buffer.from(process.env.FIREBASE_PRIVATE_KEY_BASE64.trim(), "base64").toString("utf8");
+      keyReport.base64DecodeOk = true;
+      keyReport.decodedLength = decoded.length;
+      keyReport.hasPemHeader = decoded.includes("-----BEGIN PRIVATE KEY-----");
+      keyReport.hasPemFooter = decoded.includes("-----END PRIVATE KEY-----");
+      keyReport.firstLine = decoded.split("\n")[0];
+      keyReport.lineCount = decoded.split("\n").length;
+    } catch (e) {
+      keyReport.base64DecodeOk = false;
+      keyReport.error = e instanceof Error ? e.message : String(e);
+    }
+  } else if (process.env.FIREBASE_PRIVATE_KEY) {
+    let k = process.env.FIREBASE_PRIVATE_KEY;
+    if (k.startsWith('"') && k.endsWith('"')) k = k.slice(1, -1);
+    k = k.replace(/\\n/g, "\n");
+    keyReport.source = "raw_FIREBASE_PRIVATE_KEY";
+    keyReport.processedLength = k.length;
+    keyReport.hasPemHeader = k.includes("-----BEGIN PRIVATE KEY-----");
+    keyReport.hasPemFooter = k.includes("-----END PRIVATE KEY-----");
+    keyReport.firstLine = k.split("\n")[0];
+  } else {
+    keyReport.error = "Neither FIREBASE_PRIVATE_KEY nor FIREBASE_PRIVATE_KEY_BASE64 is set";
+  }
+  report.privateKeyValidation = keyReport;
+
+  // 3. Token verification test (only if token provided)
   if (token) {
     try {
       const { verifyFirebaseIdToken } = await import("@/lib/verifyFirebaseToken");
@@ -42,10 +71,9 @@ export async function GET(req: NextRequest) {
     report.tokenVerification = "Skipped — pass ?token=<firebase-id-token> to test";
   }
 
-  // 3. Firestore connectivity test
+  // 4. Firestore connectivity test
   try {
     const { adminDb } = await import("@/lib/firebaseAdmin");
-    // Just try to read a non-existent doc — if Firestore initialised correctly, this won't throw
     await adminDb.collection("_health").doc("ping").get();
     report.firestoreConnectivity = { ok: true };
   } catch (e: unknown) {
@@ -55,11 +83,10 @@ export async function GET(req: NextRequest) {
     };
   }
 
-  // 4. Firebase REST API reachability (no token needed)
+  // 5. Firebase REST API reachability
   try {
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
     if (!apiKey) throw new Error("NEXT_PUBLIC_FIREBASE_API_KEY not set");
-    // Call with a deliberately invalid token to see if the API is reachable at all
     const res = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
       {
@@ -69,7 +96,6 @@ export async function GET(req: NextRequest) {
       }
     );
     const body = await res.json();
-    // A reachable API returns 400 with an error code — not a network failure
     report.firebaseRestApiReachable = {
       ok: true,
       status: res.status,
