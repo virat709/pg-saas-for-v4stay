@@ -13,29 +13,46 @@ export const authOptions: AuthOptions = {
         action: { label: "Action", type: "text" }
       },
       async authorize(credentials) {
-        if (!credentials?.idToken) {
-          return null;
-        }
-
+        const step = { current: "start" };
         try {
-          // Verify token via Firebase REST API (no firebase-admin/auth → no ESM conflict)
+          // ── STEP 1: Validate input ────────────────────────────────────────
+          step.current = "validate-input";
+          if (!credentials?.idToken) {
+            console.error("[AUTH][FAIL] No idToken received in credentials");
+            return null;
+          }
+          console.log("[AUTH][1] idToken received, length:", credentials.idToken.length);
+
+          // ── STEP 2: Verify Firebase ID token via REST API ─────────────────
+          step.current = "verify-token";
+          console.log("[AUTH][2] Calling verifyFirebaseIdToken...");
           const decodedToken = await verifyFirebaseIdToken(credentials.idToken);
 
           if (!decodedToken) {
-            console.error("[AUTH] Token verification returned null.");
+            console.error("[AUTH][FAIL] verifyFirebaseIdToken returned null — token invalid or API key missing");
             return null;
           }
+          console.log("[AUTH][2] Token verified OK. uid:", decodedToken.uid, "| email:", decodedToken.email);
 
           const { uid, email, name: tokenName } = decodedToken;
 
-          // Firestore operations still use firebase-admin/firestore (no ESM issue)
+          // ── STEP 3: Initialize Firestore via firebase-admin ───────────────
+          step.current = "init-firestore";
+          console.log("[AUTH][3] Importing adminDb...");
           const { adminDb } = await import("@/lib/firebaseAdmin");
+          console.log("[AUTH][3] adminDb imported OK");
+
+          // ── STEP 4: Firestore read/write ──────────────────────────────────
+          step.current = "firestore-read";
           const ownersRef = adminDb.collection("owners");
+          console.log("[AUTH][4] Reading owner doc for uid:", uid);
           const ownerDoc = await ownersRef.doc(uid).get();
+          console.log("[AUTH][4] Doc exists:", ownerDoc.exists);
 
           let ownerData: Record<string, unknown> | null = null;
 
           if (!ownerDoc.exists) {
+            step.current = "firestore-write";
             ownerData = {
               email: email || "",
               name: credentials.name || tokenName || "Owner",
@@ -43,18 +60,27 @@ export const authOptions: AuthOptions = {
               created_at: new Date(),
               updated_at: new Date(),
             };
+            console.log("[AUTH][5] Writing new owner doc...");
             await ownersRef.doc(uid).set(ownerData);
+            console.log("[AUTH][5] Owner doc created OK");
           } else {
             ownerData = ownerDoc.data() as Record<string, unknown>;
+            console.log("[AUTH][5] Existing owner loaded:", ownerData?.email);
           }
 
-          return {
+          // ── STEP 5: Return session user ───────────────────────────────────
+          const user = {
             id: uid,
             email: (ownerData?.email as string) || email || "",
             name: (ownerData?.name as string) || tokenName || "Owner",
           };
-        } catch (error) {
-          console.error("[AUTH] Error during authorization:", error);
+          console.log("[AUTH][OK] authorize() returning user:", user.email);
+          return user;
+
+        } catch (error: unknown) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error(`[AUTH][ERROR] Failed at step "${step.current}":`, err.message);
+          console.error("[AUTH][STACK]", err.stack?.split("\n").slice(0, 6).join(" | "));
           return null;
         }
       }
