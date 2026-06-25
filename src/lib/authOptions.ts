@@ -1,5 +1,6 @@
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { verifyFirebaseIdToken } from "@/lib/verifyFirebaseToken";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -17,28 +18,26 @@ export const authOptions: AuthOptions = {
         }
 
         try {
-          console.log("[AUTH DEBUG] Init credentials verification:", {
-            hasProjectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-            hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
-            hasPrivateKeyBase64: !!process.env.FIREBASE_PRIVATE_KEY_BASE64,
-          });
+          // Verify token via Firebase REST API (no firebase-admin/auth → no ESM conflict)
+          const decodedToken = await verifyFirebaseIdToken(credentials.idToken);
 
-          const { adminAuth, adminDb } = await import("@/lib/firebaseAdmin");
-          const decodedToken = await adminAuth.verifyIdToken(credentials.idToken);
+          if (!decodedToken) {
+            console.error("[AUTH] Token verification returned null.");
+            return null;
+          }
+
           const { uid, email, name: tokenName } = decodedToken;
 
+          // Firestore operations still use firebase-admin/firestore (no ESM issue)
+          const { adminDb } = await import("@/lib/firebaseAdmin");
           const ownersRef = adminDb.collection("owners");
           const ownerDoc = await ownersRef.doc(uid).get();
 
-          let ownerData: any = null;
+          let ownerData: Record<string, unknown> | null = null;
 
           if (!ownerDoc.exists) {
-            // Check if it's a registration action or Google Sign-In where we auto-create
             ownerData = {
-              email: email || credentials.email || "",
+              email: email || "",
               name: credentials.name || tokenName || "Owner",
               phone: credentials.phone || "",
               created_at: new Date(),
@@ -46,16 +45,16 @@ export const authOptions: AuthOptions = {
             };
             await ownersRef.doc(uid).set(ownerData);
           } else {
-            ownerData = ownerDoc.data();
+            ownerData = ownerDoc.data() as Record<string, unknown>;
           }
 
           return {
             id: uid,
-            email: ownerData?.email || email,
-            name: ownerData?.name || tokenName,
+            email: (ownerData?.email as string) || email || "",
+            name: (ownerData?.name as string) || tokenName || "Owner",
           };
         } catch (error) {
-          console.error("Firebase auth verification error:", error);
+          console.error("[AUTH] Error during authorization:", error);
           return null;
         }
       }
