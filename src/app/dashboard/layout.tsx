@@ -224,6 +224,9 @@ export default function DashboardLayout({
         }
 
         @media (max-width: 768px) {
+          .dashboard-root {
+            flex-direction: column;
+          }
           .dashboard-sidebar { display: none; }
           .dashboard-topbar { display: flex; }
           .drawer-overlay { display: block; }
