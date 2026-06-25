@@ -333,9 +333,13 @@ export default function Home() {
                   border: "1px solid rgba(56,189,248,0.2)",
                 }}
               >
+                {/* Indian Rupee ₹ icon */}
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="1" x2="12" y2="23" />
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  <line x1="6" y1="5" x2="18" y2="5" />
+                  <line x1="6" y1="10" x2="18" y2="10" />
+                  <path d="M6 10h4a4 4 0 0 0 0-5H6" />
+                  <line x1="6" y1="5" x2="6" y2="21" />
+                  <line x1="6" y1="10" x2="16" y2="21" />
                 </svg>
               </div>
               <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#f8fafc", marginBottom: "0.75rem" }}>
