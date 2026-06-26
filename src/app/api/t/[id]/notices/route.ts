@@ -3,9 +3,9 @@ import { adminDb } from "@/lib/firebaseAdmin";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const tenantId = params.id;
+    const { id: tenantId } = await params;
     if (!tenantId) return NextResponse.json({ message: "Tenant ID required" }, { status: 400 });
 
     // Find the property that this tenant belongs to

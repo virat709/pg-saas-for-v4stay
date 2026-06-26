@@ -82,6 +82,20 @@ export default function TenantPortal() {
 
   useEffect(() => {
     fetchData();
+
+    // Poll specifically for notices every 10 seconds to ensure immediate updates
+    const noticeInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/t/${tenantId}/notices`);
+        if (res.ok) {
+          setNotices(await res.json());
+        }
+      } catch (e) {
+        console.error("Notice polling failed:", e);
+      }
+    }, 10000);
+
+    return () => clearInterval(noticeInterval);
   }, [tenantId]);
 
   const handleSubmitComplaint = async (e: React.FormEvent) => {

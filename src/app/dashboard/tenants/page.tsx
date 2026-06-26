@@ -23,6 +23,11 @@ export default function TenantsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
+  const [editTenantData, setEditTenantData] = useState<Tenant | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editRentAmount, setEditRentAmount] = useState("");
+  const [editBillingCycleDay, setEditBillingCycleDay] = useState("5");
   // Form State
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -206,6 +211,55 @@ export default function TenantsPage() {
     }
   };
 
+  const handleEditTenantSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTenantData) return;
+    setUploading(true);
+    try {
+      const res = await fetch(`/api/tenants/${editTenantData.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName,
+          phone: editPhone,
+          rent_amount: editRentAmount,
+          billing_cycle_day: editBillingCycleDay
+        })
+      });
+      if (res.ok) {
+        setEditTenantData(null);
+        fetchData();
+      } else {
+        alert("Failed to update tenant.");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteTenant = async (tenantId: string, tenantName: string) => {
+    if (!confirm(
+      `🧨 HARD DELETE "${tenantName}"?\n\n` +
+      `This will completely erase the tenant from the database. Use this ONLY for mistakes.\n\n` +
+      `Are you absolutely sure?`
+    )) return;
+    setActionLoading(tenantId);
+    try {
+      const res = await fetch(`/api/tenants/${tenantId}?hard=true`, { method: "DELETE" });
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert("Failed to delete tenant.");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -362,6 +416,19 @@ export default function TenantsPage() {
                       >
                         View Details
                       </button>
+                      <button 
+                        onClick={() => { setEditTenantData(tenant); setEditName(tenant.name); setEditPhone(tenant.phone); setEditRentAmount(tenant.rent_amount?.toString() || ""); setEditBillingCycleDay(tenant.billing_cycle_day?.toString() || "5"); }} 
+                        style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: '6px', cursor: 'pointer' }}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteTenant(tenant.id, tenant.name)} 
+                        disabled={actionLoading === tenant.id}
+                        style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px', cursor: 'pointer' }}
+                      >
+                        Delete
+                      </button>
                       {tenant.status === 'active' && (
                         <>
                           <button 
@@ -454,6 +521,41 @@ export default function TenantsPage() {
           </div>
         </div>
       )}
+
+      {editTenantData && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--primary)' }}>Edit Tenant</h2>
+              <button onClick={() => setEditTenantData(null)} style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', lineHeight: 1, color: 'var(--text-muted)' }}>&times;</button>
+            </div>
+            <form onSubmit={handleEditTenantSubmit} className="add-tenant-form">
+              <div className="input-group">
+                <label className="input-label">Full Name</label>
+                <input type="text" className="input-field" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Phone Number</label>
+                <input type="tel" className="input-field" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} required />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Monthly Rent (₹)</label>
+                <input type="number" className="input-field" value={editRentAmount} onChange={(e) => setEditRentAmount(e.target.value)} required />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Billing Cycle Day</label>
+                <input type="number" className="input-field" value={editBillingCycleDay} onChange={(e) => setEditBillingCycleDay(e.target.value)} min="1" max="31" required />
+              </div>
+              <div style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
+                <button type="submit" className="btn-primary w-full" disabled={uploading}>
+                  {uploading ? "Saving..." : "Update Tenant"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .add-tenant-form {
           display: grid;

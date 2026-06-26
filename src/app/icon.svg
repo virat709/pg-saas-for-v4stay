@@ -1,0 +1,59 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="houseGrad" x1="20" y1="20" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#1e6091" />
+      <stop offset="100%" stopColor="#00b4d8" />
+    </linearGradient>
+    <linearGradient id="checkGrad" x1="50" y1="60" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#00c49f" />
+      <stop offset="100%" stopColor="#10b981" />
+    </linearGradient>
+  </defs>
+
+  <!-- Solid white background with rounded corners for visibility on dark tabs -->
+  <rect width="120" height="120" rx="24" fill="#ffffff" />
+
+  <path
+    d="M 22 55 L 60 21 L 98 55"
+    stroke="url(#houseGrad)"
+    strokeWidth="10"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+
+  <path
+    d="M 30 50 V 88 C 30 96 36 96 42 96 H 70"
+    stroke="url(#houseGrad)"
+    strokeWidth="10"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+
+  <rect x="51" y="38" width="7" height="7" rx="1.5" fill="url(#houseGrad)" />
+  <rect x="62" y="38" width="7" height="7" rx="1.5" fill="url(#houseGrad)" />
+  <rect x="51" y="49" width="7" height="7" rx="1.5" fill="url(#houseGrad)" />
+  <rect x="62" y="49" width="7" height="7" rx="1.5" fill="url(#houseGrad)" />
+
+  <path
+    d="M 42 82 V 72"
+    stroke="url(#houseGrad)"
+    strokeWidth="7"
+    strokeLinecap="round"
+  />
+  <path
+    d="M 44 76 H 74 C 77 76 78 77 78 80 V 82"
+    stroke="url(#houseGrad)"
+    strokeWidth="7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+  <rect x="47" y="71" width="10" height="5" rx="2" fill="url(#houseGrad)" />
+
+  <path
+    d="M 50 86 L 62 98 L 98 62"
+    stroke="url(#checkGrad)"
+    strokeWidth="12"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  />
+</svg>
