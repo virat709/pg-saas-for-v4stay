@@ -48,6 +48,7 @@ export default function DashboardLayout({
     { name: "Tenants", path: "/dashboard/tenants" },
     { name: "Payments", path: "/dashboard/payments" },
     { name: "Complaints", path: "/dashboard/complaints" },
+    { name: "Notice Board", path: "/dashboard/notices" },
     { name: "Menu", path: "/dashboard/menu" },
   ];
 

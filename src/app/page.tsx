@@ -383,6 +383,55 @@ export default function Home() {
         </div>
       </main>
 
+      {/* ── Contact Us Section ─────────────────────────────────────────── */}
+      <AnimatedSection delay={200}>
+        <div
+          style={{
+            marginTop: "6rem",
+            marginBottom: "4rem",
+            padding: "3rem",
+            background: "rgba(15, 23, 42, 0.6)",
+            borderRadius: "24px",
+            border: "1px solid rgba(255,255,255,0.05)",
+            textAlign: "center",
+            maxWidth: "800px",
+            margin: "6rem auto 4rem auto",
+            boxShadow: "0 20px 40px -10px rgba(0,0,0,0.5)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <h2 style={{ fontSize: "2rem", fontWeight: 700, color: "#f8fafc", marginBottom: "1rem" }}>
+            Get in Touch
+          </h2>
+          <p style={{ color: "#94a3b8", fontSize: "1.125rem", marginBottom: "2rem" }}>
+            Have questions or need help setting up your PG? We're here to help.
+          </p>
+          <a
+            href="mailto:v4services.in@gmail.com"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "1rem 2rem",
+              fontSize: "1.125rem",
+              fontWeight: 600,
+              borderRadius: "12px",
+              backgroundColor: "rgba(0, 196, 159, 0.1)",
+              color: "#00c49f",
+              border: "1px solid rgba(0, 196, 159, 0.2)",
+              textDecoration: "none",
+              transition: "all 0.2s",
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            v4services.in@gmail.com
+          </a>
+        </div>
+      </AnimatedSection>
+
       {/* ── Footer ─────────────────────────────────────────────────────── */}
       <AnimatedSection>
         <footer
@@ -394,9 +443,14 @@ export default function Home() {
             borderTop: "1px solid rgba(255,255,255,0.05)",
             color: "#64748b",
             fontSize: "0.875rem",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "0.5rem",
           }}
         >
-          © {new Date().getFullYear()} PGmate. Manage. Simplify. Grow.
+          <span>© {new Date().getFullYear()} PGmate. Manage. Simplify. Grow.</span>
+          <span>Contact us: <a href="mailto:v4services.in@gmail.com" style={{ color: "#00c49f", textDecoration: "none" }}>v4services.in@gmail.com</a></span>
         </footer>
       </AnimatedSection>
     </div>

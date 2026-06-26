@@ -38,6 +38,10 @@ export default function TenantsPage() {
   const [uploading, setUploading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Bulk CSV Upload State
+  const [showCsvUpload, setShowCsvUpload] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvUploading, setCsvUploading] = useState(false);
   const getDaysLeft = (billingDay: number) => {
     if (!billingDay) return 0;
     const today = new Date();
@@ -84,6 +88,55 @@ export default function TenantsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleCsvUpload = async () => {
+    if (!csvFile) return;
+    setCsvUploading(true);
+    try {
+      const text = await csvFile.text();
+      const lines = text.split('\n').filter(line => line.trim() !== '');
+      if (lines.length < 2) {
+        alert("CSV file must contain a header and at least one row of data.");
+        setCsvUploading(false);
+        return;
+      }
+      
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const tenantsData = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        // Handle basic CSV splitting, ignoring commas inside quotes if possible
+        // A simple split is used here for simplicity as requested
+        const values = lines[i].split(',').map(v => v.trim());
+        const tenantObj: any = {};
+        headers.forEach((header, index) => {
+          tenantObj[header] = values[index];
+        });
+        tenantsData.push(tenantObj);
+      }
+
+      const res = await fetch('/api/tenants/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenants: tenantsData })
+      });
+
+      if (res.ok) {
+        alert("Tenants uploaded successfully!");
+        setShowCsvUpload(false);
+        setCsvFile(null);
+        fetchData();
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to upload tenants.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error parsing or uploading CSV.");
+    } finally {
+      setCsvUploading(false);
+    }
+  };
 
   const handleAddTenant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,10 +210,35 @@ export default function TenantsPage() {
     <div>
       <div className="flex justify-between items-center mb-8">
         <h1>Tenants</h1>
-        <button className="btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
-          {showAddForm ? "Cancel" : "+ Add Tenant"}
-        </button>
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <button className="btn-secondary" onClick={() => setShowCsvUpload(!showCsvUpload)} style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--primary)", backgroundColor: "transparent", color: "var(--primary)", cursor: "pointer", transition: "var(--transition)" }}>
+            {showCsvUpload ? "Cancel Upload" : "Upload CSV"}
+          </button>
+          <button className="btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
+            {showAddForm ? "Cancel" : "+ Add Tenant"}
+          </button>
+        </div>
       </div>
+
+      {showCsvUpload && (
+        <div className="card mb-8 animate-fade-in">
+          <h3>Upload Tenants via CSV</h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1rem" }}>
+            Format: <code style={{background: 'rgba(0,0,0,0.1)', padding: '2px 4px', borderRadius: '4px'}}>name, phone, roomnumber, bedlabel, rentamount, billingcycleday, securitydeposit, emergencycontact</code>
+          </p>
+          <div className="input-group mb-0">
+            <input type="file" accept=".csv" className="input-field" onChange={e => {
+              const file = e.target?.files?.[0] || null;
+              setCsvFile(file);
+            }} />
+          </div>
+          <div className="flex items-center" style={{ marginTop: '1.5rem' }}>
+            <button onClick={handleCsvUpload} className="btn-primary" disabled={!csvFile || csvUploading}>
+              {csvUploading ? "Uploading..." : "Upload CSV"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {showAddForm && (
         <div className="card mb-8 animate-fade-in">

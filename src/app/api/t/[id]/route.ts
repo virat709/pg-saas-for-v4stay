@@ -7,15 +7,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id: tenantId } = await params;
 
-    // Fetch tenant using collectionGroup and query by documentId to avoid sequential property iteration
-    const { FieldPath } = await import("firebase-admin/firestore");
-    const tSnap = await adminDb.collectionGroup("tenants").where(FieldPath.documentId(), "==", tenantId).get();
-    
-    if (tSnap.empty) return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
-    const tenantSnap = tSnap.docs[0];
-    const path = tenantSnap.ref.path;
-    const parts = path.split("/");
-    const propertyId = parts[1];
+    // Iterate through properties to find the tenant
+    const pSnapList = await adminDb.collection("properties").get();
+    let propertyId = null;
+    let tenantSnap = null;
+
+    for (const doc of pSnapList.docs) {
+      const tDoc = await doc.ref.collection("tenants").doc(tenantId).get();
+      if (tDoc.exists) {
+        propertyId = doc.id;
+        tenantSnap = tDoc;
+        break;
+      }
+    }
+
+    if (!propertyId || !tenantSnap) {
+      return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
+    }
 
     const pSnap = await adminDb.collection("properties").doc(propertyId).get();
     const propertyData = pSnap.exists ? { id: propertyId, ...pSnap.data() } : null;

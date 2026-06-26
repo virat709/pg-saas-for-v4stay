@@ -12,6 +12,7 @@ export default function TenantPortal() {
   const [menu, setMenu] = useState<any>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [notices, setNotices] = useState<any[]>([]);
   
   const [category, setCategory] = useState("wifi");
   const [description, setDescription] = useState("");
@@ -66,6 +67,11 @@ export default function TenantPortal() {
       const menuRes = await fetch(`/api/t/${tenantId}/menu`);
       if (menuRes.ok) {
         setMenu(await menuRes.json());
+      }
+
+      const noticesRes = await fetch(`/api/t/${tenantId}/notices`);
+      if (noticesRes.ok) {
+        setNotices(await noticesRes.json());
       }
     } catch (e) {
       console.error(e);
@@ -235,6 +241,28 @@ export default function TenantPortal() {
           </div>
         </div>
       </div>
+
+      {notices.length > 0 && (
+        <div className="card mb-8 animate-fade-in">
+          <h3>Notice Board 📢</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+            {notices.map((notice) => (
+              <div key={notice.id} style={{ padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px', backgroundColor: 'var(--bg-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                  <h4 style={{ margin: 0, color: 'var(--primary)', fontSize: '1.1rem' }}>{notice.title}</h4>
+                  {notice.priority === 'high' && (
+                    <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '2px 6px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 600 }}>
+                      HIGH PRIORITY
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Posted on: {formatDate(notice.created_at)}</div>
+                <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5, whiteSpace: 'pre-wrap', color: 'var(--text-main)' }}>{notice.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card mb-8">
         <h3>Make a Payment</h3>
