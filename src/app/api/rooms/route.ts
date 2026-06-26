@@ -17,24 +17,18 @@ export async function GET(req: Request) {
 
     const rSnap = await adminDb.collection("properties").doc(propertyId).collection("rooms").get();
     
-    // Fetch all beds via collectionGroup and filter in memory by parent property path
-    const bSnap = await adminDb.collectionGroup("beds").get();
-    
     const bedsByRoom: Record<string, any[]> = {};
-    bSnap.docs.forEach((bDoc) => {
-      const path = bDoc.ref.path;
-      const parts = path.split("/");
-      if (parts[1] === propertyId && parts[2] === "rooms") {
-        const roomId = parts[3];
-        if (!bedsByRoom[roomId]) {
-          bedsByRoom[roomId] = [];
-        }
-        bedsByRoom[roomId].push({
+    
+    // Fetch beds for each room in parallel to restrict reads to this property only
+    await Promise.all(
+      rSnap.docs.map(async (roomDoc) => {
+        const bSnap = await roomDoc.ref.collection("beds").get();
+        bedsByRoom[roomDoc.id] = bSnap.docs.map((bDoc) => ({
           id: bDoc.id,
           ...bDoc.data()
-        });
-      }
-    });
+        }));
+      })
+    );
 
     const rooms = rSnap.docs.map((roomDoc) => {
       const roomData = roomDoc.data();

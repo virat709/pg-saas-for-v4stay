@@ -24,19 +24,19 @@ export async function GET(req: Request) {
     });
 
     const bedsMap: Record<string, any> = {};
-    const bSnap = await adminDb.collectionGroup("beds").get();
-    bSnap.docs.forEach((bDoc) => {
-      const path = bDoc.ref.path;
-      const parts = path.split("/");
-      if (parts[1] === propertyId && parts[2] === "rooms") {
-        const roomId = parts[3];
-        bedsMap[bDoc.id] = {
-          id: bDoc.id,
-          ...bDoc.data(),
-          room: roomsMap[roomId] || null,
-        };
-      }
-    });
+    // Fetch beds in parallel for each room to restrict database queries to this property
+    await Promise.all(
+      rSnap.docs.map(async (rDoc) => {
+        const bSnap = await rDoc.ref.collection("beds").get();
+        bSnap.docs.forEach((bDoc) => {
+          bedsMap[bDoc.id] = {
+            id: bDoc.id,
+            ...bDoc.data(),
+            room: roomsMap[rDoc.id] || null,
+          };
+        });
+      })
+    );
 
     const tenants = tSnap.docs.map((tDoc) => {
       const tData = tDoc.data();
