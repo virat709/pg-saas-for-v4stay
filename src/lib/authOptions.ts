@@ -126,7 +126,7 @@ export const authOptions: AuthOptions = {
       if (token && session.user) {
         session.user.id = token.sub as string;
         // Expose subscriptionStatus to client session (non-sensitive metadata)
-        (session.user as any).subscriptionStatus = token.subscriptionStatus;
+        session.user.subscriptionStatus = token.subscriptionStatus as string | undefined;
       }
       return session;
     },

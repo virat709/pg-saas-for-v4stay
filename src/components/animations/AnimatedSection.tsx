@@ -29,13 +29,23 @@ export function AnimatedSection({
 }: AnimatedSectionProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  // Track reduced-motion in state to avoid SSR hydration mismatch.
+  // Defaults to false on the server; syncs on mount.
+  const [prefersReduced, setPrefersReduced] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReduced(mql.matches);
+
+    // Listen for changes (e.g. user toggles OS preference while page is open)
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-
-    // Check reduced-motion preference
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -56,11 +66,7 @@ export function AnimatedSection({
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [delay]);
-
-  const prefersReduced =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, [delay, prefersReduced]);
 
   return (
     <div

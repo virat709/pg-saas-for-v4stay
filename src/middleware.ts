@@ -68,9 +68,10 @@ export async function middleware(request: NextRequest) {
     }
   } catch (err) {
     console.error("[middleware] Subscription status check failed:", err);
-    // On error: fail open for the dashboard to avoid locking out owners on API errors.
-    // You may choose to fail closed (redirect to subscription page) for stricter security.
-    return NextResponse.next();
+    // Fail closed: redirect to subscription page on API errors to prevent
+    // unpaid users from accessing the dashboard during outages.
+    const subUrl = new URL("/onboarding/subscription", request.url);
+    return NextResponse.redirect(subUrl);
   }
 
   // Not paid — redirect to subscription page

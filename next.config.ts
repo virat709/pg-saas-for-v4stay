@@ -14,6 +14,13 @@ const nextConfig: NextConfig = {
     "google-auth-library",
     "googleapis",
   ],
+  // Explicitly set turbopack root to this project directory to suppress the
+  // "multiple lockfiles detected" workspace root warning.
+  // Uses import.meta.dirname (Node 20+) instead of __dirname which is
+  // undefined in ESM modules.
+  turbopack: {
+    root: import.meta.dirname,
+  },
 };
 
 export default nextConfig;

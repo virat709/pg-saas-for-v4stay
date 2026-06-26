@@ -11,9 +11,10 @@ export default function DashboardOverview() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [tenantsRes, roomsRes] = await Promise.all([
+        const [tenantsRes, roomsRes, paymentsRes] = await Promise.all([
           fetch("/api/tenants"),
           fetch("/api/rooms"),
+          fetch("/api/payments"),
         ]);
 
         let totalBeds = 0;
@@ -24,16 +25,38 @@ export default function DashboardOverview() {
         if (tenantsRes.ok && roomsRes.ok) {
           const tenants = await tenantsRes.json();
           const rooms = await roomsRes.json();
+          const payments = paymentsRes.ok ? await paymentsRes.json() : [];
 
           rooms.forEach((r: any) => {
             totalBeds += r.beds.length;
             occupiedBeds += r.beds.filter((b: any) => b.status === "occupied").length;
           });
 
+          // Build a set of tenant IDs who have paid this month
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
+          const paidThisMonth = new Set<string>();
+          payments.forEach((p: any) => {
+            if (!p.payment_date || p.type !== "rent") return;
+            let pDate: Date;
+            if (typeof p.payment_date === "object" && typeof p.payment_date.seconds === "number") {
+              pDate = new Date(p.payment_date.seconds * 1000);
+            } else if (typeof p.payment_date === "object" && typeof p.payment_date._seconds === "number") {
+              pDate = new Date(p.payment_date._seconds * 1000);
+            } else {
+              pDate = new Date(p.payment_date);
+            }
+            if (!isNaN(pDate.getTime()) && pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
+              if (p.tenantId) paidThisMonth.add(p.tenantId);
+            }
+          });
+
           tenants.forEach((t: any) => {
-            expectedCollection += t.rent_amount;
-            const today = new Date();
-            if (today.getDate() > t.billing_cycle_day) {
+            if (t.status !== "active") return;
+            expectedCollection += t.rent_amount || 0;
+            // Only mark overdue if past billing day AND no payment this month
+            if (now.getDate() > (t.billing_cycle_day || 0) && !paidThisMonth.has(t.id)) {
               overdueTenants += 1;
             }
           });
@@ -106,7 +129,7 @@ export default function DashboardOverview() {
               Monthly Collection
             </h3>
             <div style={{ fontSize: "2rem", fontWeight: 700, margin: "0.5rem 0", color: "var(--success)" }}>
-              ₹{stats?.expectedCollection.toLocaleString()}
+              ₹{(stats?.expectedCollection ?? 0).toLocaleString()}
             </div>
             <p style={{ margin: 0, fontSize: "0.875rem" }}>Expected this month</p>
           </div>
