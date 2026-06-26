@@ -90,7 +90,7 @@ export default function MenuPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex-responsive mb-8">
         <div>
           <h1>Weekly Menu</h1>
           <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
@@ -105,8 +105,10 @@ export default function MenuPage() {
             padding: "0.65rem 1.5rem",
             display: "flex",
             alignItems: "center",
+            justifyContent: "center",
             gap: "0.5rem",
             opacity: saving ? 0.7 : 1,
+            whiteSpace: "nowrap",
           }}
         >
           {saving ? (
@@ -144,7 +146,7 @@ export default function MenuPage() {
                         fontWeight: 700,
                         padding: "2px 8px",
                         borderRadius: "12px",
-                        backgroundColor: "rgba(16, 185, 129, 0.15)",
+                        backgroundColor: "rgba(30, 96, 145, 0.15)",
                         color: "var(--primary)",
                         letterSpacing: "0.5px",
                         textTransform: "uppercase",
@@ -155,7 +157,7 @@ export default function MenuPage() {
                   )}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
+                <div className="meals-grid">
                   {MEALS.map((meal) => (
                     <div key={meal} className="input-group" style={{ margin: 0 }}>
                       <label className="input-label">{MEAL_LABELS[meal]}</label>
