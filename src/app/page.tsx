@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Spline from "@splinetool/react-spline/next";
 import { HeroEntrance } from "@/components/animations/HeroEntrance";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { useScrollyNav } from "@/hooks/useScrollyNav";
@@ -34,6 +35,25 @@ export default function Home() {
             "radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.15), transparent 60%), radial-gradient(circle at -20% 50%, rgba(56, 189, 248, 0.1), transparent 50%)",
         }}
       />
+
+      {/* ── Spline 3D Background ───────────────────────────────────────── */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1,
+          pointerEvents: "none",
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        <Spline
+          scene="https://prod.spline.design/dMlOZZ8vJrCgbMf6/scene.splinecode" 
+        />
+      </div>
 
       {/* ── Navbar — fades in last (index 5), gains shadow on scroll ───── */}
       <HeroEntrance index={5} style={{ position: "sticky", top: 0, zIndex: 50 }}>
