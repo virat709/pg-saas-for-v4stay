@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { WelcomeBack } from "@/components/animations/WelcomeBack";
 import { useIsReturningUser } from "@/hooks/useIsReturningUser";
+import Logo from "@/components/Logo";
 
 export default function DashboardLayout({
   children,
@@ -63,17 +64,8 @@ export default function DashboardLayout({
         >
           {pgName}
         </h2>
-        <div
-          style={{
-            fontSize: "0.75rem",
-            color: "var(--primary)",
-            marginTop: "0.25rem",
-            fontWeight: 700,
-            letterSpacing: "1px",
-            textTransform: "uppercase",
-          }}
-        >
-          v4stay <span style={{ opacity: 0.7 }}>PG</span>
+        <div style={{ marginTop: "0.25rem" }}>
+          <Logo size={24} variant="dark" showTagline={false} />
         </div>
       </div>
 
@@ -98,7 +90,7 @@ export default function DashboardLayout({
                 padding: "0.75rem 1rem",
                 borderRadius: "var(--radius-md)",
                 backgroundColor: isActive
-                  ? "rgba(16, 185, 129, 0.1)"
+                  ? "rgba(30, 96, 145, 0.1)"
                   : "transparent",
                 color: isActive ? "var(--primary)" : "var(--text-main)",
                 fontWeight: isActive ? 600 : 400,

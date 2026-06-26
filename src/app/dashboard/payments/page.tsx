@@ -228,7 +228,7 @@ export default function PaymentsPage() {
       {receiptPayment && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div id="print-receipt" className="card" style={{ width: '400px', backgroundColor: '#fff', color: '#000', padding: '2rem' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '1rem', color: 'var(--primary)' }}>PG.V4Stay Receipt</h2>
+            <h2 style={{ textAlign: 'center', marginBottom: '1rem', color: 'var(--primary)' }}>PGmate Receipt</h2>
             <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: '1rem', marginBottom: '1rem' }}>
               <p><strong>Receipt ID:</strong> {receiptPayment.id.substring(0, 8).toUpperCase()}</p>
               <p><strong>Date:</strong> {formatDate(receiptPayment.payment_date)}</p>

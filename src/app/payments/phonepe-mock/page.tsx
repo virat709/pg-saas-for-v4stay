@@ -64,7 +64,7 @@ function MockCheckoutContent() {
     "Initiating secure transaction...",
     "Contacting your payment provider...",
     "Authorizing payment...",
-    "Confirming with PG V4Stay...",
+    "Confirming with PGmate...",
   ];
 
   useEffect(() => {
@@ -224,7 +224,7 @@ function MockCheckoutContent() {
         >
           <div>
             <span>Merchant: </span>
-            <strong style={{ color: "#00e676" }}>PG V4Stay</strong>
+            <strong style={{ color: "#00c49f" }}>PGmate</strong>
           </div>
           <div>
             <span>ID: </span>
@@ -358,7 +358,7 @@ function MockCheckoutContent() {
                     Scan QR code using any UPI App (PhonePe, GPay, Paytm)
                   </span>
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=9652172595@axl&pn=PG%20V4Stay&am=${amount}&cu=INR`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=9652172595@axl&pn=PGmate&am=${amount}&cu=INR`}
                     alt="Scan to Pay"
                     style={{ margin: "0 auto", display: "block", borderRadius: "4px" }}
                   />

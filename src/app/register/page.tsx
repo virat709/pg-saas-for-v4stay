@@ -7,6 +7,7 @@ import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { useIsReturningUser } from "@/hooks/useIsReturningUser";
+import Logo from "@/components/Logo";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -80,9 +81,9 @@ export default function RegisterPage() {
   return (
     <div className="flex items-center justify-center w-full" style={{ minHeight: '100vh', padding: '1rem' }}>
       <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%' }}>
-        <div className="text-center mb-8">
-          <h1 style={{ color: 'var(--primary)' }}>PG.V4Stay</h1>
-          <p>Create your owner account to manage your PG.</p>
+        <div className="text-center mb-8" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+          <Logo size={42} variant="dark" showTagline={true} />
+          <p style={{ marginTop: '0.5rem' }}>Create your owner account to manage your PG.</p>
         </div>
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: '1rem', textAlign: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>{error}</div>}

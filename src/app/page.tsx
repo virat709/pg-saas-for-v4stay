@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import SplineBackground from "@/components/SplineBackground";
+import Logo from "@/components/Logo";
 import { HeroEntrance } from "@/components/animations/HeroEntrance";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { useScrollyNav } from "@/hooks/useScrollyNav";
@@ -57,31 +58,7 @@ export default function Home() {
             transition: "box-shadow 0.35s ease",
           }}
         >
-          <div
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: 800,
-              color: "#fff",
-              display: "flex",
-              alignItems: "baseline",
-              gap: "6px",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            v4stay{" "}
-            <span
-              style={{
-                fontSize: "0.875rem",
-                color: "#10b981",
-                fontWeight: 700,
-                padding: "2px 6px",
-                background: "rgba(16,185,129,0.1)",
-                borderRadius: "4px",
-              }}
-            >
-              PG
-            </span>
-          </div>
+          <Logo size={30} variant="light" showTagline={false} />
           <div style={{ display: "flex", gap: "1rem" }}>
             <Link
               href="/login"
@@ -106,8 +83,8 @@ export default function Home() {
                 textDecoration: "none",
                 color: "#0f172a",
                 fontWeight: 600,
-                backgroundColor: "#10b981",
-                boxShadow: "0 0 15px rgba(16,185,129,0.4)",
+                backgroundColor: "#00c49f",
+                boxShadow: "0 0 15px rgba(0,196,159,0.4)",
                 transition: "all 0.2s",
               }}
             >
@@ -139,13 +116,13 @@ export default function Home() {
               gap: "0.5rem",
               marginBottom: "2rem",
               padding: "8px 16px",
-              backgroundColor: "rgba(16, 185, 129, 0.1)",
-              border: "1px solid rgba(16, 185, 129, 0.2)",
-              color: "#10b981",
+              backgroundColor: "rgba(0, 196, 159, 0.1)",
+              border: "1px solid rgba(0, 196, 159, 0.2)",
+              color: "#00c49f",
               borderRadius: "30px",
               fontSize: "0.875rem",
               fontWeight: 600,
-              boxShadow: "0 0 20px rgba(16,185,129,0.1)",
+              boxShadow: "0 0 20px rgba(0,196,159,0.1)",
             }}
           >
             <span
@@ -154,8 +131,8 @@ export default function Home() {
                 width: "8px",
                 height: "8px",
                 borderRadius: "50%",
-                backgroundColor: "#10b981",
-                boxShadow: "0 0 8px #10b981",
+                backgroundColor: "#00c49f",
+                boxShadow: "0 0 8px #00c49f",
               }}
             />
             Smart PG Management System
@@ -181,7 +158,7 @@ export default function Home() {
                 color: "transparent",
                 backgroundClip: "text",
                 WebkitBackgroundClip: "text",
-                backgroundImage: "linear-gradient(90deg, #34d399, #10b981)",
+                backgroundImage: "linear-gradient(90deg, #1e6091, #00c49f)",
               }}
             >
               Smart Automation
@@ -224,11 +201,11 @@ export default function Home() {
                 fontSize: "1.125rem",
                 fontWeight: 600,
                 borderRadius: "12px",
-                backgroundColor: "#10b981",
+                backgroundColor: "#00c49f",
                 color: "#0f172a",
                 textDecoration: "none",
                 boxShadow:
-                  "0 10px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.1)",
+                  "0 10px 25px -5px rgba(0, 196, 159, 0.4), 0 8px 10px -6px rgba(0, 196, 159, 0.1)",
                 transition: "transform 0.2s",
               }}
             >
@@ -285,13 +262,13 @@ export default function Home() {
                   width: "56px",
                   height: "56px",
                   borderRadius: "16px",
-                  background: "rgba(16, 185, 129, 0.1)",
+                  background: "rgba(0, 196, 159, 0.1)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: "1.5rem",
-                  color: "#10b981",
-                  border: "1px solid rgba(16,185,129,0.2)",
+                  color: "#00c49f",
+                  border: "1px solid rgba(0,196,159,0.2)",
                 }}
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -419,7 +396,7 @@ export default function Home() {
             fontSize: "0.875rem",
           }}
         >
-          © {new Date().getFullYear()} v4stay PG Management. Elevating the standard of living.
+          © {new Date().getFullYear()} PGmate. Manage. Simplify. Grow.
         </footer>
       </AnimatedSection>
     </div>
