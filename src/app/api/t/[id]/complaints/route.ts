@@ -9,23 +9,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = await req.json();
     const { category, description } = body;
 
-    const propertiesRef = adminDb.collection("properties");
-    const pSnap = await propertiesRef.get();
+    // Fetch tenant using collectionGroup and query by documentId to avoid sequential property iteration
+    const { FieldPath } = await import("firebase-admin/firestore");
+    const tSnap = await adminDb.collectionGroup("tenants").where(FieldPath.documentId(), "==", tenantId).get();
     
-    let propertyId = null;
-    let tenantStatus = null;
-
-    for (const p of pSnap.docs) {
-      const tRef = adminDb.collection("properties").doc(p.id).collection("tenants").doc(tenantId);
-      const tDoc = await tRef.get();
-      if (tDoc.exists) {
-        propertyId = p.id;
-        tenantStatus = tDoc.data()?.status;
-        break;
-      }
-    }
-
-    if (!propertyId) return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
+    if (tSnap.empty) return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
+    const tenantDoc = tSnap.docs[0];
+    const path = tenantDoc.ref.path;
+    const propertyId = path.split("/")[1];
+    const tenantStatus = tenantDoc.data()?.status;
     if (tenantStatus === "vacated") return NextResponse.json({ message: "Account deactivated" }, { status: 403 });
 
     const complaintsRef = adminDb.collection("properties").doc(propertyId).collection("maintenanceRequests");

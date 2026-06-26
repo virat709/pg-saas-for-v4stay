@@ -165,7 +165,7 @@ export default function TenantsPage() {
       {showAddForm && (
         <div className="card mb-8 animate-fade-in">
           <h3>Add New Tenant</h3>
-          <form onSubmit={handleAddTenant} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <form onSubmit={handleAddTenant} className="add-tenant-form">
             <div className="input-group mb-0">
               <label className="input-label">Full Name</label>
               <input type="text" className="input-field" value={name} onChange={e => setName(e.target.value)} required />
@@ -234,7 +234,7 @@ export default function TenantsPage() {
           <p>No tenants added yet. Click "+ Add Tenant" to get started.</p>
         </div>
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="card table-responsive">
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
               <tr>
@@ -322,7 +322,7 @@ export default function TenantsPage() {
               <button onClick={() => setSelectedTenant(null)} style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', lineHeight: 1, color: 'var(--text-muted)' }}>&times;</button>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+            <div className="tenant-details-grid">
               <div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Full Name</div>
                 <div style={{ fontWeight: 500, fontSize: '1.1rem' }}>{selectedTenant.name}</div>
@@ -376,6 +376,32 @@ export default function TenantsPage() {
           </div>
         </div>
       )}
+      <style jsx>{`
+        .add-tenant-form {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+        .table-responsive {
+          padding: 0;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        .tenant-details-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.25rem;
+        }
+        @media (max-width: 600px) {
+          .add-tenant-form {
+            grid-template-columns: 1fr;
+          }
+          .tenant-details-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -30,28 +30,24 @@ export async function GET(req: Request) {
     });
 
     const roomsMap: Record<string, any> = {};
-    const bedsMap: Record<string, any> = {};
+    rSnap.docs.forEach((rDoc) => {
+      roomsMap[rDoc.id] = { id: rDoc.id, ...rDoc.data() };
+    });
 
-    await Promise.all(
-      rSnap.docs.map(async (rDoc) => {
-        roomsMap[rDoc.id] = { id: rDoc.id, ...rDoc.data() };
-        const bSnap = await adminDb
-          .collection("properties")
-          .doc(propertyId)
-          .collection("rooms")
-          .doc(rDoc.id)
-          .collection("beds")
-          .get();
-        
-        bSnap.docs.forEach((bDoc) => {
-          bedsMap[bDoc.id] = {
-            id: bDoc.id,
-            ...bDoc.data(),
-            room: roomsMap[rDoc.id],
-          };
-        });
-      })
-    );
+    const bedsMap: Record<string, any> = {};
+    const bSnap = await adminDb.collectionGroup("beds").get();
+    bSnap.docs.forEach((bDoc) => {
+      const path = bDoc.ref.path;
+      const parts = path.split("/");
+      if (parts[1] === propertyId && parts[2] === "rooms") {
+        const roomId = parts[3];
+        bedsMap[bDoc.id] = {
+          id: bDoc.id,
+          ...bDoc.data(),
+          room: roomsMap[roomId] || null,
+        };
+      }
+    });
 
     // Map beds to tenants in memory
     Object.keys(tenantsMap).forEach((tId) => {

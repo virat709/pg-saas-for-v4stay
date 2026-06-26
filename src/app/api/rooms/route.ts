@@ -17,17 +17,36 @@ export async function GET(req: Request) {
 
     const rSnap = await adminDb.collection("properties").doc(propertyId).collection("rooms").get();
     
-    const rooms = await Promise.all(rSnap.docs.map(async (roomDoc) => {
+    // Fetch all beds via collectionGroup and filter in memory by parent property path
+    const bSnap = await adminDb.collectionGroup("beds").get();
+    
+    const bedsByRoom: Record<string, any[]> = {};
+    bSnap.docs.forEach((bDoc) => {
+      const path = bDoc.ref.path;
+      const parts = path.split("/");
+      if (parts[1] === propertyId && parts[2] === "rooms") {
+        const roomId = parts[3];
+        if (!bedsByRoom[roomId]) {
+          bedsByRoom[roomId] = [];
+        }
+        bedsByRoom[roomId].push({
+          id: bDoc.id,
+          ...bDoc.data()
+        });
+      }
+    });
+
+    const rooms = rSnap.docs.map((roomDoc) => {
       const roomData = roomDoc.data();
-      const bSnap = await adminDb.collection("properties").doc(propertyId).collection("rooms").doc(roomDoc.id).collection("beds").get();
-      const beds = bSnap.docs.map(b => ({ id: b.id, ...b.data() }));
-      
+      const beds = bedsByRoom[roomDoc.id] || [];
+      // Sort beds by bed_label
+      beds.sort((a: any, b: any) => (a.bed_label ?? "").localeCompare(b.bed_label ?? ""));
       return {
         id: roomDoc.id,
         ...roomData,
         beds
       };
-    }));
+    });
 
     // Sort rooms by floor then room_number
     (rooms as any[]).sort((a, b) => {

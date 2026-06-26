@@ -1,12 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function SubscriptionPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{name: string, price: number} | null>(null);
+
+  // Check if owner already has an active subscription on mount
+  useEffect(() => {
+    fetch("/api/payments/status")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error("Failed to check status");
+      })
+      .then((data) => {
+        if (data.activated === true) {
+          // If already active, trigger session refresh to update Next-Auth cookie, then redirect to dashboard
+          fetch("/api/auth/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          }).finally(() => {
+            router.push("/dashboard");
+          });
+        }
+      })
+      .catch((err) => console.error("Mount status check failed:", err));
+  }, [router]);
 
   const handleSelectPlan = async (name: string, price: number) => {
     setLoading(true);
@@ -19,17 +41,32 @@ export default function SubscriptionPage() {
         body: JSON.stringify({ planName: name, price }),
       });
       
-      if (!res.ok) throw new Error("Payment initiation failed");
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      
+      if (res.status === 409) {
+        alert("You already have an active subscription! Redirecting to your dashboard...");
+        // Refresh session
+        await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }).catch(() => {});
+        router.push("/dashboard");
+        return;
+      }
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Payment initiation failed");
+      }
       
       if (data.url) {
         window.location.href = data.url;
       } else {
         throw new Error("No redirect URL returned");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Error initiating payment. Please try again.");
+      alert(e.message || "Error initiating payment. Please try again.");
       setLoading(false);
       setSelectedPlan(null);
     }

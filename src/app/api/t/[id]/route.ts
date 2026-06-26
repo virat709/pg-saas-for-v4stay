@@ -7,26 +7,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id: tenantId } = await params;
 
-    // Secure by obscurity (UUID is hard to guess).
-    const propertiesRef = adminDb.collection("properties");
-    const pSnap = await propertiesRef.get();
+    // Fetch tenant using collectionGroup and query by documentId to avoid sequential property iteration
+    const { FieldPath } = await import("firebase-admin/firestore");
+    const tSnap = await adminDb.collectionGroup("tenants").where(FieldPath.documentId(), "==", tenantId).get();
     
-    let tenantSnap = null;
-    let propertyId = null;
-    let propertyData = null;
+    if (tSnap.empty) return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
+    const tenantSnap = tSnap.docs[0];
+    const path = tenantSnap.ref.path;
+    const parts = path.split("/");
+    const propertyId = parts[1];
 
-    for (const p of pSnap.docs) {
-      const tRef = adminDb.collection("properties").doc(p.id).collection("tenants").doc(tenantId);
-      const tDoc = await tRef.get();
-      if (tDoc.exists) {
-        tenantSnap = tDoc;
-        propertyId = p.id;
-        propertyData = { id: p.id, ...p.data() };
-        break;
-      }
-    }
-
-    if (!tenantSnap || !propertyId) return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
+    const pSnap = await adminDb.collection("properties").doc(propertyId).get();
+    const propertyData = pSnap.exists ? { id: propertyId, ...pSnap.data() } : null;
 
     const tenantData = tenantSnap.data();
     if (!tenantData) return NextResponse.json({ message: "Tenant data missing" }, { status: 404 });
