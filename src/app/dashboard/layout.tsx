@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { WelcomeBack } from "@/components/animations/WelcomeBack";
 import { useIsReturningUser } from "@/hooks/useIsReturningUser";
@@ -28,8 +28,26 @@ function DashboardLayoutContent({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { properties, activePropertyId, setActivePropertyId } = useProperties();
+
+  // Redirect to dashboard if active property is "all" and we are on a property-specific subpage
+  useEffect(() => {
+    if (activePropertyId === "all") {
+      const pgSpecificPaths = [
+        "/dashboard/rooms",
+        "/dashboard/tenants",
+        "/dashboard/payments",
+        "/dashboard/complaints",
+        "/dashboard/notices",
+        "/dashboard/menu"
+      ];
+      if (pgSpecificPaths.some(path => pathname === path || pathname.startsWith(path + "/"))) {
+        router.push("/dashboard");
+      }
+    }
+  }, [activePropertyId, pathname, router]);
 
   // Returning-user detection — WelcomeBack animation
   const { isReturning, firstName, welcomeShownThisSession, markWelcomeShown } =
@@ -112,7 +130,12 @@ const SidebarContent = ({ pathname }: { pathname: string }) => {
           flex: 1,
         }}
       >
-        {navItems.map((item) => {
+        {navItems.filter(item => {
+          if (activePropertyId === "all") {
+            return ["Overview", "Subscription", "Settings"].includes(item.name);
+          }
+          return true;
+        }).map((item) => {
           const isActive =
             item.path === "/dashboard"
               ? pathname === item.path

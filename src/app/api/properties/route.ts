@@ -37,6 +37,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
     }
 
+    const ownerDoc = await adminDb.collection("owners").doc(session.user.id).get();
+    const ownerData = ownerDoc.data();
+    const limit = ownerData?.property_limit || 1;
+
+    const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
+    if (pSnap.size >= limit) {
+      return NextResponse.json({ 
+        message: `You have reached your subscription's property limit (${limit} PG(s)). Please upgrade your subscription to add more properties.` 
+      }, { status: 403 });
+    }
+
     const propertiesRef = adminDb.collection("properties");
     const newPropertyRef = await propertiesRef.add({
       name,

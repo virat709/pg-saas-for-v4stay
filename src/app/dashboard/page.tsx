@@ -10,7 +10,7 @@ import { useProperties } from "@/context/PropertyContext";
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { activePropertyId } = useProperties();
+  const { activePropertyId, properties, setActivePropertyId } = useProperties();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -89,6 +89,42 @@ export default function DashboardOverview() {
             if (key in monthlyRevenue) monthlyRevenue[key] += p.amount_paid || 0;
           });
 
+          // Calculate per-property stats
+          const propStats = properties.map((p) => {
+            let pTotalBeds = 0;
+            let pOccupiedBeds = 0;
+            let pExpectedCollection = 0;
+            let pOverdueTenants = 0;
+
+            rooms.forEach((r: any) => {
+              if (r.propertyId === p.id) {
+                pTotalBeds += r.beds?.length || 0;
+                pOccupiedBeds += (r.beds || []).filter((b: any) => b.status === "occupied").length;
+              }
+            });
+
+            tenants.forEach((t: any) => {
+              if (t.propertyId === p.id && t.status === "active") {
+                pExpectedCollection += t.rent_amount || 0;
+                if (now.getDate() > (t.billing_cycle_day || 0) && !paidThisMonth.has(t.id)) {
+                  pOverdueTenants += 1;
+                }
+              }
+            });
+
+            return {
+              id: p.id,
+              name: p.name,
+              address: p.address || "",
+              city: p.city || "",
+              totalBeds: pTotalBeds,
+              occupiedBeds: pOccupiedBeds,
+              occupancyRate: pTotalBeds ? Math.round((pOccupiedBeds / pTotalBeds) * 100) : 0,
+              expectedCollection: pExpectedCollection,
+              overdueTenants: pOverdueTenants,
+            };
+          });
+
           setStats({
             totalBeds,
             occupiedBeds,
@@ -96,6 +132,7 @@ export default function DashboardOverview() {
             expectedCollection,
             overdueTenants,
             revenueChart: Object.entries(monthlyRevenue).map(([month, amount]) => ({ month, amount })),
+            propertiesStats: propStats,
           });
         }
       } catch (e) {
@@ -200,9 +237,77 @@ export default function DashboardOverview() {
         </AnimatedSection>
       </div>
 
+      {/* My PGs List — Shown only in All Properties Overview */}
+      {activePropertyId === "all" && stats?.propertiesStats && (
+        <AnimatedSection delay={380}>
+          <h2 className="mb-6 mt-8">My PG Properties</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+            {stats.propertiesStats.map((p: any) => (
+              <div key={p.id} className="card animate-fade-in" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+                    <h3 style={{ margin: 0, color: "var(--primary)" }}>{p.name}</h3>
+                    <span style={{ 
+                      fontSize: "0.75rem", 
+                      padding: "2px 8px", 
+                      borderRadius: "12px", 
+                      backgroundColor: "rgba(30, 96, 145, 0.1)", 
+                      color: "var(--primary)",
+                      fontWeight: 600
+                    }}>
+                      {p.occupancyRate}% Occupied
+                    </span>
+                  </div>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: "0 0 1rem 0" }}>
+                    📍 {p.address || "No Address"}{p.city ? `, ${p.city}` : ""}
+                  </p>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1.25rem", fontSize: "0.875rem" }}>
+                    <div>
+                      <span style={{ color: "var(--text-muted)", display: "block", fontSize: "0.75rem" }}>Occupied Beds</span>
+                      <strong>{p.occupiedBeds} / {p.totalBeds}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--text-muted)", display: "block", fontSize: "0.75rem" }}>Available Beds</span>
+                      <strong>{p.totalBeds - p.occupiedBeds}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--text-muted)", display: "block", fontSize: "0.75rem" }}>Expected Rent</span>
+                      <strong style={{ color: "var(--success)" }}>₹{p.expectedCollection.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: "var(--text-muted)", display: "block", fontSize: "0.75rem" }}>Dues Alert</span>
+                      <strong style={{ color: p.overdueTenants > 0 ? "var(--danger)" : "var(--text-main)" }}>
+                        {p.overdueTenants} unpaid
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setActivePropertyId(p.id)}
+                  className="btn-primary w-full"
+                  style={{ 
+                    marginTop: "0.5rem", 
+                    padding: "0.6rem 1rem", 
+                    fontSize: "0.9rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.25rem"
+                  }}
+                >
+                  🚪 Open PG
+                </button>
+              </div>
+            ))}
+          </div>
+        </AnimatedSection>
+      )}
+
       {/* Revenue Chart */}
       {stats?.revenueChart?.length > 0 && (
-        <AnimatedSection delay={380}>
+        <AnimatedSection delay={390}>
           <RevenueChart data={stats.revenueChart} />
         </AnimatedSection>
       )}
@@ -212,20 +317,32 @@ export default function DashboardOverview() {
         <div className="card">
           <h2 className="mb-4">Quick Actions</h2>
           <div className="flex gap-4">
-            <Link
-              href="/dashboard/tenants"
-              className="btn-primary"
-              style={{ backgroundColor: "var(--surface-color)", color: "var(--primary)", border: "1px solid var(--primary)" }}
-            >
-              + Add Tenant
-            </Link>
-            <Link
-              href="/dashboard/payments"
-              className="btn-primary"
-              style={{ backgroundColor: "var(--surface-color)", color: "var(--primary)", border: "1px solid var(--primary)" }}
-            >
-              Record Payment
-            </Link>
+            {activePropertyId === "all" ? (
+              <Link
+                href="/onboarding/property"
+                className="btn-primary"
+                style={{ backgroundColor: "var(--surface-color)", color: "var(--primary)", border: "1px solid var(--primary)" }}
+              >
+                + Add PG Property
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/dashboard/tenants"
+                  className="btn-primary"
+                  style={{ backgroundColor: "var(--surface-color)", color: "var(--primary)", border: "1px solid var(--primary)" }}
+                >
+                  + Add Tenant
+                </Link>
+                <Link
+                  href="/dashboard/payments"
+                  className="btn-primary"
+                  style={{ backgroundColor: "var(--surface-color)", color: "var(--primary)", border: "1px solid var(--primary)" }}
+                >
+                  Record Payment
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </AnimatedSection>
