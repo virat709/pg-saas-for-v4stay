@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
+import { sendEmail, welcomeTenantEmail } from "@/lib/email";
 
 export const dynamic = 'force-dynamic';
 
@@ -124,10 +125,25 @@ export async function POST(req: Request) {
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     const magicLink = `${baseUrl}/t/${newTenantRef.id}`;
     const propertyData = pSnap.docs[0].data();
-    const message = `Welcome to ${propertyData.name}, ${name}! Here is your secure tenant portal link to view your rent details and raise complaints: ${magicLink}`;
-    console.log(`[WHATSAPP MOCK] Sent to ${phone}: ${message}`);
 
-    return NextResponse.json({ id: newTenantRef.id, name, status: "active" }, { status: 201 });
+    // Send welcome email if tenant has an email on file
+    const tenantEmail = body.email?.trim();
+    if (tenantEmail) {
+      await sendEmail({
+        to: tenantEmail,
+        subject: `Welcome to ${propertyData.name} — Your Tenant Portal`,
+        html: welcomeTenantEmail({
+          tenantName: name,
+          pgName: propertyData.name,
+          magicLink,
+        }),
+      });
+    } else {
+      // Fallback: log magic link for manual sharing
+      console.log(`[TENANT] Magic link for ${name} (${phone}): ${magicLink}`);
+    }
+
+    return NextResponse.json({ id: newTenantRef.id, name, status: "active", magicLink }, { status: 201 });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });

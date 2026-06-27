@@ -59,7 +59,21 @@ export default function Home() {
           }}
         >
           <Logo size={30} variant="light" showTagline={false} />
-          <div style={{ display: "flex", gap: "1rem" }}>
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <a
+              href="#pricing"
+              style={{
+                padding: "0.6rem 1.25rem",
+                borderRadius: "8px",
+                textDecoration: "none",
+                color: "#e2e8f0",
+                fontWeight: 500,
+                fontSize: "0.9rem",
+                transition: "color 0.2s",
+              }}
+            >
+              Pricing
+            </a>
             <Link
               href="/login"
               style={{
@@ -383,6 +397,148 @@ export default function Home() {
         </div>
       </main>
 
+      {/* ── Pricing Section ─────────────────────────────────────────────── */}
+      <AnimatedSection delay={150}>
+        <div
+          id="pricing"
+          style={{
+            marginTop: "7rem",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ display: "inline-block", padding: "0.35rem 1rem", borderRadius: "99px", backgroundColor: "rgba(0,196,159,0.12)", border: "1px solid rgba(0,196,159,0.25)", color: "#00c49f", fontSize: "0.8rem", fontWeight: 600, marginBottom: "1.25rem", letterSpacing: "0.05em" }}>
+            PRICING
+          </div>
+          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.75rem)", fontWeight: 800, color: "#f8fafc", marginBottom: "0.75rem", letterSpacing: "-0.5px" }}>
+            Simple, Transparent Pricing
+          </h2>
+          <p style={{ color: "#94a3b8", fontSize: "1.05rem", maxWidth: "480px", margin: "0 auto 3rem", lineHeight: 1.6 }}>
+            One plan. Every feature included. No hidden fees, no per-tenant charges.
+          </p>
+
+          {/* Pricing cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem", maxWidth: "800px", margin: "0 auto", textAlign: "left" }}>
+            
+            {/* 6 Month Plan */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                background: "rgba(30,41,59,0.6)",
+                borderRadius: "24px",
+                border: "1px solid rgba(255,255,255,0.1)",
+                padding: "2.5rem",
+                backdropFilter: "blur(12px)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <h3 style={{ color: "#f8fafc", fontSize: "1.3rem", marginBottom: "0.25rem" }}>PGmate Starter — 6 Months</h3>
+              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#f8fafc", lineHeight: 1, margin: "1rem 0" }}>₹6,999</div>
+              
+              <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
+                {[
+                  "Unlimited Tenants & Rooms",
+                  "Payment Tracking & Receipts",
+                  "Tenant Portal (Magic Link)",
+                  "Complaints & Notice Board",
+                  "Priority Support",
+                ].map((f) => (
+                  <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", fontSize: "0.9rem" }}>
+                    <span style={{ color: "#cbd5e1", fontWeight: 700, marginTop: "1px", flexShrink: 0 }}>✓</span>
+                    <span style={{ color: "#cbd5e1" }}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href="/register"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "center",
+                  padding: "0.9rem",
+                  borderRadius: "12px",
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  color: "#f8fafc",
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  textDecoration: "none",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  transition: "background 0.2s",
+                }}
+              >
+                Start Now
+              </Link>
+            </div>
+
+            {/* 1 Year Plan (Highlighted) */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                background: "linear-gradient(145deg, rgba(30,41,59,0.85), rgba(15,23,42,0.95))",
+                borderRadius: "24px",
+                border: "2px solid #00c49f",
+                boxShadow: "0 0 60px rgba(0,196,159,0.12), 0 20px 40px rgba(0,0,0,0.4)",
+                padding: "2.5rem",
+                backdropFilter: "blur(12px)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              {/* Popular badge */}
+              <div style={{ position: "absolute", top: "-14px", left: "50%", transform: "translateX(-50%)", background: "linear-gradient(90deg, #00c49f, #38bdf8)", color: "#0f172a", padding: "5px 20px", borderRadius: "99px", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.08em", whiteSpace: "nowrap" }}>
+                BEST VALUE
+              </div>
+
+              <h3 style={{ color: "#f8fafc", fontSize: "1.3rem", marginBottom: "0.25rem" }}>PGmate Premium — 1 Year</h3>
+              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#00c49f", lineHeight: 1, margin: "1rem 0" }}>₹11,999</div>
+              <div style={{ color: "#00c49f", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>Save ₹1,999 compared to 6-month plan</div>
+
+              <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
+                {[
+                  "Unlimited Tenants & Rooms",
+                  "Payment Tracking & Receipts",
+                  "Tenant Portal (Magic Link)",
+                  "Complaints & Notice Board",
+                  "Meal Menu Management",
+                  "Rent Reminder Emails",
+                  "Revenue Analytics",
+                  "CSV Export",
+                  "Priority Support",
+                ].map((f) => (
+                  <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", fontSize: "0.9rem" }}>
+                    <span style={{ color: "#00c49f", fontWeight: 700, marginTop: "1px", flexShrink: 0 }}>✓</span>
+                    <span style={{ color: "#cbd5e1" }}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href="/register"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "center",
+                  padding: "0.9rem",
+                  borderRadius: "12px",
+                  backgroundColor: "#00c49f",
+                  color: "#0f172a",
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                  textDecoration: "none",
+                  boxShadow: "0 0 25px rgba(0,196,159,0.35)",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                }}
+              >
+                Start Now
+              </Link>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
       {/* ── Contact Us Section ─────────────────────────────────────────── */}
       <AnimatedSection delay={200}>
         <div
@@ -451,6 +607,17 @@ export default function Home() {
         >
           <span>© {new Date().getFullYear()} PGmate. Manage. Simplify. Grow.</span>
           <span>Contact us: <a href="mailto:v4services.in@gmail.com" style={{ color: "#00c49f", textDecoration: "none" }}>v4services.in@gmail.com</a></span>
+          <div style={{ display: "flex", gap: "1rem", marginTop: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
+            <Link href="/about" style={{ color: "#64748b", textDecoration: "none", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "#00c49f"} onMouseOut={(e) => e.currentTarget.style.color = "#64748b"}>About Us</Link>
+            <span>|</span>
+            <Link href="/privacy-policy" style={{ color: "#64748b", textDecoration: "none", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "#00c49f"} onMouseOut={(e) => e.currentTarget.style.color = "#64748b"}>Privacy Policy</Link>
+            <span>|</span>
+            <Link href="/terms-and-conditions" style={{ color: "#64748b", textDecoration: "none", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "#00c49f"} onMouseOut={(e) => e.currentTarget.style.color = "#64748b"}>Terms & Conditions</Link>
+            <span>|</span>
+            <Link href="/refund-policy" style={{ color: "#64748b", textDecoration: "none", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "#00c49f"} onMouseOut={(e) => e.currentTarget.style.color = "#64748b"}>Refund Policy</Link>
+            <span>|</span>
+            <Link href="/contact-us" style={{ color: "#64748b", textDecoration: "none", transition: "color 0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "#00c49f"} onMouseOut={(e) => e.currentTarget.style.color = "#64748b"}>Contact Us</Link>
+          </div>
         </footer>
       </AnimatedSection>
     </div>

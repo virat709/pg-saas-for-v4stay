@@ -260,12 +260,39 @@ export default function TenantsPage() {
     }
   };
 
+  const exportCSV = () => {
+    const headers = ["Name", "Phone", "Room", "Bed", "Rent", "Status", "Date Joined"];
+    const rows = tenants.map((t) => [
+      t.name,
+      t.phone,
+      t.bed?.room?.room_number || "Unassigned",
+      t.bed?.bed_label || "",
+      t.rent_amount,
+      t.status,
+      t.date_joined || "",
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map(String).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tenants-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-8" style={{ flexWrap: "wrap", gap: "1rem" }}>
         <h1>Tenants</h1>
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <button className="btn-secondary" onClick={() => setShowCsvUpload(!showCsvUpload)} style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--primary)", backgroundColor: "transparent", color: "var(--primary)", cursor: "pointer", transition: "var(--transition)" }}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <button
+            onClick={exportCSV}
+            style={{ padding: "0.6rem 1.1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", backgroundColor: "var(--surface-color)", color: "var(--text-main)", fontWeight: 500, cursor: "pointer", fontSize: "0.875rem" }}
+          >
+            ⬇ Export CSV
+          </button>
+          <button className="btn-secondary" onClick={() => setShowCsvUpload(!showCsvUpload)} style={{ padding: "0.6rem 1.1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--primary)", backgroundColor: "transparent", color: "var(--primary)", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}>
             {showCsvUpload ? "Cancel Upload" : "Upload CSV"}
           </button>
           <button className="btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
@@ -362,8 +389,24 @@ export default function TenantsPage() {
       {loading ? (
         <p>Loading tenants...</p>
       ) : tenants.length === 0 ? (
-        <div className="card text-center" style={{ padding: '3rem' }}>
-          <p>No tenants added yet. Click "+ Add Tenant" to get started.</p>
+        <div className="card text-center animate-fade-in" style={{ padding: '4rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(0,196,159,0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No tenants added yet</h3>
+          <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
+            Add your first tenant manually or upload multiple tenants at once using a CSV file.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button className="btn-primary" onClick={() => setShowAddForm(true)}>
+              + Add Tenant
+            </button>
+          </div>
         </div>
       ) : (
         <div className="card table-responsive">

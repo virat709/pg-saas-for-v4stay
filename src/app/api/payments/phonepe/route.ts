@@ -6,8 +6,8 @@ import crypto from "crypto";
 
 // Known valid plan names and their prices (paise) — prevents arbitrary amounts
 const VALID_PLANS: Record<string, number> = {
-  "6 Months": 6999,
-  "1 Year": 9999,
+  "PGmate Starter 6 Months": 6999,
+  "PGmate Premium 1 Year": 11999,
 };
 
 export async function POST(req: Request) {
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     // ── Server-side plan validation ───────────────────────────────────────
     if (!planName || !(planName in VALID_PLANS)) {
       return NextResponse.json(
-        { message: "Invalid plan name. Choose '6 Months' or '1 Year'." },
+        { message: "Invalid plan name. Choose 'PGmate Starter 6 Months' or 'PGmate Premium 1 Year'." },
         { status: 400 }
       );
     }

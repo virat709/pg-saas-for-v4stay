@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Disallow private dashboard routes
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /onboarding/
+
+Sitemap: https://pgmate.in/sitemap.xml

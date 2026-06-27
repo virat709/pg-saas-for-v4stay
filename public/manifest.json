@@ -1,0 +1,20 @@
+{
+  "name": "PGmate — PG Management",
+  "short_name": "PGmate",
+  "description": "PG management dashboard for PG accommodation owners. Manage tenants, rooms, payments, complaints, and more.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#00c49f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "en-IN"
+}

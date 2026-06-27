@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
+import { sendEmail, rentReminderEmail } from "@/lib/email";
 
 export async function GET(req: Request) {
   try {
@@ -28,7 +29,7 @@ export async function GET(req: Request) {
 
     const remindersSent: any[] = [];
 
-    activeTenants.forEach(tenant => {
+    for (const tenant of activeTenants) {
       let daysLeft = 0;
       if (currentDay <= tenant.billing_cycle_day) {
         daysLeft = tenant.billing_cycle_day - currentDay;
@@ -37,18 +38,34 @@ export async function GET(req: Request) {
       }
 
       if (daysLeft === 5) {
-        const message = `Hi ${tenant.name}, your rent of ₹${tenant.rent_amount} for ${tenant.property.name} is due in 5 days (on the ${tenant.billing_cycle_day}th). Please arrange payment to avoid late fees.`;
-        console.log(`[WHATSAPP MOCK] Sent to ${tenant.phone}: ${message}`);
-        
+        const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+        const magicLink = `${baseUrl}/t/${tenant.id}`;
+
         remindersSent.push({
           tenantId: tenant.id,
           name: tenant.name,
           phone: tenant.phone,
           daysLeft,
-          message
         });
+
+        // Send reminder email if tenant has an email on file
+        if (tenant.email) {
+          await sendEmail({
+            to: tenant.email,
+            subject: `Rent Reminder: ₹${tenant.rent_amount} due in 5 days — ${tenant.property.name}`,
+            html: rentReminderEmail({
+              tenantName: tenant.name,
+              pgName: tenant.property.name,
+              rentAmount: tenant.rent_amount,
+              dueDay: tenant.billing_cycle_day,
+              magicLink,
+            }),
+          });
+        } else {
+          console.log(`[CRON] No email for tenant ${tenant.name} (${tenant.phone}). Skipping reminder.`);
+        }
       }
-    });
+    }
 
     return NextResponse.json({
       success: true,

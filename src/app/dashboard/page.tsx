@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
+import { SkeletonStatGrid } from "@/components/SkeletonCard";
+import RevenueChart from "@/components/RevenueChart";
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any>(null);
@@ -60,15 +62,38 @@ export default function DashboardOverview() {
               overdueTenants += 1;
             }
           });
-        }
+          // Build last-6-months revenue data
+          const monthlyRevenue: Record<string, number> = {};
+          for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const key = d.toLocaleString("en-IN", { month: "short", year: "2-digit" });
+            monthlyRevenue[key] = 0;
+          }
+          payments.forEach((p: any) => {
+            if (!p.payment_date || p.type !== "rent") return;
+            let pDate: Date;
+            if (typeof p.payment_date === "object" && typeof p.payment_date.seconds === "number") {
+              pDate = new Date(p.payment_date.seconds * 1000);
+            } else if (typeof p.payment_date === "object" && typeof p.payment_date._seconds === "number") {
+              pDate = new Date(p.payment_date._seconds * 1000);
+            } else {
+              pDate = new Date(p.payment_date);
+            }
+            if (isNaN(pDate.getTime())) return;
+            const key = pDate.toLocaleString("en-IN", { month: "short", year: "2-digit" });
+            if (key in monthlyRevenue) monthlyRevenue[key] += p.amount_paid || 0;
+          });
 
-        setStats({
-          totalBeds,
-          occupiedBeds,
-          occupancyRate: totalBeds ? Math.round((occupiedBeds / totalBeds) * 100) : 0,
-          expectedCollection,
-          overdueTenants,
-        });
+          setStats({
+            totalBeds,
+            occupiedBeds,
+            occupancyRate: totalBeds ? Math.round((occupiedBeds / totalBeds) * 100) : 0,
+            expectedCollection,
+            overdueTenants,
+            revenueChart: Object.entries(monthlyRevenue).map(([month, amount]) => ({ month, amount })),
+          });
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -79,7 +104,12 @@ export default function DashboardOverview() {
     fetchStats();
   }, []);
 
-  if (loading) return <p>Loading dashboard...</p>;
+  if (loading) return (
+    <div>
+      <h1 className="mb-8">Dashboard Overview</h1>
+      <SkeletonStatGrid />
+    </div>
+  );
 
   return (
     <div>
@@ -165,6 +195,13 @@ export default function DashboardOverview() {
           </div>
         </AnimatedSection>
       </div>
+
+      {/* Revenue Chart */}
+      {stats?.revenueChart?.length > 0 && (
+        <AnimatedSection delay={380}>
+          <RevenueChart data={stats.revenueChart} />
+        </AnimatedSection>
+      )}
 
       {/* Quick actions — enters last */}
       <AnimatedSection delay={400}>

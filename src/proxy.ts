@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 /**
- * Next.js Edge Middleware — runs on every matching request BEFORE the page renders.
+ * Next.js Proxy — runs on every matching request BEFORE the page renders.
  *
  * Protection rules:
  *   /dashboard/*  — must be authenticated AND have subscription_status === "active"
@@ -13,7 +13,7 @@ import { getToken } from "next-auth/jwt";
  * NOTE: Firestore Admin SDK is NOT available in the Edge runtime.
  * We store a lightweight `subscriptionStatus` claim inside the JWT session token
  * (written when subscription is activated). This is the fastest and correct approach
- * for Edge middleware — no cold-start latency, no Firestore in the edge.
+ * for Edge middleware/proxy — no cold-start latency, no Firestore in the edge.
  *
  * The token claim is refreshed by Next-Auth on every session update (see authOptions).
  */
@@ -22,7 +22,7 @@ export const config = {
   matcher: ["/dashboard/:path*"],
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── Must be authenticated ──────────────────────────────────────────────
@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
       }
     }
   } catch (err) {
-    console.error("[middleware] Subscription status check failed:", err);
+    console.error("[proxy] Subscription status check failed:", err);
     // Fail closed: redirect to subscription page on API errors to prevent
     // unpaid users from accessing the dashboard during outages.
     const subUrl = new URL("/onboarding/subscription", request.url);

@@ -42,90 +42,92 @@ export default function DashboardLayout({
     setDrawerOpen(false);
   }, [pathname]);
 
-  const navItems = [
-    { name: "Overview", path: "/dashboard" },
-    { name: "Rooms & Beds", path: "/dashboard/rooms" },
-    { name: "Tenants", path: "/dashboard/tenants" },
-    { name: "Payments", path: "/dashboard/payments" },
-    { name: "Complaints", path: "/dashboard/complaints" },
-    { name: "Notice Board", path: "/dashboard/notices" },
-    { name: "Menu", path: "/dashboard/menu" },
-  ];
+const navItems = [
+  { name: "Overview", path: "/dashboard" },
+  { name: "Rooms & Beds", path: "/dashboard/rooms" },
+  { name: "Tenants", path: "/dashboard/tenants" },
+  { name: "Payments", path: "/dashboard/payments" },
+  { name: "Complaints", path: "/dashboard/complaints" },
+  { name: "Notice Board", path: "/dashboard/notices" },
+  { name: "Menu", path: "/dashboard/menu" },
+  { name: "Subscription", path: "/dashboard/subscription" },
+  { name: "Settings", path: "/dashboard/settings" },
+];
 
-  const SidebarContent = () => (
-    <>
-      <div style={{ marginBottom: "2rem" }}>
-        <h2
-          style={{
-            color: "var(--text-main)",
-            fontSize: "1.25rem",
-            margin: 0,
-            lineHeight: 1.2,
-          }}
-        >
-          {pgName}
-        </h2>
-        <div style={{ marginTop: "0.25rem" }}>
-          <Logo size={24} variant="dark" showTagline={false} />
-        </div>
-      </div>
-
-      <nav
+const SidebarContent = ({ pgName, pathname }: { pgName: string; pathname: string }) => (
+  <>
+    <div style={{ marginBottom: "2rem" }}>
+      <h2
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-          flex: 1,
+          color: "var(--text-main)",
+          fontSize: "1.25rem",
+          margin: 0,
+          lineHeight: 1.2,
         }}
       >
-        {navItems.map((item) => {
-          const isActive =
-            item.path === "/dashboard"
-              ? pathname === item.path
-              : pathname === item.path || pathname.startsWith(item.path + "/");
-          return (
-            <Link
-              key={item.path}
-              href={item.path}
-              style={{
-                padding: "0.75rem 1rem",
-                borderRadius: "var(--radius-md)",
-                backgroundColor: isActive
-                  ? "rgba(30, 96, 145, 0.1)"
-                  : "transparent",
-                color: isActive ? "var(--primary)" : "var(--text-main)",
-                fontWeight: isActive ? 600 : 400,
-                transition: "var(--transition)",
-              }}
-            >
-              {item.name}
-            </Link>
-          );
-        })}
-      </nav>
+        {pgName}
+      </h2>
+      <div style={{ marginTop: "0.25rem" }}>
+        <Logo size={24} variant="dark" showTagline={false} />
+      </div>
+    </div>
 
-      <div
+    <nav
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+        flex: 1,
+      }}
+    >
+      {navItems.map((item) => {
+        const isActive =
+          item.path === "/dashboard"
+            ? pathname === item.path
+            : pathname === item.path || pathname.startsWith(item.path + "/");
+        return (
+          <Link
+            key={item.path}
+            href={item.path}
+            style={{
+              padding: "0.75rem 1rem",
+              borderRadius: "var(--radius-md)",
+              backgroundColor: isActive
+                ? "rgba(30, 96, 145, 0.1)"
+                : "transparent",
+              color: isActive ? "var(--primary)" : "var(--text-main)",
+              fontWeight: isActive ? 600 : 400,
+              transition: "var(--transition)",
+            }}
+          >
+            {item.name}
+          </Link>
+        );
+      })}
+    </nav>
+
+    <div
+      style={{
+        borderTop: "1px solid var(--border-color)",
+        paddingTop: "1rem",
+        marginTop: "auto",
+      }}
+    >
+      <button
+        onClick={() => signOut({ callbackUrl: "/login" })}
         style={{
-          borderTop: "1px solid var(--border-color)",
-          paddingTop: "1rem",
-          marginTop: "auto",
+          width: "100%",
+          padding: "0.75rem",
+          textAlign: "left",
+          color: "var(--danger)",
+          fontWeight: 500,
         }}
       >
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          style={{
-            width: "100%",
-            padding: "0.75rem",
-            textAlign: "left",
-            color: "var(--danger)",
-            fontWeight: 500,
-          }}
-        >
-          Sign Out
-        </button>
-      </div>
-    </>
-  );
+        Sign Out
+      </button>
+    </div>
+  </>
+);
 
   return (
     <>
@@ -241,7 +243,7 @@ export default function DashboardLayout({
       <div className="dashboard-root">
         {/* ── Desktop sidebar ───────────────────────────────────────────── */}
         <aside className="dashboard-sidebar">
-          <SidebarContent />
+          <SidebarContent pgName={pgName} pathname={pathname} />
         </aside>
 
         {/* ── Mobile: top bar + drawer ──────────────────────────────────── */}
@@ -298,7 +300,7 @@ export default function DashboardLayout({
               >
                 ✕
               </button>
-              <SidebarContent />
+              <SidebarContent pgName={pgName} pathname={pathname} />
             </div>
           </div>
         )}

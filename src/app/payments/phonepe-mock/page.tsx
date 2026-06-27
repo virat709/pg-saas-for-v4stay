@@ -29,8 +29,8 @@ function MockCheckoutContent() {
   const searchParams = useSearchParams();
 
   const transactionId = searchParams.get("transactionId") || "TXN_MOCK";
-  const amount = searchParams.get("amount") || "9999";
-  const tier = searchParams.get("tier") || "1 Year";
+  const amount = searchParams.get("amount") || "11999";
+  const tier = searchParams.get("tier") || "PGmate Premium 1 Year";
 
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);

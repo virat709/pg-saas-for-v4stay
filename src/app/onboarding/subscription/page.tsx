@@ -102,47 +102,108 @@ export default function SubscriptionPage() {
 
   return (
     <div className="flex items-center justify-center w-full" style={{ minHeight: '100vh', padding: '1rem', backgroundColor: 'var(--bg-color)' }}>
-      <div className="card animate-fade-in" style={{ maxWidth: '800px', width: '100%', padding: '2rem' }}>
+      <div className="card animate-fade-in" style={{ maxWidth: '800px', width: '100%', padding: '2.5rem' }}>
         <div className="text-center mb-8">
-          <h2>Choose Your Plan</h2>
-          <p>Select a subscription plan for your PG.</p>
+          <h2 style={{ fontSize: '1.75rem' }}>Activate Your Plan</h2>
+          <p style={{ marginBottom: 0 }}>Choose the plan that fits your PG.</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem", textAlign: "left" }}>
           
-          <div className="card text-center" style={{ border: '2px solid transparent', display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <h3>6 Months</h3>
-            <div style={{ fontSize: '2rem', fontWeight: 700, margin: '1rem 0', color: 'var(--primary)' }}>
-              ₹6,999<span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/6 mo</span>
-            </div>
-            <ul style={{ listStyle: 'none', padding: 0, marginBottom: '2rem', textAlign: 'left', flex: 1 }}>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>Full Feature Access</li>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>Tenant Portal Links</li>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>Complaints Management</li>
+          {/* 6 Month Plan */}
+          <div
+            className="card"
+            style={{
+              position: "relative",
+              width: "100%",
+              background: "var(--surface-color)",
+              border: "1px solid var(--border-color)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>PGmate Starter — 6 Months</h3>
+            <div style={{ fontSize: "2.5rem", fontWeight: 800, lineHeight: 1, margin: "1rem 0" }}>₹6,999</div>
+            
+            <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
+              {[
+                "Unlimited Tenants & Rooms",
+                "Payment Tracking & Receipts",
+                "Tenant Portal (Magic Link)",
+                "Complaints & Notice Board",
+                "Priority Support",
+              ].map((f) => (
+                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", fontSize: "0.9rem", color: "var(--text-main)" }}>
+                  <span style={{ color: "var(--text-muted)", fontWeight: 700, marginTop: "1px", flexShrink: 0 }}>✓</span>
+                  <span>{f}</span>
+                </li>
+              ))}
             </ul>
-            <button className="btn-primary w-full" onClick={() => handleSelectPlan('6 Months', 6999)} disabled={loading}>
-              Select Plan
+
+            <button
+              className="btn-secondary w-full"
+              style={{ fontSize: '1.05rem', padding: '0.875rem' }}
+              onClick={() => handleSelectPlan('PGmate Starter 6 Months', 6999)}
+              disabled={loading}
+            >
+              Get Started
             </button>
           </div>
 
-          <div className="card text-center" style={{ border: '2px solid var(--primary)', position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'var(--primary)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>RECOMMENDED</div>
-            <h3>1 Year</h3>
-            <div style={{ fontSize: '2rem', fontWeight: 700, margin: '1rem 0', color: 'var(--primary)' }}>
-              ₹9,999<span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/yr</span>
+          {/* 1 Year Plan (Highlighted) */}
+          <div
+            className="card"
+            style={{
+              position: "relative",
+              width: "100%",
+              border: "2px solid var(--success)",
+              boxShadow: "0 0 40px rgba(16, 185, 129, 0.1)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* Popular badge */}
+            <div style={{ position: "absolute", top: "-14px", left: "50%", transform: "translateX(-50%)", background: "var(--success)", color: "#0f172a", padding: "4px 16px", borderRadius: "99px", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+              BEST VALUE
             </div>
-            <ul style={{ listStyle: 'none', padding: 0, marginBottom: '2rem', textAlign: 'left', flex: 1 }}>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>Full Feature Access</li>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>Tenant Portal Links</li>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>Complaints Management</li>
-              <li style={{ padding: '0.5rem 0', color: 'var(--success)', fontWeight: 500 }}>Save ₹3,999 vs 6-mo plan</li>
+
+            <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>PGmate Premium — 1 Year</h3>
+            <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--success)", lineHeight: 1, margin: "1rem 0" }}>₹11,999</div>
+            <div style={{ color: "var(--success)", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>Save ₹1,999 compared to 6-month plan</div>
+
+            <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
+              {[
+                "Unlimited Tenants & Rooms",
+                "Payment Tracking & Receipts",
+                "Tenant Portal (Magic Link)",
+                "Complaints & Notice Board",
+                "Meal Menu Management",
+                "Rent Reminder Emails",
+                "Revenue Analytics",
+                "CSV Export",
+                "Priority Support",
+              ].map((f) => (
+                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", fontSize: "0.9rem", color: "var(--text-main)" }}>
+                  <span style={{ color: "var(--success)", fontWeight: 700, marginTop: "1px", flexShrink: 0 }}>✓</span>
+                  <span>{f}</span>
+                </li>
+              ))}
             </ul>
-            <button className="btn-primary w-full" onClick={() => handleSelectPlan('1 Year', 9999)} disabled={loading}>
-              Select Plan
+
+            <button
+              className="btn-primary w-full"
+              style={{ fontSize: '1.05rem', padding: '0.875rem', backgroundColor: 'var(--success)', color: '#0f172a' }}
+              onClick={() => handleSelectPlan('PGmate Premium 1 Year', 11999)}
+              disabled={loading}
+            >
+              Get Started — ₹11,999
             </button>
           </div>
-
         </div>
+
+        <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1.5rem', marginBottom: 0 }}>
+          Questions? <a href="mailto:v4services.in@gmail.com" style={{ color: 'var(--primary)', fontWeight: 500 }}>Contact us</a>
+        </p>
       </div>
     </div>
   );
