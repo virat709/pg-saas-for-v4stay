@@ -18,6 +18,7 @@ type Tenant = {
 
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [availableBeds, setAvailableBeds] = useState<{id: string, label: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -59,15 +60,51 @@ export default function TenantsPage() {
     }
   };
 
+  const getPaymentStatus = (tenantId: string, billingDay: number) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Find rent payment for this tenant in the current month
+    const paid = payments.some(p => {
+      if (p.tenantId !== tenantId || p.type !== "rent") return false;
+      let pDate: Date;
+      if (p.payment_date?.seconds) {
+        pDate = new Date(p.payment_date.seconds * 1000);
+      } else if (p.payment_date?._seconds) {
+        pDate = new Date(p.payment_date._seconds * 1000);
+      } else {
+        pDate = new Date(p.payment_date);
+      }
+      return !isNaN(pDate.getTime()) && pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear;
+    });
+
+    if (paid) return { text: "Paid", color: "var(--success)", isOverdue: false };
+
+    const currentDay = now.getDate();
+    if (currentDay <= billingDay) {
+      const daysLeft = billingDay - currentDay;
+      return { text: `Due in ${daysLeft}d`, color: "var(--warning)", isOverdue: false };
+    } else {
+      const daysOverdue = currentDay - billingDay;
+      return { text: `Overdue ${daysOverdue}d`, color: "var(--danger)", isOverdue: true };
+    }
+  };
+
   const fetchData = async () => {
     try {
-      const [tenantsRes, roomsRes] = await Promise.all([
+      const [tenantsRes, roomsRes, paymentsRes] = await Promise.all([
         fetch("/api/tenants"),
-        fetch("/api/rooms")
+        fetch("/api/rooms"),
+        fetch("/api/payments")
       ]);
       
       if (tenantsRes.ok) {
         setTenants(await tenantsRes.json());
+      }
+
+      if (paymentsRes.ok) {
+        setPayments(await paymentsRes.json());
       }
       
       if (roomsRes.ok) {
@@ -281,6 +318,32 @@ export default function TenantsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const currentDay = now.getDate();
+
+  const paidTenantIds = new Set(
+    payments
+      .filter(p => {
+        if (p.type !== "rent") return false;
+        let pDate: Date;
+        if (p.payment_date?.seconds) {
+          pDate = new Date(p.payment_date.seconds * 1000);
+        } else if (p.payment_date?._seconds) {
+          pDate = new Date(p.payment_date._seconds * 1000);
+        } else {
+          pDate = new Date(p.payment_date);
+        }
+        return !isNaN(pDate.getTime()) && pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear;
+      })
+      .map(p => p.tenantId)
+  );
+
+  const activeTenants = tenants.filter(t => t.status === "active");
+  const paidCount = activeTenants.filter(t => paidTenantIds.has(t.id)).length;
+  const overdueCount = activeTenants.filter(t => !paidTenantIds.has(t.id) && currentDay > t.billing_cycle_day).length;
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8" style={{ flexWrap: "wrap", gap: "1rem" }}>
@@ -300,6 +363,29 @@ export default function TenantsPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Summary Stats ─────────────────────────────────────────────── */}
+      {tenants.length > 0 && (
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
+          gap: "1.5rem", 
+          marginBottom: "2rem" 
+        }}>
+          <div className="card" style={{ padding: "1.25rem", borderLeft: "4px solid var(--primary)", display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontSize: "0.875rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 500 }}>Active Tenants</div>
+            <div style={{ fontSize: "1.75rem", fontWeight: 700, marginTop: "0.25rem", color: 'var(--text-main)' }}>{activeTenants.length}</div>
+          </div>
+          <div className="card" style={{ padding: "1.25rem", borderLeft: "4px solid var(--success)", display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontSize: "0.875rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 500 }}>Paid (This Month)</div>
+            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--success)", marginTop: "0.25rem" }}>{paidCount}</div>
+          </div>
+          <div className="card" style={{ padding: "1.25rem", borderLeft: "4px solid var(--danger)", display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontSize: "0.875rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 500 }}>Overdue Rent</div>
+            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--danger)", marginTop: "0.25rem" }}>{overdueCount}</div>
+          </div>
+        </div>
+      )}
 
       {showCsvUpload && (
         <div className="card mb-8 animate-fade-in">
@@ -417,7 +503,7 @@ export default function TenantsPage() {
                 <th style={{ padding: '1rem', fontWeight: 600 }}>Room / Bed</th>
                 <th style={{ padding: '1rem', fontWeight: 600 }}>Rent</th>
                 <th style={{ padding: '1rem', fontWeight: 600 }}>Status</th>
-                <th style={{ padding: '1rem', fontWeight: 600 }}>Days Left</th>
+                <th style={{ padding: '1rem', fontWeight: 600 }}>Rent Status</th>
                 <th style={{ padding: '1rem', fontWeight: 600 }}>Actions</th>
               </tr>
             </thead>
@@ -446,9 +532,21 @@ export default function TenantsPage() {
                   </td>
                   <td style={{ padding: '1rem', fontWeight: 500 }}>
                     {tenant.status === 'active' ? (
-                      <span style={{ color: getDaysLeft(tenant.billing_cycle_day) <= 5 ? 'var(--danger)' : 'inherit' }}>
-                        {getDaysLeft(tenant.billing_cycle_day)} days
-                      </span>
+                      (() => {
+                        const rentStatus = getPaymentStatus(tenant.id, tenant.billing_cycle_day);
+                        return (
+                          <span style={{ 
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            backgroundColor: rentStatus.isOverdue ? 'rgba(239, 68, 68, 0.1)' : rentStatus.text === 'Paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                            color: rentStatus.color
+                          }}>
+                            {rentStatus.text}
+                          </span>
+                        );
+                      })()
                     ) : '-'}
                   </td>
                   <td style={{ padding: '1rem' }}>
@@ -459,22 +557,8 @@ export default function TenantsPage() {
                       >
                         View Details
                       </button>
-                      <button 
-                        onClick={() => { setEditTenantData(tenant); setEditName(tenant.name); setEditPhone(tenant.phone); setEditRentAmount(tenant.rent_amount?.toString() || ""); setEditBillingCycleDay(tenant.billing_cycle_day?.toString() || "5"); }} 
-                        style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: '6px', cursor: 'pointer' }}
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteTenant(tenant.id, tenant.name)} 
-                        disabled={actionLoading === tenant.id}
-                        style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px', cursor: 'pointer' }}
-                      >
-                        Delete
-                      </button>
                       {tenant.status === 'active' && (
-                        <>
-                          <button 
+                        <button 
                           onClick={() => {
                             const url = `${window.location.origin}/t/${tenant.id}`;
                             navigator.clipboard.writeText(url);
@@ -484,14 +568,6 @@ export default function TenantsPage() {
                         >
                           Copy Link
                         </button>
-                        <button 
-                          onClick={() => handleVacate(tenant.id, tenant.name)} 
-                          disabled={actionLoading === tenant.id}
-                          style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px', cursor: 'pointer' }}
-                        >
-                          {actionLoading === tenant.id ? '...' : '🚪 Vacate'}
-                        </button>
-                        </>
                       )}
                     </div>
                   </td>
@@ -517,7 +593,30 @@ export default function TenantsPage() {
               </div>
               <div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Phone Number</div>
-                <div style={{ fontWeight: 500, fontSize: '1.1rem' }}>{selectedTenant.phone}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontWeight: 500, fontSize: '1.1rem' }}>{selectedTenant.phone}</span>
+                  <a 
+                    href={`https://wa.me/${selectedTenant.phone.replace(/\D/g, "").startsWith('91') || selectedTenant.phone.replace(/\D/g, "").length > 10 ? selectedTenant.phone.replace(/\D/g, "") : '91' + selectedTenant.phone.replace(/\D/g, "")}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      backgroundColor: '#25D366',
+                      color: '#fff',
+                      textDecoration: 'none',
+                    }}
+                    title="Chat on WhatsApp"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.588 1.977 14.12 1.95 12.012 1.95c-5.438 0-9.863 4.374-9.867 9.802-.001 1.73.476 3.41 1.378 4.885l-.994 3.633 3.71-.975zm13.11-7.79c-.067-.112-.247-.179-.517-.314-.27-.134-1.597-.787-1.845-.877-.247-.09-.427-.135-.607.135-.179.27-.697.877-.854 1.057-.158.18-.315.202-.585.067-.27-.135-1.14-.42-2.172-1.341-.803-.715-1.345-1.6-1.502-1.87-.158-.27-.017-.417.118-.552.122-.122.27-.315.405-.472.135-.158.18-.27.27-.45.09-.18.045-.337-.022-.472-.068-.135-.608-1.464-.833-2.004-.22-.528-.48-.456-.66-.465-.17-.008-.367-.01-.563-.01-.197 0-.517.074-.787.37-.27.298-1.03 1.007-1.03 2.457s1.057 2.846 1.203 3.049c.146.202 2.08 3.178 5.04 4.456.703.304 1.252.486 1.68.622.709.226 1.353.194 1.863.118.57-.085 1.597-.652 1.823-1.282.225-.63.225-1.17.157-1.282zm0 0"/>
+                    </svg>
+                  </a>
+                </div>
               </div>
               <div style={{ gridColumn: '1 / -1', height: '1px', backgroundColor: 'var(--border-color)' }}></div>
               <div>
@@ -558,8 +657,32 @@ export default function TenantsPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: '2rem' }}>
-              <button className="btn-primary" style={{ width: '100%' }} onClick={() => setSelectedTenant(null)}>Close</button>
+            <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button 
+                  onClick={() => { setEditTenantData(selectedTenant); setEditName(selectedTenant.name); setEditPhone(selectedTenant.phone); setEditRentAmount(selectedTenant.rent_amount?.toString() || ""); setEditBillingCycleDay(selectedTenant.billing_cycle_day?.toString() || "5"); setSelectedTenant(null); }} 
+                  style={{ flex: 1, padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  ✏️ Edit Details
+                </button>
+                <button 
+                  onClick={() => { handleDeleteTenant(selectedTenant.id, selectedTenant.name); setSelectedTenant(null); }} 
+                  disabled={actionLoading === selectedTenant.id}
+                  style={{ flex: 1, padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  🗑️ Delete
+                </button>
+              </div>
+              {selectedTenant.status === 'active' && (
+                <button 
+                  onClick={() => { handleVacate(selectedTenant.id, selectedTenant.name); setSelectedTenant(null); }} 
+                  disabled={actionLoading === selectedTenant.id}
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  {actionLoading === selectedTenant.id ? '...' : '🚪 Vacate Room'}
+                </button>
+              )}
+              <button className="btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} onClick={() => setSelectedTenant(null)}>Close</button>
             </div>
           </div>
         </div>
