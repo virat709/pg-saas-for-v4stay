@@ -3,6 +3,26 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
 
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
+    const properties = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    return NextResponse.json(properties);
+  } catch (error) {
+    console.error("Fetch properties error:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useProperties } from "@/context/PropertyContext";
 
 type Notice = {
   id: string;
@@ -11,6 +12,8 @@ type Notice = {
 };
 
 export default function NoticeBoardPage() {
+  const { activePropertyId, properties } = useProperties();
+  const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -20,9 +23,18 @@ export default function NoticeBoardPage() {
   const [content, setContent] = useState("");
   const [priority, setPriority] = useState("normal");
 
+  useEffect(() => {
+    if (activePropertyId && activePropertyId !== "all") {
+      setSelectedFormPropertyId(activePropertyId);
+    } else if (properties.length > 0) {
+      setSelectedFormPropertyId(properties[0].id);
+    }
+  }, [activePropertyId, properties]);
+
   const fetchNotices = async () => {
     try {
-      const res = await fetch("/api/notices");
+      const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
+      const res = await fetch(`/api/notices${queryParam}`);
       if (res.ok) {
         setNotices(await res.json());
       }
@@ -35,7 +47,7 @@ export default function NoticeBoardPage() {
 
   useEffect(() => {
     fetchNotices();
-  }, []);
+  }, [activePropertyId]);
 
   const handleCreateNotice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +56,7 @@ export default function NoticeBoardPage() {
       const res = await fetch("/api/notices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content, priority }),
+        body: JSON.stringify({ title, content, priority, propertyId: selectedFormPropertyId }),
       });
       if (res.ok) {
         setTitle("");
@@ -102,6 +114,16 @@ export default function NoticeBoardPage() {
         <div className="card mb-8 animate-fade-in">
           <h3>Create Notice</h3>
           <form onSubmit={handleCreateNotice}>
+            {activePropertyId === "all" && (
+              <div className="input-group mb-0">
+                <label className="input-label">Select Property</label>
+                <select className="input-field" value={selectedFormPropertyId} onChange={e => setSelectedFormPropertyId(e.target.value)} required>
+                  {properties.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="input-group mb-0">
               <label className="input-label">Title</label>
               <input type="text" className="input-field" value={title} onChange={e => setTitle(e.target.value)} required />
@@ -149,7 +171,7 @@ export default function NoticeBoardPage() {
                   &times;
                 </button>
               </div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Posted on: {formatDate(notice.created_at)}</div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Posted on: {formatDate(notice.created_at)}{activePropertyId === "all" && (notice as any).propertyName && ` — ${(notice as any).propertyName}`}</div>
               <p style={{ marginTop: '0.5rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{notice.content}</p>
             </div>
           ))}

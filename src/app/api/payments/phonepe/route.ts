@@ -18,19 +18,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { planName, price } = await req.json();
+    const { planName, price, propertyCount } = await req.json();
 
-    // ── Server-side plan validation ───────────────────────────────────────
-    if (!planName || !(planName in VALID_PLANS)) {
+    // ── Server-side plan validation & pricing calculation ─────────────────
+    const count = parseInt(propertyCount) || 1;
+    if (count < 1) {
+      return NextResponse.json({ message: "Invalid property count." }, { status: 400 });
+    }
+
+    let expectedPrice = 0;
+    if (planName === "PGmate Starter 6 Months") {
+      expectedPrice = 6999 + (count - 1) * 4999;
+    } else if (planName === "PGmate Premium 1 Year") {
+      expectedPrice = 11999 + (count - 1) * 6999;
+    } else {
       return NextResponse.json(
         { message: "Invalid plan name. Choose 'PGmate Starter 6 Months' or 'PGmate Premium 1 Year'." },
         { status: 400 }
       );
     }
-    const expectedPrice = VALID_PLANS[planName];
+
     if (typeof price !== "number" || price !== expectedPrice) {
       return NextResponse.json(
-        { message: "Price mismatch for the selected plan." },
+        { message: `Price mismatch. Expected ₹${expectedPrice} but received ₹${price}` },
         { status: 400 }
       );
     }
@@ -69,6 +79,7 @@ export async function POST(req: Request) {
         transactionId,
         amount: price,
         planName,
+        propertyCount: count,
         status: "pending",
         callbackSecret,
         created_at: new Date(),

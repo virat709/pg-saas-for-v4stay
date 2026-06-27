@@ -11,64 +11,80 @@ export async function GET(req: Request) {
     if (!session || !session.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
+    if (pSnap.empty) return NextResponse.json([], { status: 200 });
+    const propertyIds = pSnap.docs.map(doc => doc.id);
+    const propertiesMap = Object.fromEntries(pSnap.docs.map(doc => [doc.id, doc.data()]));
 
-    if (pSnap.empty) return NextResponse.json([]);
-    const propertyId = pSnap.docs[0].id;
+    const { searchParams } = new URL(req.url);
+    const propertyIdParam = searchParams.get("propertyId");
 
-    const complaintsRef = adminDb.collection("properties").doc(propertyId).collection("maintenanceRequests");
-    const cSnap = await complaintsRef.get();
-    
-    // Fetch all tenants, rooms, and beds in parallel to construct mapping maps
-    const [tSnap, rSnap] = await Promise.all([
-      adminDb.collection("properties").doc(propertyId).collection("tenants").get(),
-      adminDb.collection("properties").doc(propertyId).collection("rooms").get(),
-    ]);
+    let targets = propertyIds;
+    if (propertyIdParam && propertyIdParam !== "all") {
+      if (!propertyIds.includes(propertyIdParam)) {
+        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      }
+      targets = [propertyIdParam];
+    }
 
-    const tenantsMap: Record<string, any> = {};
-    tSnap.docs.forEach((tDoc) => {
-      tenantsMap[tDoc.id] = { id: tDoc.id, ...tDoc.data(), bed: null };
-    });
+    const allComplaints: any[] = [];
 
-    const roomsMap: Record<string, any> = {};
-    rSnap.docs.forEach((rDoc) => {
-      roomsMap[rDoc.id] = { id: rDoc.id, ...rDoc.data() };
-    });
-
-    const bedsMap: Record<string, any> = {};
-    // Fetch beds in parallel for each room to restrict database queries to this property
     await Promise.all(
-      rSnap.docs.map(async (rDoc) => {
-        const bSnap = await rDoc.ref.collection("beds").get();
-        bSnap.docs.forEach((bDoc) => {
-          bedsMap[bDoc.id] = {
-            id: bDoc.id,
-            ...bDoc.data(),
-            room: roomsMap[rDoc.id] || null,
-          };
+      targets.map(async (pId) => {
+        const complaintsRef = adminDb.collection("properties").doc(pId).collection("maintenanceRequests");
+        const cSnap = await complaintsRef.get();
+        
+        const [tSnap, rSnap] = await Promise.all([
+          adminDb.collection("properties").doc(pId).collection("tenants").get(),
+          adminDb.collection("properties").doc(pId).collection("rooms").get(),
+        ]);
+
+        const tenantsMap: Record<string, any> = {};
+        tSnap.docs.forEach((tDoc) => {
+          tenantsMap[tDoc.id] = { id: tDoc.id, ...tDoc.data(), bed: null };
+        });
+
+        const roomsMap: Record<string, any> = {};
+        rSnap.docs.forEach((rDoc) => {
+          roomsMap[rDoc.id] = { id: rDoc.id, ...rDoc.data() };
+        });
+
+        const bedsMap: Record<string, any> = {};
+        await Promise.all(
+          rSnap.docs.map(async (rDoc) => {
+            const bSnap = await rDoc.ref.collection("beds").get();
+            bSnap.docs.forEach((bDoc) => {
+              bedsMap[bDoc.id] = {
+                id: bDoc.id,
+                ...bDoc.data(),
+                room: roomsMap[rDoc.id] || null,
+              };
+            });
+          })
+        );
+
+        // Map beds to tenants in memory
+        Object.keys(tenantsMap).forEach((tId) => {
+          const t = tenantsMap[tId];
+          if (t.bedId) {
+            t.bed = bedsMap[t.bedId] || null;
+          }
+        });
+
+        cSnap.docs.forEach((cDoc) => {
+          const cData = cDoc.data();
+          const tenantData = cData.tenantId ? (tenantsMap[cData.tenantId] || null) : null;
+          allComplaints.push({
+            id: cDoc.id,
+            ...cData,
+            tenant: tenantData,
+            propertyId: pId,
+            propertyName: propertiesMap[pId]?.name || "My PG"
+          });
         });
       })
     );
 
-    // Map beds to tenants in memory
-    Object.keys(tenantsMap).forEach((tId) => {
-      const t = tenantsMap[tId];
-      if (t.bedId) {
-        t.bed = bedsMap[t.bedId] || null;
-      }
-    });
-
-    // Construct final complaints list with populated tenant and bed data
-    const complaints = cSnap.docs.map((cDoc) => {
-      const cData = cDoc.data();
-      const tenantData = cData.tenantId ? (tenantsMap[cData.tenantId] || null) : null;
-      return {
-        id: cDoc.id,
-        ...cData,
-        tenant: tenantData,
-      };
-    });
-
-    complaints.sort((a: any, b: any) => {
+    allComplaints.sort((a: any, b: any) => {
       if (a.status !== b.status) {
         return a.status.localeCompare(b.status);
       }
@@ -77,7 +93,7 @@ export async function GET(req: Request) {
       return bTime - aTime;
     });
 
-    return NextResponse.json(complaints);
+    return NextResponse.json(allComplaints);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
@@ -99,16 +115,23 @@ export async function PATCH(req: Request) {
     }
 
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
-
     if (pSnap.empty) return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
-    const propertyId = pSnap.docs[0].id;
+    const propertyIds = pSnap.docs.map(doc => doc.id);
 
-    const complaintRef = adminDb.collection("properties").doc(propertyId).collection("maintenanceRequests").doc(id);
-    const cSnap = await complaintRef.get();
+    let targetPropertyId = null;
+    for (const pId of propertyIds) {
+      const cDoc = await adminDb.collection("properties").doc(pId).collection("maintenanceRequests").doc(id).get();
+      if (cDoc.exists) {
+        targetPropertyId = pId;
+        break;
+      }
+    }
 
-    if (!cSnap.exists) {
+    if (!targetPropertyId) {
       return NextResponse.json({ message: "Unauthorized or Not Found" }, { status: 403 });
     }
+
+    const complaintRef = adminDb.collection("properties").doc(targetPropertyId).collection("maintenanceRequests").doc(id);
 
     await complaintRef.update({
       status,

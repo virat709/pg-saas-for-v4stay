@@ -13,11 +13,18 @@ export async function POST(req: Request) {
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
     if (pSnap.empty) return NextResponse.json({ message: "No property found" }, { status: 404 });
     
-    const propertyId = pSnap.docs[0].id;
-    const propertyRef = adminDb.collection("properties").doc(propertyId);
-
     const body = await req.json();
-    const { tenants } = body;
+    const { tenants, propertyId } = body;
+
+    const propertyIds = pSnap.docs.map(doc => doc.id);
+    let targetPropertyId = propertyId;
+    if (!targetPropertyId) {
+      targetPropertyId = pSnap.docs[0].id;
+    } else if (!propertyIds.includes(targetPropertyId)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    const propertyRef = adminDb.collection("properties").doc(targetPropertyId);
 
     if (!tenants || !Array.isArray(tenants) || tenants.length === 0) {
       return NextResponse.json({ message: "No valid tenants found in data." }, { status: 400 });

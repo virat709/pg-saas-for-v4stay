@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useProperties } from "@/context/PropertyContext";
 
 type Room = { room_number: string };
 type Bed = { id: string; bed_label: string; room: Room };
@@ -17,12 +18,22 @@ type Tenant = {
 };
 
 export default function TenantsPage() {
+  const { activePropertyId, properties } = useProperties();
+  const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [availableBeds, setAvailableBeds] = useState<{id: string, label: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+
+  useEffect(() => {
+    if (activePropertyId && activePropertyId !== "all") {
+      setSelectedFormPropertyId(activePropertyId);
+    } else if (properties.length > 0) {
+      setSelectedFormPropertyId(properties[0].id);
+    }
+  }, [activePropertyId, properties]);
 
   const [editTenantData, setEditTenantData] = useState<Tenant | null>(null);
   const [editName, setEditName] = useState("");
@@ -93,10 +104,11 @@ export default function TenantsPage() {
 
   const fetchData = async () => {
     try {
+      const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
       const [tenantsRes, roomsRes, paymentsRes] = await Promise.all([
-        fetch("/api/tenants"),
-        fetch("/api/rooms"),
-        fetch("/api/payments")
+        fetch(`/api/tenants${queryParam}`),
+        fetch(`/api/rooms${queryParam}`),
+        fetch(`/api/payments${queryParam}`)
       ]);
       
       if (tenantsRes.ok) {
@@ -109,16 +121,25 @@ export default function TenantsPage() {
       
       if (roomsRes.ok) {
         const roomsData = await roomsRes.json();
-        const vacantBeds: {id: string, label: string}[] = [];
+        const vacantBeds: {id: string, label: string, propertyId?: string}[] = [];
         roomsData.forEach((r: any) => {
-          r.beds.forEach((b: any) => {
+          (r.beds || []).forEach((b: any) => {
             if (b.status === "vacant") {
-              vacantBeds.push({ id: `${r.id}_${b.id}`, label: `Room ${r.room_number} - ${b.bed_label}` });
+              vacantBeds.push({ 
+                id: `${r.id}_${b.id}`, 
+                label: `Room ${r.room_number} - ${b.bed_label} (${r.propertyName || "PG"})`,
+                propertyId: r.propertyId 
+              });
             }
           });
         });
         setAvailableBeds(vacantBeds);
-        if (vacantBeds.length > 0) setBedId(vacantBeds[0].id);
+        if (vacantBeds.length > 0) {
+          setBedId(vacantBeds[0].id);
+          if (vacantBeds[0].propertyId) {
+            setSelectedFormPropertyId(vacantBeds[0].propertyId);
+          }
+        }
       }
     } catch (e) {
       console.error(e);
@@ -129,7 +150,7 @@ export default function TenantsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activePropertyId]);
 
   const handleCsvUpload = async () => {
     if (!csvFile) return;
@@ -160,7 +181,7 @@ export default function TenantsPage() {
       const res = await fetch('/api/tenants/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenants: tenantsData })
+        body: JSON.stringify({ tenants: tenantsData, propertyId: selectedFormPropertyId })
       });
 
       if (res.ok) {
@@ -205,7 +226,8 @@ export default function TenantsPage() {
           name, phone, bedId, date_joined: dateJoined,
           rent_amount: rentAmount, billing_cycle_day: billingCycleDay,
           security_deposit_amount: securityDeposit,
-          photo: photoUrl, id_proof_doc: idProofUrl
+          photo: photoUrl, id_proof_doc: idProofUrl,
+          propertyId: selectedFormPropertyId
         })
       });
       if (res.ok) {
@@ -421,7 +443,14 @@ export default function TenantsPage() {
             </div>
             <div className="input-group mb-0">
               <label className="input-label">Assign Bed</label>
-              <select className="input-field" value={bedId} onChange={e => setBedId(e.target.value)} required>
+              <select className="input-field" value={bedId} onChange={e => {
+                const val = e.target.value;
+                setBedId(val);
+                const bed = availableBeds.find(b => b.id === val);
+                if (bed && bed.propertyId) {
+                  setSelectedFormPropertyId(bed.propertyId);
+                }
+              }} required>
                 {availableBeds.map(b => (
                   <option key={b.id} value={b.id}>{b.label}</option>
                 ))}

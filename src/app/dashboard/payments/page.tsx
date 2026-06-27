@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useProperties } from "@/context/PropertyContext";
 import Link from "next/link";
 
 type Tenant = { id: string; name: string; rent_amount: number };
@@ -17,6 +18,8 @@ type Payment = {
 };
 
 export default function PaymentsPage() {
+  const { activePropertyId, properties } = useProperties();
+  const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [payments, setPayments] = useState<Payment[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +34,14 @@ export default function PaymentsPage() {
   const [amountPaid, setAmountPaid] = useState("");
   const [method, setMethod] = useState("UPI");
   const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null);
+
+  useEffect(() => {
+    if (activePropertyId && activePropertyId !== "all") {
+      setSelectedFormPropertyId(activePropertyId);
+    } else if (properties.length > 0) {
+      setSelectedFormPropertyId(properties[0].id);
+    }
+  }, [activePropertyId, properties]);
 
   const formatDate = (dateVal: any) => {
     if (!dateVal) return "-";
@@ -47,10 +58,11 @@ export default function PaymentsPage() {
 
   const fetchData = async () => {
     try {
+      const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
       const [payRes, tenRes, upiRes] = await Promise.all([
-        fetch("/api/payments"),
-        fetch("/api/tenants"),
-        fetch("/api/property/upi")
+        fetch(`/api/payments${queryParam}`),
+        fetch(`/api/tenants${queryParam}`),
+        fetch(`/api/property/upi${queryParam}`)
       ]);
       
       if (payRes.ok) setPayments(await payRes.json());
@@ -65,6 +77,9 @@ export default function PaymentsPage() {
           setTenantId(tData[0].id);
           setAmount(tData[0].rent_amount.toString());
           setAmountPaid(tData[0].rent_amount.toString());
+          if (tData[0].propertyId) {
+            setSelectedFormPropertyId(tData[0].propertyId);
+          }
         }
       }
     } catch (e) {
@@ -76,14 +91,19 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activePropertyId]);
 
   const handleTenantChange = (id: string) => {
     setTenantId(id);
     const tenant = tenants.find(t => t.id === id);
-    if (tenant && type === "rent") {
-      setAmount(tenant.rent_amount.toString());
-      setAmountPaid(tenant.rent_amount.toString());
+    if (tenant) {
+      if (type === "rent") {
+        setAmount(tenant.rent_amount.toString());
+        setAmountPaid(tenant.rent_amount.toString());
+      }
+      if (tenant.propertyId) {
+        setSelectedFormPropertyId(tenant.propertyId);
+      }
     }
   };
 
@@ -105,7 +125,14 @@ export default function PaymentsPage() {
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenantId, type, amount, amount_paid: amountPaid, method })
+        body: JSON.stringify({ 
+          tenantId, 
+          type, 
+          amount, 
+          amount_paid: amountPaid, 
+          method,
+          propertyId: selectedFormPropertyId
+        })
       });
       if (res.ok) {
         setShowAddForm(false);
@@ -123,7 +150,7 @@ export default function PaymentsPage() {
       const res = await fetch("/api/property/upi", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ upi_id: upiId })
+        body: JSON.stringify({ upi_id: upiId, propertyId: selectedFormPropertyId })
       });
       if (res.ok) {
         alert("UPI ID saved successfully!");

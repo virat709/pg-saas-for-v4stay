@@ -5,18 +5,22 @@ import Link from "next/link";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { SkeletonStatGrid } from "@/components/SkeletonCard";
 import RevenueChart from "@/components/RevenueChart";
+import { useProperties } from "@/context/PropertyContext";
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { activePropertyId } = useProperties();
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setLoading(true);
+        const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
         const [tenantsRes, roomsRes, paymentsRes] = await Promise.all([
-          fetch("/api/tenants"),
-          fetch("/api/rooms"),
-          fetch("/api/payments"),
+          fetch(`/api/tenants${queryParam}`),
+          fetch(`/api/rooms${queryParam}`),
+          fetch(`/api/payments${queryParam}`),
         ]);
 
         let totalBeds = 0;
@@ -30,8 +34,8 @@ export default function DashboardOverview() {
           const payments = paymentsRes.ok ? await paymentsRes.json() : [];
 
           rooms.forEach((r: any) => {
-            totalBeds += r.beds.length;
-            occupiedBeds += r.beds.filter((b: any) => b.status === "occupied").length;
+            totalBeds += r.beds?.length || 0;
+            occupiedBeds += (r.beds || []).filter((b: any) => b.status === "occupied").length;
           });
 
           // Build a set of tenant IDs who have paid this month
@@ -102,7 +106,7 @@ export default function DashboardOverview() {
     };
 
     fetchStats();
-  }, []);
+  }, [activePropertyId]);
 
   if (loading) return (
     <div>

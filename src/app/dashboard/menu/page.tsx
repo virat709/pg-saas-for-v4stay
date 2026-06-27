@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useProperties } from "@/context/PropertyContext";
 
 const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 const MEALS = ["breakfast", "lunch", "dinner"] as const;
@@ -29,13 +30,25 @@ function emptyMenu(): WeekMenu {
 }
 
 export default function MenuPage() {
+  const { activePropertyId, properties } = useProperties();
+  const [selectedMenuPropertyId, setSelectedMenuPropertyId] = useState("");
   const [menu, setMenu] = useState<WeekMenu>(emptyMenu());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch("/api/menu")
+    if (activePropertyId && activePropertyId !== "all") {
+      setSelectedMenuPropertyId(activePropertyId);
+    } else if (properties.length > 0) {
+      setSelectedMenuPropertyId(properties[0].id);
+    }
+  }, [activePropertyId, properties]);
+
+  useEffect(() => {
+    if (!selectedMenuPropertyId) return;
+    setLoading(true);
+    fetch(`/api/menu?propertyId=${selectedMenuPropertyId}`)
       .then((r) => r.json())
       .then((data) => {
         if (data && !data.message) {
@@ -51,7 +64,7 @@ export default function MenuPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedMenuPropertyId]);
 
   const handleChange = (day: string, meal: keyof DayMenu, value: string) => {
     setMenu((prev) => ({
@@ -67,7 +80,7 @@ export default function MenuPage() {
       const res = await fetch("/api/menu", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(menu),
+        body: JSON.stringify({ ...menu, propertyId: selectedMenuPropertyId }),
       });
       if (res.ok) {
         setSaved(true);
@@ -120,6 +133,31 @@ export default function MenuPage() {
           )}
         </button>
       </div>
+
+      {activePropertyId === "all" && (
+        <div className="card mb-6" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem' }}>
+          <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Select Property to Edit Menu:</span>
+          <select 
+            value={selectedMenuPropertyId} 
+            onChange={e => setSelectedMenuPropertyId(e.target.value)}
+            style={{
+              padding: "0.5rem 1rem",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--border-color)",
+              backgroundColor: "var(--surface-color)",
+              color: "var(--text-main)",
+              fontSize: "0.9rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              outline: "none"
+            }}
+          >
+            {properties.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {loading ? (
         <p>Loading menu...</p>

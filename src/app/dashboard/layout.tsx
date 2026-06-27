@@ -8,14 +8,28 @@ import { WelcomeBack } from "@/components/animations/WelcomeBack";
 import { useIsReturningUser } from "@/hooks/useIsReturningUser";
 import Logo from "@/components/Logo";
 
+import { PropertyProvider, useProperties } from "@/context/PropertyContext";
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  return (
+    <PropertyProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </PropertyProvider>
+  );
+}
+
+function DashboardLayoutContent({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
-  const [pgName, setPgName] = useState("Loading...");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { properties, activePropertyId, setActivePropertyId } = useProperties();
 
   // Returning-user detection — WelcomeBack animation
   const { isReturning, firstName, welcomeShownThisSession, markWelcomeShown } =
@@ -28,19 +42,13 @@ export default function DashboardLayout({
     }
   }, [isReturning, welcomeShownThisSession]);
 
-  useEffect(() => {
-    fetch("/api/property")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.name) setPgName(data.name);
-      })
-      .catch((e) => console.error(e));
-  }, []);
-
   // Close drawer on route change
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
+
+  const activeProperty = properties.find(p => p.id === activePropertyId);
+  const currentDisplayName = activePropertyId === "all" ? "All Properties" : (activeProperty?.name || "Loading...");
 
 const navItems = [
   { name: "Overview", path: "/dashboard" },
@@ -54,80 +62,105 @@ const navItems = [
   { name: "Settings", path: "/dashboard/settings" },
 ];
 
-const SidebarContent = ({ pgName, pathname }: { pgName: string; pathname: string }) => (
-  <>
-    <div style={{ marginBottom: "2rem" }}>
-      <h2
-        style={{
-          color: "var(--text-main)",
-          fontSize: "1.25rem",
-          margin: 0,
-          lineHeight: 1.2,
-        }}
-      >
-        {pgName}
-      </h2>
-      <div style={{ marginTop: "0.25rem" }}>
-        <Logo size={24} variant="dark" showTagline={false} />
-      </div>
-    </div>
+const SidebarContent = ({ pathname }: { pathname: string }) => {
+  const { properties, activePropertyId, setActivePropertyId } = useProperties();
 
-    <nav
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.5rem",
-        flex: 1,
-      }}
-    >
-      {navItems.map((item) => {
-        const isActive =
-          item.path === "/dashboard"
-            ? pathname === item.path
-            : pathname === item.path || pathname.startsWith(item.path + "/");
-        return (
-          <Link
-            key={item.path}
-            href={item.path}
+  return (
+    <>
+      <div style={{ marginBottom: "2rem" }}>
+        {/* Active Property Switcher Dropdown */}
+        <div style={{ position: "relative", marginBottom: "1rem" }}>
+          <label style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", display: "block", marginBottom: "0.35rem" }}>
+            Active Property
+          </label>
+          <select
+            value={activePropertyId}
+            onChange={(e) => setActivePropertyId(e.target.value)}
             style={{
-              padding: "0.75rem 1rem",
+              width: "100%",
+              padding: "0.5rem 0.75rem",
               borderRadius: "var(--radius-md)",
-              backgroundColor: isActive
-                ? "rgba(30, 96, 145, 0.1)"
-                : "transparent",
-              color: isActive ? "var(--primary)" : "var(--text-main)",
-              fontWeight: isActive ? 600 : 400,
-              transition: "var(--transition)",
+              border: "1px solid var(--border-color)",
+              backgroundColor: "var(--bg-color)",
+              color: "var(--text-main)",
+              fontSize: "0.9rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              outline: "none",
+              boxShadow: "var(--shadow-sm)",
             }}
           >
-            {item.name}
-          </Link>
-        );
-      })}
-    </nav>
+            <option value="all">All Properties (Overview)</option>
+            {properties.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-    <div
-      style={{
-        borderTop: "1px solid var(--border-color)",
-        paddingTop: "1rem",
-        marginTop: "auto",
-      }}
-    >
-      <button
-        onClick={() => signOut({ callbackUrl: "/login" })}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Logo size={20} variant="dark" showTagline={false} />
+        </div>
+      </div>
+
+      <nav
         style={{
-          width: "100%",
-          padding: "0.75rem",
-          textAlign: "left",
-          color: "var(--danger)",
-          fontWeight: 500,
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
+          flex: 1,
         }}
       >
-        Sign Out
-      </button>
-    </div>
-  </>
-);
+        {navItems.map((item) => {
+          const isActive =
+            item.path === "/dashboard"
+              ? pathname === item.path
+              : pathname === item.path || pathname.startsWith(item.path + "/");
+          return (
+            <Link
+              key={item.path}
+              href={item.path}
+              style={{
+                padding: "0.75rem 1rem",
+                borderRadius: "var(--radius-md)",
+                backgroundColor: isActive
+                  ? "rgba(30, 96, 145, 0.1)"
+                  : "transparent",
+                color: isActive ? "var(--primary)" : "var(--text-main)",
+                fontWeight: isActive ? 600 : 400,
+                transition: "var(--transition)",
+              }}
+            >
+              {item.name}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div
+        style={{
+          borderTop: "1px solid var(--border-color)",
+          paddingTop: "1rem",
+          marginTop: "auto",
+        }}
+      >
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          style={{
+            width: "100%",
+            padding: "0.75rem",
+            textAlign: "left",
+            color: "var(--danger)",
+            fontWeight: 500,
+          }}
+        >
+          Sign Out
+        </button>
+      </div>
+    </>
+  );
+};
 
   return (
     <>
@@ -243,7 +276,7 @@ const SidebarContent = ({ pgName, pathname }: { pgName: string; pathname: string
       <div className="dashboard-root">
         {/* ── Desktop sidebar ───────────────────────────────────────────── */}
         <aside className="dashboard-sidebar">
-          <SidebarContent pgName={pgName} pathname={pathname} />
+          <SidebarContent pathname={pathname} />
         </aside>
 
         {/* ── Mobile: top bar + drawer ──────────────────────────────────── */}
@@ -258,7 +291,7 @@ const SidebarContent = ({ pgName, pathname }: { pgName: string; pathname: string
             <span />
           </button>
           <span style={{ fontWeight: 700, color: "var(--primary)", fontSize: "0.95rem" }}>
-            {pgName}
+            {currentDisplayName}
           </span>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
@@ -300,7 +333,7 @@ const SidebarContent = ({ pgName, pathname }: { pgName: string; pathname: string
               >
                 ✕
               </button>
-              <SidebarContent pgName={pgName} pathname={pathname} />
+              <SidebarContent pathname={pathname} />
             </div>
           </div>
         )}

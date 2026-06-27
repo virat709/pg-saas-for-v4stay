@@ -146,11 +146,14 @@ async function handleCallback(req: Request) {
     // ── Mark payment success and activate subscription ────────────────────
     await paymentRef.update({ status: "success", updated_at: new Date() });
 
+    const propertyLimit = (paymentData.propertyCount as number) || 1;
+
     const ownerRef = adminDb.collection("owners").doc(ownerId);
     await ownerRef.update({
       plan_tier: finalTier,
       subscription_status: "active",
       subscription_activated_at: new Date(),
+      property_limit: propertyLimit,
       updated_at: new Date(),
     });
 

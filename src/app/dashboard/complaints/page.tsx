@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useProperties } from "@/context/PropertyContext";
 
 export default function ComplaintsPage() {
+  const { activePropertyId } = useProperties();
   const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,7 +18,8 @@ export default function ComplaintsPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/complaints");
+      const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
+      const res = await fetch(`/api/complaints${queryParam}`);
       if (res.ok) {
         setComplaints(await res.json());
       }
@@ -29,7 +32,7 @@ export default function ComplaintsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activePropertyId]);
 
   const handleResolve = async (id: string) => {
     try {
@@ -77,7 +80,7 @@ export default function ComplaintsPage() {
                     </span>
                   </h3>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-                    From: <strong>{req.tenant?.name}</strong> (Room {req.tenant?.bed?.room?.room_number} - {req.tenant?.bed?.bed_label})
+                    From: <strong>{req.tenant?.name}</strong> (Room {req.tenant?.bed?.room?.room_number} - {req.tenant?.bed?.bed_label}){activePropertyId === "all" && req.propertyName && ` — ${req.propertyName}`}
                   </p>
                   <p>{req.description}</p>
                   <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '1rem' }}>

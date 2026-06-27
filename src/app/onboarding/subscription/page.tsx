@@ -7,6 +7,7 @@ export default function SubscriptionPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{name: string, price: number} | null>(null);
+  const [propertyCount, setPropertyCount] = useState(1);
 
   // Check if owner already has an active subscription on mount
   useEffect(() => {
@@ -30,7 +31,7 @@ export default function SubscriptionPage() {
       .catch((err) => console.error("Mount status check failed:", err));
   }, [router]);
 
-  const handleSelectPlan = async (name: string, price: number) => {
+  const handleSelectPlan = async (name: string, price: number, quantity: number) => {
     setLoading(true);
     setSelectedPlan({ name, price });
     
@@ -38,7 +39,7 @@ export default function SubscriptionPage() {
       const res = await fetch("/api/payments/phonepe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planName: name, price }),
+        body: JSON.stringify({ planName: name, price, propertyCount: quantity }),
       });
       
       const data = await res.json().catch(() => ({}));
@@ -105,7 +106,34 @@ export default function SubscriptionPage() {
       <div className="card animate-fade-in" style={{ maxWidth: '800px', width: '100%', padding: '2.5rem' }}>
         <div className="text-center mb-8">
           <h2 style={{ fontSize: '1.75rem' }}>Activate Your Plan</h2>
-          <p style={{ marginBottom: 0 }}>Choose the plan that fits your PG.</p>
+          <p style={{ marginBottom: '1.5rem' }}>Choose the plan that fits your PG chain size.</p>
+          
+          {/* Property Count Selector Card */}
+          <div className="card mb-8 text-center" style={{ maxWidth: '400px', margin: '0 auto 2rem auto', padding: '1.25rem', border: '1px dashed var(--primary)' }}>
+            <label style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block', marginBottom: '0.75rem' }}>
+              How many properties do you want to manage?
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
+              <button 
+                className="btn-secondary" 
+                onClick={() => setPropertyCount(prev => Math.max(1, prev - 1))}
+                style={{ padding: '0.25rem', fontSize: '1.25rem', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+              >
+                -
+              </button>
+              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--primary)' }}>{propertyCount}</span>
+              <button 
+                className="btn-secondary" 
+                onClick={() => setPropertyCount(prev => prev + 1)}
+                style={{ padding: '0.25rem', fontSize: '1.25rem', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+              >
+                +
+              </button>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0 }}>
+              {propertyCount === 1 ? "Standard base plan configuration." : `Includes 1 Base PG + ${propertyCount - 1} Additional PG Addon(s)`}
+            </p>
+          </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem", textAlign: "left" }}>
@@ -123,7 +151,14 @@ export default function SubscriptionPage() {
             }}
           >
             <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>PGmate Starter — 6 Months</h3>
-            <div style={{ fontSize: "2.5rem", fontWeight: 800, lineHeight: 1, margin: "1rem 0" }}>₹6,999</div>
+            <div style={{ fontSize: "2.5rem", fontWeight: 800, lineHeight: 1, margin: "1rem 0" }}>
+              ₹{(6999 + (propertyCount - 1) * 4999).toLocaleString()}
+            </div>
+            {propertyCount > 1 && (
+              <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
+                ₹6,999 base + {propertyCount - 1} × ₹4,999 addons
+              </div>
+            )}
             
             <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
               {[
@@ -143,7 +178,7 @@ export default function SubscriptionPage() {
             <button
               className="btn-secondary w-full"
               style={{ fontSize: '1.05rem', padding: '0.875rem' }}
-              onClick={() => handleSelectPlan('PGmate Starter 6 Months', 6999)}
+              onClick={() => handleSelectPlan('PGmate Starter 6 Months', 6999 + (propertyCount - 1) * 4999, propertyCount)}
               disabled={loading}
             >
               Get Started
@@ -168,8 +203,18 @@ export default function SubscriptionPage() {
             </div>
 
             <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>PGmate Premium — 1 Year</h3>
-            <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--success)", lineHeight: 1, margin: "1rem 0" }}>₹11,999</div>
-            <div style={{ color: "var(--success)", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>Save ₹1,999 compared to 6-month plan</div>
+            <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--success)", lineHeight: 1, margin: "1rem 0" }}>
+              ₹{(11999 + (propertyCount - 1) * 6999).toLocaleString()}
+            </div>
+            {propertyCount > 1 ? (
+              <div style={{ color: "var(--success)", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>
+                ₹11,999 base + {propertyCount - 1} × ₹6,999 addons
+              </div>
+            ) : (
+              <div style={{ color: "var(--success)", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>
+                Save ₹1,999 compared to 6-month plan
+              </div>
+            )}
 
             <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
               {[
@@ -193,10 +238,10 @@ export default function SubscriptionPage() {
             <button
               className="btn-primary w-full"
               style={{ fontSize: '1.05rem', padding: '0.875rem', backgroundColor: 'var(--success)', color: '#0f172a' }}
-              onClick={() => handleSelectPlan('PGmate Premium 1 Year', 11999)}
+              onClick={() => handleSelectPlan('PGmate Premium 1 Year', 11999 + (propertyCount - 1) * 6999, propertyCount)}
               disabled={loading}
             >
-              Get Started — ₹11,999
+              Get Started
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useProperties } from "@/context/PropertyContext";
 
 type Bed = {
   id: string;
@@ -18,6 +19,8 @@ type Room = {
 };
 
 export default function RoomsPage() {
+  const { activePropertyId, properties } = useProperties();
+  const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -32,10 +35,19 @@ export default function RoomsPage() {
   
   const [customFloor, setCustomFloor] = useState("");
   const [customSharing, setCustomSharing] = useState("");
+
+  useEffect(() => {
+    if (activePropertyId && activePropertyId !== "all") {
+      setSelectedFormPropertyId(activePropertyId);
+    } else if (properties.length > 0) {
+      setSelectedFormPropertyId(properties[0].id);
+    }
+  }, [activePropertyId, properties]);
   
   const fetchRooms = async () => {
     try {
-      const res = await fetch("/api/rooms");
+      const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
+      const res = await fetch(`/api/rooms${queryParam}`);
       if (res.ok) {
         const data = await res.json();
         setRooms(data);
@@ -49,7 +61,7 @@ export default function RoomsPage() {
 
   useEffect(() => {
     fetchRooms();
-  }, []);
+  }, [activePropertyId]);
 
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +77,12 @@ export default function RoomsPage() {
       const res = await fetch("/api/rooms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room_number: roomNumber, floor: finalFloor, sharing_type: finalSharing })
+        body: JSON.stringify({ 
+          room_number: roomNumber, 
+          floor: finalFloor, 
+          sharing_type: finalSharing,
+          propertyId: selectedFormPropertyId
+        })
       });
       if (res.ok) {
         setShowAddForm(false);
@@ -142,6 +159,16 @@ export default function RoomsPage() {
         <div className="card mb-8 animate-fade-in">
           <h3>Add New Room</h3>
           <form onSubmit={handleAddRoom} className="flex gap-4 items-center mt-4" style={{ flexWrap: 'wrap' }}>
+            {activePropertyId === "all" && (
+              <div className="input-group" style={{ flex: 1, minWidth: '150px', marginBottom: 0 }}>
+                <label className="input-label">Select Property</label>
+                <select className="input-field" value={selectedFormPropertyId} onChange={e => setSelectedFormPropertyId(e.target.value)} required>
+                  {properties.map(p => (
+                    <option key={p.id} value={p.id} style={{ color: '#000' }}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="input-group" style={{ flex: 1, minWidth: '150px', marginBottom: 0 }}>
               <label className="input-label">Room Number</label>
               <input type="text" className="input-field" value={roomNumber} onChange={e => setRoomNumber(e.target.value)} required placeholder="e.g. 101" />

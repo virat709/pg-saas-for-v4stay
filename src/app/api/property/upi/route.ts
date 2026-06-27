@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     if (!session || !session.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { upi_id } = body;
+    const { upi_id, propertyId } = body;
 
     // Validate UPI ID format (e.g. name@bank or phone@upi) — allow empty to clear
     if (upi_id && (upi_id.length > 100 || (upi_id.trim() !== "" && !/^[a-zA-Z0-9._\-]+@[a-zA-Z0-9]+$/.test(upi_id.trim())))) {
@@ -21,12 +21,18 @@ export async function POST(req: Request) {
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
     
     if (pSnap.empty) {
-      // If no property exists, we can't save it, though a user shouldn't be here without one
       return NextResponse.json({ message: "Property not found" }, { status: 404 });
     }
+
+    const propertyIds = pSnap.docs.map(doc => doc.id);
+    let targetPropertyId = propertyId;
+    if (!targetPropertyId) {
+      targetPropertyId = pSnap.docs[0].id;
+    } else if (!propertyIds.includes(targetPropertyId)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
     
-    const propId = pSnap.docs[0].id;
-    await adminDb.collection("properties").doc(propId).update({ upi_id: upi_id || "" });
+    await adminDb.collection("properties").doc(targetPropertyId).update({ upi_id: upi_id || "" });
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -41,10 +47,22 @@ export async function GET(req: Request) {
     if (!session || !session.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
-    
     if (pSnap.empty) return NextResponse.json({ upi_id: "" });
+
+    const propertyIds = pSnap.docs.map(doc => doc.id);
+    const { searchParams } = new URL(req.url);
+    const propertyIdParam = searchParams.get("propertyId");
+
+    let targetPropertyId = pSnap.docs[0].id;
+    if (propertyIdParam && propertyIdParam !== "all") {
+      if (!propertyIds.includes(propertyIdParam)) {
+        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      }
+      targetPropertyId = propertyIdParam;
+    }
     
-    return NextResponse.json({ upi_id: pSnap.docs[0].data().upi_id || "" });
+    const pDoc = pSnap.docs.find(doc => doc.id === targetPropertyId);
+    return NextResponse.json({ upi_id: pDoc ? (pDoc.data().upi_id || "") : "" });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });

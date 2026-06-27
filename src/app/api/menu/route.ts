@@ -16,16 +16,27 @@ function emptyMenu() {
   return menu;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
     if (pSnap.empty) return NextResponse.json(emptyMenu());
+    const propertyIds = pSnap.docs.map(doc => doc.id);
 
-    const propertyId = pSnap.docs[0].id;
-    const menuDoc = await adminDb.collection("properties").doc(propertyId).collection("menu").doc("week").get();
+    const { searchParams } = new URL(req.url);
+    const propertyIdParam = searchParams.get("propertyId");
+
+    let targetPropertyId = pSnap.docs[0].id;
+    if (propertyIdParam && propertyIdParam !== "all") {
+      if (!propertyIds.includes(propertyIdParam)) {
+        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      }
+      targetPropertyId = propertyIdParam;
+    }
+
+    const menuDoc = await adminDb.collection("properties").doc(targetPropertyId).collection("menu").doc("week").get();
 
     if (!menuDoc.exists) return NextResponse.json(emptyMenu());
 
@@ -44,24 +55,32 @@ export async function PUT(req: Request) {
     if (!session?.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
+    const { propertyId, ...menuBody } = body;
 
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
     if (pSnap.empty) return NextResponse.json({ message: "Property not found" }, { status: 404 });
+    const propertyIds = pSnap.docs.map(doc => doc.id);
 
-    const propertyId = pSnap.docs[0].id;
+    let targetPropertyId = pSnap.docs[0].id;
+    if (propertyId) {
+      if (!propertyIds.includes(propertyId)) {
+        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      }
+      targetPropertyId = propertyId;
+    }
 
     // Build sanitized menu object
     const menu: Record<string, Record<string, string>> = {};
     for (const day of DAYS) {
       menu[day] = {};
       for (const meal of MEALS) {
-        menu[day][meal] = typeof body[day]?.[meal] === "string" ? body[day][meal].trim() : "";
+        menu[day][meal] = typeof menuBody[day]?.[meal] === "string" ? menuBody[day][meal].trim() : "";
       }
     }
 
     await adminDb
       .collection("properties")
-      .doc(propertyId)
+      .doc(targetPropertyId)
       .collection("menu")
       .doc("week")
       .set({ ...menu, updatedAt: new Date() });

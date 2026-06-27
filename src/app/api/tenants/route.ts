@@ -12,51 +12,70 @@ export async function GET(req: Request) {
     if (!session || !session.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
+    if (pSnap.empty) return NextResponse.json([], { status: 200 }); // Return empty instead of error to prevent breaking client dashboard
 
-    if (pSnap.empty) return NextResponse.json({ message: "No property found" }, { status: 404 });
-    const propertyId = pSnap.docs[0].id;
+    const propertyIds = pSnap.docs.map(doc => doc.id);
+    const propertiesMap = Object.fromEntries(pSnap.docs.map(doc => [doc.id, doc.data()]));
 
-    const tSnap = await adminDb.collection("properties").doc(propertyId).collection("tenants").get();
-    
-    const rSnap = await adminDb.collection("properties").doc(propertyId).collection("rooms").get();
-    const roomsMap: Record<string, any> = {};
-    rSnap.docs.forEach((rDoc) => {
-      roomsMap[rDoc.id] = { id: rDoc.id, ...rDoc.data() };
-    });
+    const { searchParams } = new URL(req.url);
+    const propertyIdParam = searchParams.get("propertyId");
 
-    const bedsMap: Record<string, any> = {};
-    // Fetch beds in parallel for each room to restrict database queries to this property
+    let targets = propertyIds;
+    if (propertyIdParam && propertyIdParam !== "all") {
+      if (!propertyIds.includes(propertyIdParam)) {
+        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      }
+      targets = [propertyIdParam];
+    }
+
+    const allTenants: any[] = [];
+
     await Promise.all(
-      rSnap.docs.map(async (rDoc) => {
-        const bSnap = await rDoc.ref.collection("beds").get();
-        bSnap.docs.forEach((bDoc) => {
-          bedsMap[bDoc.id] = {
-            id: bDoc.id,
-            ...bDoc.data(),
-            room: roomsMap[rDoc.id] || null,
-          };
+      targets.map(async (pId) => {
+        const tSnap = await adminDb.collection("properties").doc(pId).collection("tenants").get();
+        const rSnap = await adminDb.collection("properties").doc(pId).collection("rooms").get();
+        
+        const roomsMap: Record<string, any> = {};
+        rSnap.docs.forEach((rDoc) => {
+          roomsMap[rDoc.id] = { id: rDoc.id, ...rDoc.data() };
+        });
+
+        const bedsMap: Record<string, any> = {};
+        await Promise.all(
+          rSnap.docs.map(async (rDoc) => {
+            const bSnap = await rDoc.ref.collection("beds").get();
+            bSnap.docs.forEach((bDoc) => {
+              bedsMap[bDoc.id] = {
+                id: bDoc.id,
+                ...bDoc.data(),
+                room: roomsMap[rDoc.id] || null,
+              };
+            });
+          })
+        );
+
+        tSnap.docs.forEach((tDoc) => {
+          const tData = tDoc.data();
+          const bedData = tData.bedId ? (bedsMap[tData.bedId] || null) : null;
+          allTenants.push({
+            id: tDoc.id,
+            ...tData,
+            bed: bedData,
+            propertyId: pId,
+            propertyName: propertiesMap[pId]?.name || "My PG"
+          });
         });
       })
     );
 
-    const tenants = tSnap.docs.map((tDoc) => {
-      const tData = tDoc.data();
-      const bedData = tData.bedId ? (bedsMap[tData.bedId] || null) : null;
-      return {
-        id: tDoc.id,
-        ...tData,
-        bed: bedData,
-      };
-    });
-
     // Sort descending by created_at
-    tenants.sort((a: any, b: any) => {
+    allTenants.sort((a: any, b: any) => {
       const aTime = a.created_at?.toMillis ? a.created_at.toMillis() : (a.created_at instanceof Date ? a.created_at.getTime() : 0);
       const bTime = b.created_at?.toMillis ? b.created_at.toMillis() : (b.created_at instanceof Date ? b.created_at.getTime() : 0);
       return bTime - aTime;
     });
 
-    return NextResponse.json(tenants);
+    return NextResponse.json(allTenants);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
@@ -69,12 +88,18 @@ export async function POST(req: Request) {
     if (!session || !session.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
-
     if (pSnap.empty) return NextResponse.json({ message: "No property found" }, { status: 404 });
-    const propertyId = pSnap.docs[0].id;
+    const propertyIds = pSnap.docs.map(doc => doc.id);
 
     const body = await req.json();
-    const { name, phone, bedId: combinedBedId, date_joined, rent_amount, billing_cycle_day, security_deposit_amount, emergency_contact, photo, id_proof_doc } = body;
+    const { name, phone, bedId: combinedBedId, date_joined, rent_amount, billing_cycle_day, security_deposit_amount, emergency_contact, photo, id_proof_doc, propertyId } = body;
+
+    let targetPropertyId = propertyId;
+    if (!targetPropertyId) {
+      targetPropertyId = pSnap.docs[0].id;
+    } else if (!propertyIds.includes(targetPropertyId)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
 
     // Input validation
     if (!name?.trim()) return NextResponse.json({ message: "Name is required" }, { status: 400 });
@@ -89,13 +114,13 @@ export async function POST(req: Request) {
     const [roomId, bedId] = combinedBedId.split("_");
 
     // Check if bed is already occupied
-    const bSnap = await adminDb.collection("properties").doc(propertyId).collection("rooms").doc(roomId).collection("beds").doc(bedId).get();
+    const bSnap = await adminDb.collection("properties").doc(targetPropertyId).collection("rooms").doc(roomId).collection("beds").doc(bedId).get();
     if (!bSnap.exists || bSnap.data()?.status === "occupied") {
       return NextResponse.json({ message: "Bed is unavailable" }, { status: 400 });
     }
 
     const batch = adminDb.batch();
-    const newTenantRef = adminDb.collection("properties").doc(propertyId).collection("tenants").doc();
+    const newTenantRef = adminDb.collection("properties").doc(targetPropertyId).collection("tenants").doc();
 
     batch.set(newTenantRef, {
       roomId,
@@ -113,7 +138,7 @@ export async function POST(req: Request) {
       created_at: new Date()
     });
 
-    const bedRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(roomId).collection("beds").doc(bedId);
+    const bedRef = adminDb.collection("properties").doc(targetPropertyId).collection("rooms").doc(roomId).collection("beds").doc(bedId);
     batch.update(bedRef, {
       status: "occupied",
       tenantId: newTenantRef.id,
@@ -124,7 +149,8 @@ export async function POST(req: Request) {
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     const magicLink = `${baseUrl}/t/${newTenantRef.id}`;
-    const propertyData = pSnap.docs[0].data();
+    const propertyDoc = pSnap.docs.find(doc => doc.id === targetPropertyId);
+    const propertyData = propertyDoc ? propertyDoc.data() : { name: "My PG" };
 
     // Send welcome email if tenant has an email on file
     const tenantEmail = body.email?.trim();
