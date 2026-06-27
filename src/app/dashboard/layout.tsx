@@ -76,7 +76,6 @@ const navItems = [
   { name: "Complaints", path: "/dashboard/complaints" },
   { name: "Notice Board", path: "/dashboard/notices" },
   { name: "Menu", path: "/dashboard/menu" },
-  { name: "Subscription", path: "/dashboard/subscription" },
   { name: "Settings", path: "/dashboard/settings" },
 ];
 
@@ -132,7 +131,7 @@ const SidebarContent = ({ pathname }: { pathname: string }) => {
       >
         {navItems.filter(item => {
           if (activePropertyId === "all") {
-            return ["Overview", "Subscription", "Settings"].includes(item.name);
+            return ["Overview", "Settings"].includes(item.name);
           }
           return true;
         }).map((item) => {

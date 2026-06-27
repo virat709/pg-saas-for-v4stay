@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import {
   updatePassword,
@@ -11,6 +12,7 @@ import { AnimatedSection } from "@/components/animations/AnimatedSection";
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
+  const [ownerData, setOwnerData] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -25,6 +27,7 @@ export default function SettingsPage() {
     fetch("/api/settings")
       .then((r) => r.json())
       .then((data) => {
+        setOwnerData(data);
         setProfile({ name: data.name || "", email: data.email || "", phone: data.phone || "" });
       })
       .catch(console.error)
@@ -165,6 +168,89 @@ export default function SettingsPage() {
               {profileSaving ? "Saving..." : "Save Changes"}
             </button>
           </form>
+        </div>
+      </AnimatedSection>
+
+      {/* ── Subscription Section ────────────────── */}
+      <AnimatedSection delay={120}>
+        <div
+          className="card"
+          style={{
+            marginBottom: "1.5rem",
+            borderLeft: `4px solid ${ownerData?.subscription_status === "active" ? "var(--success)" : "var(--warning)"}`,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+            <div>
+              <h2 style={{ marginBottom: "0.25rem" }}>Subscription Details</h2>
+              <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                Manage your PGmate subscription and billing.
+              </p>
+            </div>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "0.35rem 0.85rem",
+                borderRadius: "99px",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                backgroundColor: ownerData?.subscription_status === "active" ? "rgba(0,196,159,0.15)" : "rgba(245,158,11,0.15)",
+                color: ownerData?.subscription_status === "active" ? "var(--success)" : "var(--warning)",
+                border: `1px solid ${ownerData?.subscription_status === "active" ? "rgba(0,196,159,0.3)" : "rgba(245,158,11,0.3)"}`,
+              }}
+            >
+              {ownerData?.subscription_status === "active" ? "● Active" : "● Inactive"}
+            </span>
+          </div>
+
+          <div
+            style={{
+              marginTop: "1.5rem",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+              gap: "1rem",
+              marginBottom: "1.5rem"
+            }}
+          >
+            <div>
+              <p style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 0.25rem", color: "var(--text-muted)" }}>Plan</p>
+              <p style={{ fontWeight: 600, color: "var(--text-main)", margin: 0 }}>
+                {ownerData?.plan_tier || ownerData?.subscription_plan || "—"}
+              </p>
+            </div>
+            <div>
+              <p style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 0.25rem", color: "var(--text-muted)" }}>PG limit</p>
+              <p style={{ fontWeight: 600, color: "var(--text-main)", margin: 0 }}>
+                {ownerData?.property_limit || 1} Property(ies)
+              </p>
+            </div>
+            <div>
+              <p style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 0.25rem", color: "var(--text-muted)" }}>Member Since</p>
+              <p style={{ fontWeight: 600, color: "var(--text-main)", margin: 0 }}>
+                {ownerData?.subscription_activated_at ? (
+                  new Date(typeof ownerData.subscription_activated_at === "object" && ownerData.subscription_activated_at.seconds ? ownerData.subscription_activated_at.seconds * 1000 : ownerData.subscription_activated_at).toLocaleDateString("en-IN")
+                ) : (
+                  "—"
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", borderTop: "1px solid var(--border-color)", paddingTop: "1rem" }}>
+            <a
+              href="mailto:v4services.in@gmail.com?subject=Subscription Help - PGmate"
+              className="btn-primary"
+              style={{ textDecoration: "none", fontSize: "0.85rem", padding: "0.5rem 1rem" }}
+            >
+              Support Help
+            </a>
+            {ownerData?.subscription_status !== "active" && (
+              <Link href="/onboarding/subscription" className="btn-primary" style={{ textDecoration: "none", backgroundColor: "var(--success)", color: "#0f172a", fontSize: "0.85rem", padding: "0.5rem 1rem" }}>
+                Activate Subscription
+              </Link>
+            )}
+          </div>
         </div>
       </AnimatedSection>
 
