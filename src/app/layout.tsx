@@ -21,9 +21,64 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://pgmate.in/#organization",
+        "name": "V4Stay",
+        "url": "https://pgmate.in",
+        "logo": "https://pgmate.in/logo-light.png"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://pgmate.in/#website",
+        "url": "https://pgmate.in",
+        "name": "PGmate",
+        "description": "Smart Paying Guest (PG) Management System & Software",
+        "publisher": {
+          "@id": "https://pgmate.in/#organization"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://pgmate.in/#software",
+        "name": "PGmate",
+        "operatingSystem": "All",
+        "applicationCategory": "BusinessApplication",
+        "category": "PG Management Software",
+        "publisher": {
+          "@id": "https://pgmate.in/#organization"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "6999",
+          "priceCurrency": "INR",
+          "priceSpecification": {
+            "@type": "UnitPriceSpecification",
+            "price": "6999",
+            "priceCurrency": "INR",
+            "referenceQuantity": {
+              "@type": "QuantitativeValue",
+              "value": "6",
+              "unitCode": "MON"
+            }
+          }
+        }
+      }
+    ]
+  };
+
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
