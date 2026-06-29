@@ -412,7 +412,7 @@ export default function PaymentsPage() {
                           <a href={payment.reference} target="_blank" rel="noopener noreferrer" title="Click to view full screenshot">
                             <img 
                               src={payment.reference} 
-                              alt="Payment Proof" 
+                              alt="Payment proof screenshot uploaded by tenant" 
                               style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-color)', cursor: 'pointer' }}
                             />
                           </a>

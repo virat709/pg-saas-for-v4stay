@@ -480,7 +480,7 @@ export default function TenantsPage() {
                 if (file) setPhotoPreview(URL.createObjectURL(file));
                 else setPhotoPreview(null);
               }} style={{ padding: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', cursor: 'not-allowed' }} />
-              {photoPreview && <img src={photoPreview} alt="Preview" style={{ marginTop: '0.5rem', height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px' }} />}
+              {photoPreview && <img src={photoPreview} alt="Tenant profile photo preview" style={{ marginTop: '0.5rem', height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px' }} />}
             </div>
             <div className="input-group mb-0" style={{ display: 'flex', flexDirection: 'column', opacity: 0.5 }}>
               <label className="input-label">ID Proof Document (Locked for now)</label>
@@ -490,7 +490,7 @@ export default function TenantsPage() {
                 if (file && file.type.startsWith('image/')) setIdProofPreview(URL.createObjectURL(file));
                 else setIdProofPreview(null);
               }} style={{ padding: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', cursor: 'not-allowed' }} />
-              {idProofPreview && <img src={idProofPreview} alt="Preview" style={{ marginTop: '0.5rem', height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px' }} />}
+              {idProofPreview && <img src={idProofPreview} alt="Tenant identification proof document preview" style={{ marginTop: '0.5rem', height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px' }} />}
             </div>
             <div className="flex items-center" style={{ marginTop: '1.5rem', gridColumn: '1 / -1' }}>
               <button type="submit" className="btn-primary w-full" disabled={uploading}>

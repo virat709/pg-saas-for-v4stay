@@ -359,7 +359,7 @@ function MockCheckoutContent() {
                   </span>
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=9652172595@axl&pn=PGmate&am=${amount}&cu=INR`}
-                    alt="Scan to Pay"
+                    alt="UPI payment QR code for PGmate transaction"
                     style={{ margin: "0 auto", display: "block", borderRadius: "4px" }}
                   />
                 </div>

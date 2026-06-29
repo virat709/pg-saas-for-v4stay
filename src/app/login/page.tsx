@@ -97,7 +97,7 @@ export default function LoginPage() {
             transition: 'background-color 0.2s'
           }}
         >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 18, height: 18 }} />
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google brand logo for OAuth login" style={{ width: 18, height: 18 }} />
           Continue with Google
         </button>
 
