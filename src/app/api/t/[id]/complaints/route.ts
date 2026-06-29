@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
+import { getTenantAndProperty } from "@/lib/tenantHelper";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,16 +10,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = await req.json();
     const { category, description } = body;
 
-    // Single collectionGroup query — no N+1 property scan
-    const { FieldPath } = await import("firebase-admin/firestore");
-    const tSnap = await adminDb.collectionGroup("tenants").where(FieldPath.documentId(), "==", tenantId).get();
-
-    if (tSnap.empty) {
+    const result = await getTenantAndProperty(tenantId);
+    if (!result) {
       return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
     }
 
-    const tenantDoc = tSnap.docs[0];
-    const propertyId = tenantDoc.ref.path.split("/")[1];
+    const { propertyId, tenantDoc } = result;
     const tenantStatus = tenantDoc.data()?.status;
     if (tenantStatus === "vacated") return NextResponse.json({ message: "Account deactivated" }, { status: 403 });
 
