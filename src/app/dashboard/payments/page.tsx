@@ -6,8 +6,8 @@ import Link from "next/link";
 
 type Tenant = { id: string; name: string; rent_amount: number; propertyId?: string };
 type Payment = {
-
   id: string;
+  tenantId?: string;
   type: string;
   amount: number;
   amount_paid: number;
@@ -15,7 +15,7 @@ type Payment = {
   status: string;
   reference?: string;
   payment_date: any;
-  tenant: Tenant;
+  tenant: Tenant | null;
 };
 
 export default function PaymentsPage() {

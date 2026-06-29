@@ -66,7 +66,9 @@ export async function GET(req: Request) {
       return (a.floor ?? '').localeCompare(b.floor ?? '');
     });
 
-    return NextResponse.json(allRooms);
+    return NextResponse.json(allRooms, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' }
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });

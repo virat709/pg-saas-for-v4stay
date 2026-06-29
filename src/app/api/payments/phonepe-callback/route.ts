@@ -125,7 +125,7 @@ async function handleCallback(req: Request) {
     // 2. Mock checkout: verify X-Mock-Secret matches HMAC stored in DB
     if (!isVerified && xMockSecret && storedSecret) {
       const expectedSecret = crypto
-        .createHmac("sha256", process.env.NEXTAUTH_SECRET || "fallback-secret")
+        .createHmac("sha256", process.env.NEXTAUTH_SECRET!)
         .update(transactionId)
         .digest("hex");
 

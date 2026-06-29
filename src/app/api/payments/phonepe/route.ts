@@ -4,12 +4,6 @@ import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
 import crypto from "crypto";
 
-// Known valid plan names and their prices (paise) — prevents arbitrary amounts
-const VALID_PLANS: Record<string, number> = {
-  "PGmate Starter 6 Months": 6999,
-  "PGmate Premium 1 Year": 11999,
-};
-
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -67,7 +61,7 @@ export async function POST(req: Request) {
     // The secret is stored in DB and echoed back by the mock checkout in the
     // X-Mock-Secret header — prevents arbitrary POST to the callback endpoint.
     const callbackSecret = crypto
-      .createHmac("sha256", process.env.NEXTAUTH_SECRET || "fallback-secret")
+      .createHmac("sha256", process.env.NEXTAUTH_SECRET!)
       .update(transactionId)
       .digest("hex");
 

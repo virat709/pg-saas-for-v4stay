@@ -16,7 +16,9 @@ export async function GET() {
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
     const properties = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    return NextResponse.json(properties);
+    return NextResponse.json(properties, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' }
+    });
   } catch (error) {
     console.error("Fetch properties error:", error);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });

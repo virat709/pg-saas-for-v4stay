@@ -700,16 +700,13 @@ export default function Home() {
           id="contact"
           style={{
             scrollMarginTop: "100px",
-            marginTop: "6rem",
-
-            marginBottom: "4rem",
+            margin: "6rem auto 4rem auto",
             padding: "3rem",
             background: "rgba(15, 23, 42, 0.6)",
             borderRadius: "24px",
             border: "1px solid rgba(255,255,255,0.05)",
             textAlign: "center",
             maxWidth: "800px",
-            margin: "6rem auto 4rem auto",
             boxShadow: "0 20px 40px -10px rgba(0,0,0,0.5)",
             backdropFilter: "blur(10px)",
           }}

@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
   // ── Must be authenticated ──────────────────────────────────────────────
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET || "fallback-secret",
+    secret: process.env.NEXTAUTH_SECRET,
   });
 
   if (!token || !token.sub) {

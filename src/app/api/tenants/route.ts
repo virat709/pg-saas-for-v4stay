@@ -75,7 +75,9 @@ export async function GET(req: Request) {
       return bTime - aTime;
     });
 
-    return NextResponse.json(allTenants);
+    return NextResponse.json(allTenants, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' }
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });

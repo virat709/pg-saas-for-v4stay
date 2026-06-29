@@ -21,6 +21,8 @@ export default function TenantPortal() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [phonepeClicked, setPhonepeClicked] = useState(false);
+  const [paymentConfirming, setPaymentConfirming] = useState(false);
 
   const formatDate = (dateVal: any) => {
     if (!dateVal) return "-";
@@ -169,6 +171,41 @@ export default function TenantPortal() {
     }
   };
 
+  const handlePhonePeClick = () => {
+    setPhonepeClicked(true);
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!paymentAmount || isNaN(parseFloat(paymentAmount))) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+    setPaymentConfirming(true);
+    try {
+      const res = await fetch(`/api/t/${tenantId}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: paymentAmount,
+          method: "PhonePe",
+          reference: "paid_via_phonepe"
+        }),
+      });
+      if (res.ok) {
+        alert("Payment recorded successfully! Thank you.");
+        setPhonepeClicked(false);
+        fetchData();
+      } else {
+        alert("Failed to record payment. Please try again.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setPaymentConfirming(false);
+    }
+  };
+
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading portal...</div>
@@ -280,49 +317,83 @@ export default function TenantPortal() {
 
       <div className="card mb-8">
         <h3>Make a Payment</h3>
-        {tenant?.property?.upi_id && (
-          <div style={{ marginTop: '1rem', marginBottom: '1rem', padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: 500 }}>1. Pay using any UPI app:</p>
-            <a 
-              href={`upi://pay?pa=${tenant.property.upi_id}&pn=${encodeURIComponent(tenant.property.name || 'PG Owner')}&am=${paymentAmount}&cu=INR`}
-              className="btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
-              target="_blank"
-            >
-              🚀 Open UPI App
-            </a>
-          </div>
+
+        {tenant?.property?.upi_id ? (
+          <>
+            <div style={{ marginTop: '1rem', marginBottom: '1rem', padding: '1.25rem', backgroundColor: 'var(--bg-color)', borderRadius: '12px', border: phonepeClicked ? '2px solid var(--success)' : '1px solid var(--border-color)' }}>
+              <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ backgroundColor: 'var(--success)', color: '#fff', width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>1</span>
+                Quick Pay via PhonePe
+              </p>
+              <div className="input-group" style={{ marginBottom: '0.75rem' }}>
+                <label className="input-label">Amount (₹)</label>
+                <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" />
+              </div>
+
+              {!phonepeClicked ? (
+                <a
+                  href={`upi://pay?pa=${tenant.property.upi_id}&pn=${encodeURIComponent(tenant.property.name || 'PG Owner')}&am=${paymentAmount}&cu=INR`}
+                  target="_blank"
+                  onClick={handlePhonePeClick}
+                  className="btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
+                >
+                  🚀 Pay via PhonePe
+                </a>
+              ) : (
+                <div>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                    ✅ PhonePe opened. After completing payment in the UPI app, come back and click confirm below.
+                  </p>
+                  <button onClick={handleConfirmPayment} className="btn-primary" disabled={paymentConfirming} style={{ backgroundColor: 'var(--success)', color: '#0f172a', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {paymentConfirming ? "Confirming..." : "✓ I've Paid — Confirm Now"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.5rem 0' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500 }}>OR</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+            </div>
+
+            <form onSubmit={handleMakePayment} style={{ marginTop: '0.5rem' }}>
+              <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ backgroundColor: 'var(--text-muted)', color: '#fff', width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>2</span>
+                Submit Screenshot (Alternative)
+              </p>
+              <div className="input-group" style={{ marginBottom: '0.75rem' }}>
+                <label className="input-label">Amount Paid (₹)</label>
+                <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount paid" />
+              </div>
+              <div className="input-group" style={{ marginBottom: '0.75rem' }}>
+                <label className="input-label">Upload Screenshot</label>
+                <input type="file" className="input-field" accept="image/*" onChange={e => setPaymentProof(e.target.files?.[0] || null)} />
+              </div>
+              <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                {processingPayment ? "Submitting..." : "Submit Payment Proof"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <form onSubmit={handleMakePayment} style={{ marginTop: '1rem' }}>
+            <p style={{ fontSize: '0.875rem', marginBottom: '1rem', fontWeight: 500 }}>
+              Submit your payment details:
+            </p>
+            <div className="input-group">
+              <label className="input-label">Amount Paid (₹)</label>
+              <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount paid" />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Upload Screenshot</label>
+              <input type="file" className="input-field" accept="image/*" onChange={e => setPaymentProof(e.target.files?.[0] || null)} />
+            </div>
+            <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+              {processingPayment ? "Submitting..." : "Submit Payment Proof"}
+            </button>
+          </form>
         )}
-        <form onSubmit={handleMakePayment} style={{ marginTop: '1rem' }}>
-          <p style={{ fontSize: '0.875rem', marginBottom: '1rem', fontWeight: 500 }}>
-            {tenant?.property?.upi_id ? "2. Submit your payment proof:" : "Submit your payment details:"}
-          </p>
-          <div className="input-group">
-            <label className="input-label">Amount Paid (₹)</label>
-            <input 
-              type="number" 
-              className="input-field" 
-              value={paymentAmount} 
-              onChange={e => setPaymentAmount(e.target.value)} 
-              required 
-              min="1"
-              placeholder="Enter amount paid"
-            />
-          </div>
-          <div className="input-group">
-            <label className="input-label">Upload Screenshot (Required)</label>
-            <input 
-              type="file" 
-              className="input-field" 
-              accept="image/*" 
-              onChange={e => setPaymentProof(e.target.files?.[0] || null)} 
-              required
-            />
-          </div>
-          <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-            {processingPayment ? "Submitting..." : "Submit Payment Proof"}
-          </button>
-        </form>
       </div>
 
       <div className="card mb-8">

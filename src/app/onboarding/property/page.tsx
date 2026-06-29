@@ -9,10 +9,12 @@ export default function AddPropertyPage() {
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("/api/properties", {
@@ -21,12 +23,16 @@ export default function AddPropertyPage() {
         body: JSON.stringify({ name, address, city }),
       });
 
-      if (!res.ok) throw new Error("Failed to add property");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to add property");
+      }
 
       // Redirect to subscription step
       router.push("/onboarding/subscription");
     } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);
     }
   };
@@ -38,6 +44,10 @@ export default function AddPropertyPage() {
           <h2>Add Your First PG</h2>
           <p>Let's set up your property details to get started.</p>
         </div>
+
+        {error && (
+          <div style={{ color: 'var(--danger)', marginBottom: '1rem', textAlign: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>{error}</div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex-col flex">
           <div className="input-group">

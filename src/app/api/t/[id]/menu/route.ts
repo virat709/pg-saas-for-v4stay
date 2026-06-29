@@ -7,23 +7,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id: tenantId } = await params;
 
-    // Iterate through properties to find the tenant
-    const pSnapList = await adminDb.collection("properties").get();
-    let propertyId = null;
-    let tenantDoc = null;
+    // Single collectionGroup query — no N+1 property scan
+    const { FieldPath } = await import("firebase-admin/firestore");
+    const tSnap = await adminDb.collectionGroup("tenants").where(FieldPath.documentId(), "==", tenantId).get();
 
-    for (const doc of pSnapList.docs) {
-      const tDoc = await doc.ref.collection("tenants").doc(tenantId).get();
-      if (tDoc.exists) {
-        propertyId = doc.id;
-        tenantDoc = tDoc;
-        break;
-      }
-    }
-
-    if (!propertyId || !tenantDoc) {
+    if (tSnap.empty) {
       return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
     }
+
+    const tenantDoc = tSnap.docs[0];
+    const propertyId = tenantDoc.ref.path.split("/")[1];
     const isTenantVacated = tenantDoc.data()?.status === "vacated";
     if (isTenantVacated) return NextResponse.json({ message: "Account deactivated" }, { status: 403 });
 

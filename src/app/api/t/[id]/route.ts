@@ -7,58 +7,52 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id: tenantId } = await params;
 
-    // Iterate through properties to find the tenant
-    const pSnapList = await adminDb.collection("properties").get();
-    let propertyId = null;
-    let tenantSnap = null;
+    // Single collectionGroup query — no N+1 property scan
+    const { FieldPath } = await import("firebase-admin/firestore");
+    const tSnap = await adminDb.collectionGroup("tenants").where(FieldPath.documentId(), "==", tenantId).get();
 
-    for (const doc of pSnapList.docs) {
-      const tDoc = await doc.ref.collection("tenants").doc(tenantId).get();
-      if (tDoc.exists) {
-        propertyId = doc.id;
-        tenantSnap = tDoc;
-        break;
-      }
-    }
-
-    if (!propertyId || !tenantSnap) {
+    if (tSnap.empty) {
       return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
     }
 
-    const pSnap = await adminDb.collection("properties").doc(propertyId).get();
-    const propertyData = pSnap.exists ? { id: propertyId, ...pSnap.data() } : null;
-
+    const tenantSnap = tSnap.docs[0];
+    const propertyId = tenantSnap.ref.path.split("/")[1];
     const tenantData = tenantSnap.data();
     if (!tenantData) return NextResponse.json({ message: "Tenant data missing" }, { status: 404 });
 
-    // Block access for vacated tenants — portal is permanently disabled
+    // Block access for vacated tenants
     if (tenantData.status === "vacated") {
       return NextResponse.json({ message: "This tenant account has been deactivated. Please contact your PG owner." }, { status: 403 });
     }
-    // Fetch bed/room
+
+    // Fetch all related data in parallel
+    const [pSnap, paySnap, cSnap] = await Promise.all([
+      adminDb.collection("properties").doc(propertyId).get(),
+      adminDb.collection("properties").doc(propertyId).collection("payments").where("tenantId", "==", tenantId).get(),
+      adminDb.collection("properties").doc(propertyId).collection("maintenanceRequests").where("tenantId", "==", tenantId).get(),
+    ]);
+
+    const propertyData = pSnap.exists ? { id: propertyId, ...pSnap.data() } : null;
+
+    // Fetch bed/room (only if tenant has an assignment)
     let bedData = null;
     if (tenantData.roomId && tenantData.bedId) {
-      const bedRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tenantData.roomId).collection("beds").doc(tenantData.bedId);
-      const bSnap = await bedRef.get();
+      const roomRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tenantData.roomId);
+      const [rSnap, bSnap] = await Promise.all([
+        roomRef.get(),
+        roomRef.collection("beds").doc(tenantData.bedId).get(),
+      ]);
       if (bSnap.exists) {
-        const roomRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(tenantData.roomId);
-        const rSnap = await roomRef.get();
         bedData = { id: bSnap.id, ...bSnap.data(), room: rSnap.exists ? { id: rSnap.id, ...rSnap.data() } : null };
       }
     }
 
-    // Fetch payments
-    const paymentsRef = adminDb.collection("properties").doc(propertyId).collection("payments");
-    const paySnap = await paymentsRef.where("tenantId", "==", tenantId).get();
     const payments = paySnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => {
       const aTime = a.created_at?.toMillis ? a.created_at.toMillis() : (a.created_at instanceof Date ? a.created_at.getTime() : 0);
       const bTime = b.created_at?.toMillis ? b.created_at.toMillis() : (b.created_at instanceof Date ? b.created_at.getTime() : 0);
       return bTime - aTime;
     });
 
-    // Fetch complaints
-    const complaintsRef = adminDb.collection("properties").doc(propertyId).collection("maintenanceRequests");
-    const cSnap = await complaintsRef.where("tenantId", "==", tenantId).get();
     const maintenanceRequests = cSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => {
       const aTime = a.created_at?.toMillis ? a.created_at.toMillis() : (a.created_at instanceof Date ? a.created_at.getTime() : 0);
       const bTime = b.created_at?.toMillis ? b.created_at.toMillis() : (b.created_at instanceof Date ? b.created_at.getTime() : 0);

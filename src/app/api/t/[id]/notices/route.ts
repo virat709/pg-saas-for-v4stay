@@ -8,30 +8,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const { id: tenantId } = await params;
     if (!tenantId) return NextResponse.json({ message: "Tenant ID required" }, { status: 400 });
 
-    // Find the property that this tenant belongs to
-    // Since tenants are stored in properties/{propertyId}/tenants/{tenantId}
-    const pSnap = await adminDb.collection("properties").get();
-    let propertyId = null;
-    let tenantDoc = null;
+    // Single collectionGroup query — no N+1 property scan
+    const { FieldPath } = await import("firebase-admin/firestore");
+    const tSnap = await adminDb.collectionGroup("tenants").where(FieldPath.documentId(), "==", tenantId).get();
 
-    for (const doc of pSnap.docs) {
-      const tDoc = await doc.ref.collection("tenants").doc(tenantId).get();
-      if (tDoc.exists) {
-        propertyId = doc.id;
-        tenantDoc = tDoc;
-        break;
-      }
-    }
-
-    if (!propertyId || !tenantDoc) {
+    if (tSnap.empty) {
       return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
     }
 
+    const tenantDoc = tSnap.docs[0];
+    const propertyId = tenantDoc.ref.path.split("/")[1];
     const tenantData = tenantDoc.data();
     if (tenantData?.status === "vacated") {
       return NextResponse.json({ message: "Account deactivated" }, { status: 403 });
     }
-
 
     // Fetch notices for this property
     const nSnap = await adminDb.collection("properties").doc(propertyId).collection("notices").orderBy("created_at", "desc").get();

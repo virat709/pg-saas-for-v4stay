@@ -134,5 +134,7 @@ export const authOptions: AuthOptions = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-for-dev",
+  // WARNING: The fallback secret is for local development ONLY.
+  // In production, NEXTAUTH_SECRET must be set to a strong random value.
+  secret: process.env.NEXTAUTH_SECRET,
 };
