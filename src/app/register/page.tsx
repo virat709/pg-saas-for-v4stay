@@ -83,7 +83,7 @@ export default function RegisterPage() {
       <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%' }}>
         <div className="text-center mb-8" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
           <Logo size={42} variant="dark" showTagline={true} />
-          <p style={{ marginTop: '0.5rem' }}>Create your owner account to manage your PG.</p>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 600, marginTop: '0.5rem', color: 'var(--text-main)' }}>Register a PGmate Account</h1>
         </div>
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: '1rem', textAlign: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>{error}</div>}

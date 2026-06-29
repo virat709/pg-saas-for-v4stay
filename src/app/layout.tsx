@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PGmate | Owner Dashboard",
-  description: "PG management dashboard for PG accommodation owners.",
+  title: "PGmate - Paying Guest (PG) Management System & Software",
+  description: "Scale and monetize your PG accommodation with PGmate. Automate rent tracking, generate digital receipts, offer a premium tenant portal, and manage complaints.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
