@@ -159,16 +159,16 @@ export default function Home() {
         <HeroEntrance index={1}>
           <h1
             style={{
-              fontSize: "clamp(2.5rem, 7vw, 4.5rem)",
+              fontSize: "clamp(2.2rem, 6vw, 4rem)",
               fontWeight: 800,
-              maxWidth: "900px",
-              lineHeight: 1.1,
+              maxWidth: "950px",
+              lineHeight: 1.15,
               marginBottom: "1.5rem",
               color: "#fff",
               letterSpacing: "-1px",
             }}
           >
-            Monetize and Scale Your PG with{" "}
+            PGmate: The Smart PG Management System to{" "}
             <span
               style={{
                 color: "transparent",
@@ -177,7 +177,7 @@ export default function Home() {
                 backgroundImage: "linear-gradient(90deg, #1e6091, #00c49f)",
               }}
             >
-              Smart Automation
+              Scale Your Property Business
             </span>
           </h1>
         </HeroEntrance>
@@ -186,17 +186,15 @@ export default function Home() {
         <HeroEntrance index={2}>
           <p
             style={{
-              fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
+              fontSize: "clamp(0.95rem, 2vw, 1.15rem)",
               color: "#94a3b8",
-              maxWidth: "700px",
+              maxWidth: "800px",
               marginBottom: "3.5rem",
-              lineHeight: 1.6,
+              lineHeight: 1.65,
               fontWeight: 400,
             }}
           >
-            Maximize occupancy, automate rent collection, and deliver a premium
-            tenant experience. Stop managing spreadsheets and start scaling your
-            real estate revenue.
+            PGmate is an automated Paying Guest (PG) management software built for PG owners, hostel managers, and co-living operators. We solve the chaos of manual tracking by automating rent collections, room allocations, security deposits, and tenant complaints—replacing messy spreadsheets and WhatsApp messages with a unified, professional dashboard that maximizes occupancy.
           </p>
         </HeroEntrance>
 
