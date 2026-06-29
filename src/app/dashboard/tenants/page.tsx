@@ -26,6 +26,7 @@ export default function TenantsPage() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [copiedTenantId, setCopiedTenantId] = useState<string | null>(null);
 
   useEffect(() => {
     if (activePropertyId && activePropertyId !== "all") {
@@ -591,11 +592,21 @@ export default function TenantsPage() {
                           onClick={() => {
                             const url = `${window.location.origin}/t/${tenant.id}`;
                             navigator.clipboard.writeText(url);
-                            alert("Tenant access link copied to clipboard!\n\n" + url);
+                            setCopiedTenantId(tenant.id);
+                            setTimeout(() => setCopiedTenantId(null), 2000);
                           }} 
-                          style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'var(--primary)', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}
+                          style={{ 
+                            padding: '6px 12px', 
+                            fontSize: '0.875rem', 
+                            backgroundColor: copiedTenantId === tenant.id ? 'var(--success)' : 'var(--primary)', 
+                            border: 'none', 
+                            color: '#fff', 
+                            borderRadius: '6px', 
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
                         >
-                          Copy Link
+                          {copiedTenantId === tenant.id ? "Copied! ✓" : "Copy Link"}
                         </button>
                       )}
                     </div>
