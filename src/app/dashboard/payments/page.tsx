@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useProperties } from "@/context/PropertyContext";
 import Link from "next/link";
 
-type Tenant = { id: string; name: string; rent_amount: number };
+type Tenant = { id: string; name: string; rent_amount: number; propertyId?: string };
 type Payment = {
+
   id: string;
   type: string;
   amount: number;

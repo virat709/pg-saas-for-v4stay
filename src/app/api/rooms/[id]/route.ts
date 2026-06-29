@@ -16,9 +16,22 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
     if (pSnap.empty) return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
-    const propertyId = pSnap.docs[0].id;
+    const propertyIds = pSnap.docs.map(doc => doc.id);
     
-    const roomRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(roomId);
+    let targetPropertyId = null;
+    for (const pId of propertyIds) {
+      const rDoc = await adminDb.collection("properties").doc(pId).collection("rooms").doc(roomId).get();
+      if (rDoc.exists) {
+        targetPropertyId = pId;
+        break;
+      }
+    }
+    
+    if (!targetPropertyId) {
+      return NextResponse.json({ message: "Room not found" }, { status: 404 });
+    }
+    
+    const roomRef = adminDb.collection("properties").doc(targetPropertyId).collection("rooms").doc(roomId);
     await roomRef.update({
       room_number,
       floor,
@@ -41,9 +54,22 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
     if (pSnap.empty) return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
-    const propertyId = pSnap.docs[0].id;
+    const propertyIds = pSnap.docs.map(doc => doc.id);
     
-    const roomRef = adminDb.collection("properties").doc(propertyId).collection("rooms").doc(roomId);
+    let targetPropertyId = null;
+    for (const pId of propertyIds) {
+      const rDoc = await adminDb.collection("properties").doc(pId).collection("rooms").doc(roomId).get();
+      if (rDoc.exists) {
+        targetPropertyId = pId;
+        break;
+      }
+    }
+    
+    if (!targetPropertyId) {
+      return NextResponse.json({ message: "Room not found" }, { status: 404 });
+    }
+    
+    const roomRef = adminDb.collection("properties").doc(targetPropertyId).collection("rooms").doc(roomId);
     const bedsSnap = await roomRef.collection("beds").get();
     
     // Check if any bed is occupied
@@ -66,3 +92,4 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
+

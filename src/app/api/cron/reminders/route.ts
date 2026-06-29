@@ -4,6 +4,21 @@ import { sendEmail, rentReminderEmail } from "@/lib/email";
 
 export async function GET(req: Request) {
   try {
+    // Optional Cron Secret Authorization Check
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret) {
+      const authHeader = req.headers.get("authorization");
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        console.warn("[CRON] Unauthorized request blocked.");
+        return new Response(JSON.stringify({ message: "Unauthorized" }), { 
+          status: 401,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    } else {
+      console.warn("[CRON] Running without CRON_SECRET authorization check (development mode).");
+    }
+
     const propertiesRef = adminDb.collection("properties");
     const pSnap = await propertiesRef.get();
     

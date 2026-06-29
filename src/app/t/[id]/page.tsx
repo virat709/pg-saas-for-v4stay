@@ -419,6 +419,18 @@ export default function TenantPortal() {
                       )}
                     </div>
                   )}
+                  {pay.status === 'completed' && (
+                    <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                      <a 
+                        href={`/payments/receipt/${pay.id}?tenantId=${tenantId}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        style={{ color: '#00c49f', textDecoration: 'underline', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        📄 View Receipt
+                      </a>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <span style={{ 

@@ -12,18 +12,26 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // Since tenants are stored in properties/{propertyId}/tenants/{tenantId}
     const pSnap = await adminDb.collection("properties").get();
     let propertyId = null;
+    let tenantDoc = null;
 
     for (const doc of pSnap.docs) {
       const tDoc = await doc.ref.collection("tenants").doc(tenantId).get();
       if (tDoc.exists) {
         propertyId = doc.id;
+        tenantDoc = tDoc;
         break;
       }
     }
 
-    if (!propertyId) {
+    if (!propertyId || !tenantDoc) {
       return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
     }
+
+    const tenantData = tenantDoc.data();
+    if (tenantData?.status === "vacated") {
+      return NextResponse.json({ message: "Account deactivated" }, { status: 403 });
+    }
+
 
     // Fetch notices for this property
     const nSnap = await adminDb.collection("properties").doc(propertyId).collection("notices").orderBy("created_at", "desc").get();

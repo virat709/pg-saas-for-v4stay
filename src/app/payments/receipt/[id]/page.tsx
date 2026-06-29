@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 interface ReceiptData {
   id: string;
@@ -36,17 +36,24 @@ function receiptNumber(id: string): string {
 
 export default function ReceiptPage() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const tenantId = searchParams.get("tenantId");
   const [data, setData] = useState<ReceiptData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`/api/payments/receipt/${id}`)
+    const fetchUrl = tenantId
+      ? `/api/payments/receipt/${id}?tenantId=${tenantId}`
+      : `/api/payments/receipt/${id}`;
+    
+    fetch(fetchUrl)
       .then((r) => { if (!r.ok) throw new Error("Not found"); return r.json(); })
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, tenantId]);
+
 
   if (loading) return <div style={{ padding: "2rem", textAlign: "center" }}>Loading receipt...</div>;
   if (error || !data) return <div style={{ padding: "2rem", textAlign: "center", color: "red" }}>Receipt not found or you do not have permission to view it.</div>;

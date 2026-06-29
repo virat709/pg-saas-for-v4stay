@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import SplineBackground from "@/components/SplineBackground";
 import Logo from "@/components/Logo";
@@ -9,6 +10,7 @@ import { useScrollyNav } from "@/hooks/useScrollyNav";
 
 export default function Home() {
   const { isScrolled } = useScrollyNav(40);
+  const [propertyCount, setPropertyCount] = useState(1);
 
   return (
     <div
@@ -416,6 +418,73 @@ export default function Home() {
             One plan. Every feature included. No hidden fees, no per-tenant charges.
           </p>
 
+          {/* Dynamic Property Count Selector */}
+          <div
+            style={{
+              maxWidth: "400px",
+              margin: "0 auto 3rem auto",
+              padding: "1.5rem",
+              background: "rgba(30, 41, 59, 0.5)",
+              borderRadius: "20px",
+              border: "1px dashed rgba(0, 196, 159, 0.4)",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+              backdropFilter: "blur(8px)",
+              textAlign: "center"
+            }}
+          >
+            <label style={{ fontSize: "0.95rem", fontWeight: 600, display: "block", marginBottom: "0.75rem", color: "#f8fafc" }}>
+              How many properties do you want to manage?
+            </label>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5rem" }}>
+              <button
+                type="button"
+                onClick={() => setPropertyCount(prev => Math.max(1, prev - 1))}
+                style={{
+                  padding: "0.25rem",
+                  fontSize: "1.25rem",
+                  width: "36px",
+                  height: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#f8fafc",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                -
+              </button>
+              <span style={{ fontSize: "1.75rem", fontWeight: 800, color: "#00c49f" }}>{propertyCount}</span>
+              <button
+                type="button"
+                onClick={() => setPropertyCount(prev => prev + 1)}
+                style={{
+                  padding: "0.25rem",
+                  fontSize: "1.25rem",
+                  width: "36px",
+                  height: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#f8fafc",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                +
+              </button>
+            </div>
+            <p style={{ fontSize: "0.8rem", color: "#94a3b8", marginTop: "0.75rem", marginBottom: 0 }}>
+              {propertyCount === 1 ? "Standard Single Property Plan" : `Enterprise Option: 1 Base PG + ${propertyCount - 1} Additional PG Addon(s)`}
+            </p>
+          </div>
+
           {/* Pricing cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "2rem", maxWidth: "800px", margin: "0 auto", textAlign: "left" }}>
             
@@ -434,7 +503,17 @@ export default function Home() {
               }}
             >
               <h3 style={{ color: "#f8fafc", fontSize: "1.3rem", marginBottom: "0.25rem" }}>PGmate Starter — 6 Months</h3>
-              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#f8fafc", lineHeight: 1, margin: "1rem 0" }}>₹6,999</div>
+              <div style={{ color: "#cbd5e1", fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                Up to {propertyCount} propert{propertyCount === 1 ? "y" : "ies"} limit
+              </div>
+              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#f8fafc", lineHeight: 1, margin: "1rem 0" }}>
+                ₹{(6999 + (propertyCount - 1) * 4999).toLocaleString()}
+              </div>
+              {propertyCount > 1 && (
+                <div style={{ color: "#cbd5e1", fontSize: "0.8rem", marginBottom: "1.5rem", marginTop: "-0.5rem" }}>
+                  ₹6,999 base + {propertyCount - 1} × ₹4,999 addons
+                </div>
+              )}
               
               <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
                 {[
@@ -493,8 +572,19 @@ export default function Home() {
               </div>
 
               <h3 style={{ color: "#f8fafc", fontSize: "1.3rem", marginBottom: "0.25rem" }}>PGmate Premium — 1 Year</h3>
-              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#00c49f", lineHeight: 1, margin: "1rem 0" }}>₹11,999</div>
-              <div style={{ color: "#00c49f", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>Save ₹1,999 compared to 6-month plan</div>
+              <div style={{ color: "#00c49f", fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                Up to {propertyCount} propert{propertyCount === 1 ? "y" : "ies"} limit
+              </div>
+              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#00c49f", lineHeight: 1, margin: "1rem 0" }}>
+                ₹{(11999 + (propertyCount - 1) * 6999).toLocaleString()}
+              </div>
+              {propertyCount > 1 ? (
+                <div style={{ color: "#00c49f", fontSize: "0.8rem", fontWeight: 600, marginBottom: "1.5rem", marginTop: "-0.5rem" }}>
+                  ₹11,999 base + {propertyCount - 1} × ₹6,999 addons
+                </div>
+              ) : (
+                <div style={{ color: "#00c49f", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>Save ₹1,999 compared to 6-month plan</div>
+              )}
 
               <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
                 {[

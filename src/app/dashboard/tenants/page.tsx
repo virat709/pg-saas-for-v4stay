@@ -22,7 +22,7 @@ export default function TenantsPage() {
   const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
-  const [availableBeds, setAvailableBeds] = useState<{id: string, label: string}[]>([]);
+  const [availableBeds, setAvailableBeds] = useState<{id: string, label: string, propertyId?: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
