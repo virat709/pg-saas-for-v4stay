@@ -55,7 +55,7 @@ export default function ContactUs() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", alignItems: "center" }}>
               <div style={{ textAlign: "center" }}>
-                <h3 style={{ color: "#f8fafc", fontSize: "1.25rem", marginBottom: "0.5rem" }}>Email Support</h3>
+                <h2 style={{ color: "#f8fafc", fontSize: "1.25rem", marginBottom: "0.5rem" }}>Email Support</h2>
                 <a
                   href="mailto:v4services.in@gmail.com"
                   style={{

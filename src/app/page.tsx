@@ -274,13 +274,21 @@ export default function Home() {
         </HeroEntrance>
 
         {/* ── Feature Cards — scroll-revealed, staggered ────────────────── */}
-        <section id="features" style={{ scrollMarginTop: "100px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <section id="features" style={{ scrollMarginTop: "100px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", marginTop: "8rem" }}>
+          <div style={{ display: "inline-block", padding: "0.35rem 1rem", borderRadius: "99px", backgroundColor: "rgba(0,196,159,0.12)", border: "1px solid rgba(0,196,159,0.25)", color: "#00c49f", fontSize: "0.8rem", fontWeight: 600, marginBottom: "1.25rem", letterSpacing: "0.05em", textAlign: "center" }}>
+            FEATURES
+          </div>
+          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.75rem)", fontWeight: 800, color: "#f8fafc", marginBottom: "0.75rem", letterSpacing: "-0.5px", textAlign: "center" }}>
+            Everything You Need to Manage Your PG
+          </h2>
+          <p style={{ color: "#94a3b8", fontSize: "1.05rem", maxWidth: "550px", margin: "0 auto 3rem auto", lineHeight: 1.6, textAlign: "center" }}>
+            Ditch the spreadsheets. Automate collections, track room availability, and support tenants in one platform.
+          </p>
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
               gap: "2rem",
-              marginTop: "8rem",
               maxWidth: "1100px",
               width: "100%",
               textAlign: "left",

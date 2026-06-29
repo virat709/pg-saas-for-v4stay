@@ -43,8 +43,11 @@ export default function AboutPage() {
           </p>
         </div>
 
-        {/* Mission */}
+        {/* Mission & Core Values */}
         <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 5% 5rem" }}>
+          <h2 style={{ fontSize: "1.75rem", fontWeight: 700, color: "#f8fafc", marginBottom: "2rem", textAlign: "center" }}>
+            Our Values & Principles
+          </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1.5rem", marginBottom: "4rem" }}>
             {[
               { icon: "🏠", title: "Our Mission", text: "To give every PG and hostel owner a modern, effortless management platform that saves time, reduces errors, and keeps both owners and tenants happy." },
