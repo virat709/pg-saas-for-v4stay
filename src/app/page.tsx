@@ -63,9 +63,23 @@ export default function Home() {
           <Logo size={30} variant="light" showTagline={false} />
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
             <a
+              href="#features"
+              style={{
+                padding: "0.6rem 1rem",
+                borderRadius: "8px",
+                textDecoration: "none",
+                color: "#e2e8f0",
+                fontWeight: 500,
+                fontSize: "0.9rem",
+                transition: "color 0.2s",
+              }}
+            >
+              Features
+            </a>
+            <a
               href="#pricing"
               style={{
-                padding: "0.6rem 1.25rem",
+                padding: "0.6rem 1rem",
                 borderRadius: "8px",
                 textDecoration: "none",
                 color: "#e2e8f0",
@@ -75,6 +89,20 @@ export default function Home() {
               }}
             >
               Pricing
+            </a>
+            <a
+              href="#contact"
+              style={{
+                padding: "0.6rem 1rem",
+                borderRadius: "8px",
+                textDecoration: "none",
+                color: "#e2e8f0",
+                fontWeight: 500,
+                fontSize: "0.9rem",
+                transition: "color 0.2s",
+              }}
+            >
+              Contact
             </a>
             <Link
               href="/login"
@@ -246,17 +274,18 @@ export default function Home() {
         </HeroEntrance>
 
         {/* ── Feature Cards — scroll-revealed, staggered ────────────────── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "2rem",
-            marginTop: "8rem",
-            maxWidth: "1100px",
-            width: "100%",
-            textAlign: "left",
-          }}
-        >
+        <section id="features" style={{ scrollMarginTop: "100px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "2rem",
+              marginTop: "8rem",
+              maxWidth: "1100px",
+              width: "100%",
+              textAlign: "left",
+            }}
+          >
           {/* Card 1 — Occupancy */}
           <AnimatedSection delay={0}>
             <div
@@ -395,6 +424,26 @@ export default function Home() {
             </div>
           </AnimatedSection>
         </div>
+          
+          {/* Features -> Pricing Link */}
+          <div style={{ textAlign: "center", marginTop: "3.5rem" }}>
+            <a
+              href="#pricing"
+              style={{
+                color: "#00c49f",
+                textDecoration: "none",
+                fontWeight: 600,
+                fontSize: "1.05rem",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                transition: "transform 0.2s",
+              }}
+            >
+              Explore our subscription pricing plans ➔
+            </a>
+          </div>
+        </section>
       </main>
 
       {/* ── Pricing Section ─────────────────────────────────────────────── */}
@@ -624,14 +673,27 @@ export default function Home() {
               </Link>
             </div>
           </div>
+          
+          {/* Pricing -> Contact Link */}
+          <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
+            <span style={{ color: "#94a3b8", fontSize: "0.95rem" }}>
+              Need a plan for more properties or custom enterprise setup?{" "}
+              <a href="#contact" style={{ color: "#00c49f", textDecoration: "none", fontWeight: 600 }}>
+                Contact our sales team
+              </a>
+            </span>
+          </div>
         </div>
       </AnimatedSection>
 
       {/* ── Contact Us Section ─────────────────────────────────────────── */}
       <AnimatedSection delay={200}>
         <div
+          id="contact"
           style={{
+            scrollMarginTop: "100px",
             marginTop: "6rem",
+
             marginBottom: "4rem",
             padding: "3rem",
             background: "rgba(15, 23, 42, 0.6)",

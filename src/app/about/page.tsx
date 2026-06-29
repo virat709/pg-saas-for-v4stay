@@ -22,7 +22,8 @@ export default function AboutPage() {
         <Link href="/" style={{ textDecoration: "none" }}>
           <Logo size={30} variant="light" showTagline={false} />
         </Link>
-        <div style={{ display: "flex", gap: "1rem" }}>
+        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          <Link href="/#features" style={{ color: "#e2e8f0", textDecoration: "none", fontSize: "0.9rem", fontWeight: 500 }}>Features</Link>
           <Link href="/login" style={{ padding: "0.5rem 1rem", borderRadius: "8px", color: "#e2e8f0", border: "1px solid rgba(255,255,255,0.1)", textDecoration: "none", fontSize: "0.9rem" }}>Login</Link>
           <Link href="/register" style={{ padding: "0.5rem 1rem", borderRadius: "8px", backgroundColor: "#00c49f", color: "#0f172a", fontWeight: 700, textDecoration: "none", fontSize: "0.9rem" }}>Register PG</Link>
         </div>
@@ -115,8 +116,8 @@ export default function AboutPage() {
               <Link href="/register" style={{ padding: "0.85rem 2rem", borderRadius: "10px", backgroundColor: "#00c49f", color: "#0f172a", fontWeight: 700, textDecoration: "none", boxShadow: "0 0 20px rgba(0,196,159,0.3)" }}>
                 Start Free Today
               </Link>
-              <Link href="/contact-us" style={{ padding: "0.85rem 2rem", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)", color: "#e2e8f0", fontWeight: 600, textDecoration: "none" }}>
-                Contact Us
+              <Link href="/#features" style={{ padding: "0.85rem 2rem", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.12)", color: "#e2e8f0", fontWeight: 600, textDecoration: "none" }}>
+                Explore Features
               </Link>
             </div>
           </div>
