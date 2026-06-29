@@ -14,13 +14,13 @@ export default function RegisterLayout({ children }: { children: React.ReactNode
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://pgmate.in"
+        "item": "https://pg.v4stay.com"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Register",
-        "item": "https://pgmate.in/register"
+        "item": "https://pg.v4stay.com/register"
       }
     ]
   };

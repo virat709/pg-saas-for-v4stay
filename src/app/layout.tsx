@@ -34,30 +34,30 @@ export default function RootLayout({
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://pgmate.in/#organization",
+        "@id": "https://pg.v4stay.com/#organization",
         "name": "V4Stay",
-        "url": "https://pgmate.in",
-        "logo": "https://pgmate.in/logo-light.png"
+        "url": "https://pg.v4stay.com",
+        "logo": "https://pg.v4stay.com/logo-light.png"
       },
       {
         "@type": "WebSite",
-        "@id": "https://pgmate.in/#website",
-        "url": "https://pgmate.in",
+        "@id": "https://pg.v4stay.com/#website",
+        "url": "https://pg.v4stay.com",
         "name": "PGmate",
         "description": "Smart Paying Guest (PG) Management System & Software",
         "publisher": {
-          "@id": "https://pgmate.in/#organization"
+          "@id": "https://pg.v4stay.com/#organization"
         }
       },
       {
         "@type": "SoftwareApplication",
-        "@id": "https://pgmate.in/#software",
+        "@id": "https://pg.v4stay.com/#software",
         "name": "PGmate",
         "operatingSystem": "All",
         "applicationCategory": "BusinessApplication",
         "category": "PG Management Software",
         "publisher": {
-          "@id": "https://pgmate.in/#organization"
+          "@id": "https://pg.v4stay.com/#organization"
         },
         "offers": {
           "@type": "Offer",

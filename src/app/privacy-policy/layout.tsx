@@ -14,13 +14,13 @@ export default function PrivacyPolicyLayout({ children }: { children: React.Reac
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://pgmate.in"
+        "item": "https://pg.v4stay.com"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Privacy Policy",
-        "item": "https://pgmate.in/privacy-policy"
+        "item": "https://pg.v4stay.com/privacy-policy"
       }
     ]
   };

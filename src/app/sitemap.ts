@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXTAUTH_URL || "https://pgmate.in";
+  const baseUrl = process.env.NEXTAUTH_URL || "https://pg.v4stay.com";
 
   return [
     {

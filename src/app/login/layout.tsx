@@ -14,13 +14,13 @@ export default function LoginLayout({ children }: { children: React.ReactNode })
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://pgmate.in"
+        "item": "https://pg.v4stay.com"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Login",
-        "item": "https://pgmate.in/login"
+        "item": "https://pg.v4stay.com/login"
       }
     ]
   };

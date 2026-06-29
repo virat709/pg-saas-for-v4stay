@@ -14,13 +14,13 @@ export default function AboutLayout({ children }: { children: React.ReactNode })
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://pgmate.in"
+        "item": "https://pg.v4stay.com"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "About Us",
-        "item": "https://pgmate.in/about"
+        "item": "https://pg.v4stay.com/about"
       }
     ]
   };

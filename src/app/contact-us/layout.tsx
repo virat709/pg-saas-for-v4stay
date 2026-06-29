@@ -14,13 +14,13 @@ export default function ContactUsLayout({ children }: { children: React.ReactNod
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://pgmate.in"
+        "item": "https://pg.v4stay.com"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Contact Us",
-        "item": "https://pgmate.in/contact-us"
+        "item": "https://pg.v4stay.com/contact-us"
       }
     ]
   };

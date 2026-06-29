@@ -14,13 +14,13 @@ export default function ForgotPasswordLayout({ children }: { children: React.Rea
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://pgmate.in"
+        "item": "https://pg.v4stay.com"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Reset Password",
-        "item": "https://pgmate.in/forgot-password"
+        "item": "https://pg.v4stay.com/forgot-password"
       }
     ]
   };

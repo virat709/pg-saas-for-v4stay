@@ -14,13 +14,13 @@ export default function TermsAndConditionsLayout({ children }: { children: React
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://pgmate.in"
+        "item": "https://pg.v4stay.com"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Terms and Conditions",
-        "item": "https://pgmate.in/terms-and-conditions"
+        "item": "https://pg.v4stay.com/terms-and-conditions"
       }
     ]
   };
