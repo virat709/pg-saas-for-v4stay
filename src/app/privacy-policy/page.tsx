@@ -37,7 +37,7 @@ export default function PrivacyPolicy() {
         <h1 style={{ fontSize: "2.5rem", marginBottom: "2rem", color: "#00c49f" }}>Privacy Policy</h1>
         
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", lineHeight: "1.6", color: "#94a3b8" }}>
-          <p><strong>Last updated: {new Date().toLocaleDateString()}</strong></p>
+          <p><strong>Last updated: June 29, 2026</strong></p>
 
           <section>
             <h2 style={{ color: "#f8fafc", fontSize: "1.5rem", marginBottom: "1rem" }}>1. Introduction</h2>
