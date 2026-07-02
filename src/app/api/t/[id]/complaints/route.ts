@@ -29,6 +29,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       updated_at: new Date()
     });
 
+    await adminDb.collection("notifications").add({
+      title: "New Complaint Submitted",
+      message: `Tenant has submitted a new complaint (${category}).`,
+      read: false,
+      recipientRole: "admin",
+      propertyId: propertyId,
+      created_at: new Date(),
+      type: "complaint"
+    });
+
     return NextResponse.json({ id: complaintRef.id, category, description, status: "open" }, { status: 201 });
   } catch (error) {
     console.error(error);

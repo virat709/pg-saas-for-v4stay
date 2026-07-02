@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
+import { getTenantAndProperty } from "@/lib/tenantHelper";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,9 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const { searchParams } = new URL(req.url);
     const tenantId = searchParams.get("tenantId");
+    const { id } = await params;
+
+    console.log(`[Receipt API GET] ID: ${id}, tenantId: ${tenantId}, adminSession:`, session?.user?.id);
 
     let propertyId = null;
     let propertyData = null;
@@ -30,27 +34,30 @@ export async function GET(
         propertyId = propertyDoc.id;
         propertyData = propertyDoc.data();
         authorized = true;
+        console.log(`[Receipt API] Admin authorized for property: ${propertyId}`);
       }
-    } else if (tenantId) {
-      // Verify tenant exists and retrieve their propertyId
-      const pSnapList = await adminDb.collection("properties").get();
-      for (const doc of pSnapList.docs) {
-        const tDoc = await doc.ref.collection("tenants").doc(tenantId).get();
-        if (tDoc.exists) {
-          propertyId = doc.id;
-          propertyData = doc.data();
+    }
+
+    if (!authorized && tenantId) {
+      // Verify tenant exists and retrieve their propertyId using our helper
+      const res = await getTenantAndProperty(tenantId);
+      if (res) {
+        propertyId = res.propertyId;
+        const pDoc = await adminDb.collection("properties").doc(propertyId).get();
+        if (pDoc.exists) {
+          propertyData = pDoc.data();
           authorized = true;
-          break;
+          console.log(`[Receipt API] Tenant authorized for property: ${propertyId}`);
         }
+      } else {
+        console.log(`[Receipt API] Tenant helper returned null for tenantId: ${tenantId}`);
       }
     }
 
     if (!authorized || !propertyId || !propertyData) {
+      console.log(`[Receipt API] Authorization failed: authorized=${authorized}, propertyId=${propertyId}`);
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-
-    const { id } = await params;
-
 
     // Fetch the specific payment
     const payDoc = await adminDb
@@ -61,13 +68,17 @@ export async function GET(
       .get();
 
     if (!payDoc.exists) {
+      console.log(`[Receipt API] Payment document not found: ${id} under property ${propertyId}`);
       return NextResponse.json({ message: "Payment not found" }, { status: 404 });
     }
 
     const payData = payDoc.data()!;
+    console.log(`[Receipt API] Payment data retrieved. tenantId on payment: ${payData.tenantId}`);
 
     // Additional check: if authorized via tenantId, ensure the payment actually belongs to this tenant!
-    if (!session?.user?.id && tenantId && payData.tenantId !== tenantId) {
+    const authorizedAsAdmin = session?.user?.id && (propertyData?.ownerId === session.user.id);
+    if (!authorizedAsAdmin && tenantId && payData.tenantId !== tenantId) {
+      console.log(`[Receipt API] Mismatch check failed. Payment tenantId (${payData.tenantId}) !== requested tenantId (${tenantId})`);
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 

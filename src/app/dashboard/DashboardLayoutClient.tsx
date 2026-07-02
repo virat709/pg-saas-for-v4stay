@@ -9,6 +9,8 @@ import { useIsReturningUser } from "@/hooks/useIsReturningUser";
 import Logo from "@/components/Logo";
 
 import { PropertyProvider, useProperties } from "@/context/PropertyContext";
+import NotificationBell from "@/components/NotificationBell";
+import { AdminNotificationProvider, useAdminNotifications } from "@/context/AdminNotificationContext";
 
 export default function DashboardLayoutClient({
   children,
@@ -16,9 +18,11 @@ export default function DashboardLayoutClient({
   children: React.ReactNode;
 }) {
   return (
-    <PropertyProvider>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
-    </PropertyProvider>
+    <AdminNotificationProvider>
+      <PropertyProvider>
+        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      </PropertyProvider>
+    </AdminNotificationProvider>
   );
 }
 
@@ -79,6 +83,87 @@ function DashboardLayoutContent({
     { name: "Settings", path: "/dashboard/settings" },
   ];
 
+  // ── NavItems: separate component so useAdminNotifications is called at top level ──
+  const NavItems = ({
+    pathname,
+    activePropertyId,
+    navItems,
+  }: {
+    pathname: string;
+    activePropertyId: string;
+    navItems: { name: string; path: string }[];
+  }) => {
+    const { unreadByType } = useAdminNotifications();
+
+    const filtered = navItems.filter((item) => {
+      if (activePropertyId === "all") {
+        return ["Overview", "Settings"].includes(item.name);
+      }
+      return true;
+    });
+
+    return (
+      <>
+        {filtered.map((item) => {
+          const isActive =
+            item.path === "/dashboard"
+              ? pathname === item.path
+              : pathname === item.path || pathname.startsWith(item.path + "/");
+
+          const dotType =
+            item.name === "Complaints"
+              ? "complaint"
+              : item.name === "Payments"
+              ? "payment"
+              : null;
+          const dotCount = dotType ? (unreadByType[dotType] || 0) : 0;
+
+          return (
+            <Link
+              key={item.path}
+              href={item.path}
+              style={{
+                padding: "0.75rem 1rem",
+                borderRadius: "var(--radius-md)",
+                backgroundColor: isActive ? "rgba(30, 96, 145, 0.1)" : "transparent",
+                color: isActive ? "var(--primary)" : "var(--text-main)",
+                fontWeight: isActive ? 600 : 400,
+                transition: "var(--transition)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span>{item.name}</span>
+              {dotCount > 0 && (
+                <span
+                  style={{
+                    backgroundColor: "#10b981",
+                    color: "#fff",
+                    fontSize: "0.62rem",
+                    fontWeight: 700,
+                    borderRadius: "50%",
+                    minWidth: "18px",
+                    height: "18px",
+                    padding: "0 3px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    boxShadow: "0 0 0 3px rgba(16,185,129,0.2)",
+                    animation: "dot-pulse 2s infinite",
+                  }}
+                >
+                  {dotCount > 9 ? "9+" : dotCount}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </>
+    );
+  };
+
   const SidebarContent = ({ pathname }: { pathname: string }) => {
     const { properties, activePropertyId, setActivePropertyId } = useProperties();
 
@@ -90,34 +175,56 @@ function DashboardLayoutContent({
             <label style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", display: "block", marginBottom: "0.35rem" }}>
               Active Property
             </label>
-            <select
-              value={activePropertyId}
-              onChange={(e) => setActivePropertyId(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "0.5rem 0.75rem",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--border-color)",
-                backgroundColor: "var(--bg-color)",
-                color: "var(--text-main)",
-                fontSize: "0.9rem",
-                fontWeight: 500,
-                cursor: "pointer",
-                outline: "none",
-                boxShadow: "var(--shadow-sm)",
-              }}
-            >
-              <option value="all">All Properties (Overview)</option>
-              {properties.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            {properties.length <= 1 ? (
+              <div
+                style={{
+                  padding: "0.55rem 0.75rem",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--bg-color)",
+                  color: "var(--text-main)",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
+              >
+                🏢 {properties[0]?.name || "My PG"}
+              </div>
+            ) : (
+              <select
+                value={activePropertyId}
+                onChange={(e) => setActivePropertyId(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.5rem 0.75rem",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--bg-color)",
+                  color: "var(--text-main)",
+                  fontSize: "0.9rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  outline: "none",
+                  boxShadow: "var(--shadow-sm)",
+                }}
+              >
+                <option value="all">All Properties (Overview)</option>
+                {properties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Logo size={20} variant="dark" showTagline={false} />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Logo size={20} variant="dark" showTagline={false} />
+            </div>
+            <NotificationBell role="admin" />
           </div>
         </div>
 
@@ -129,35 +236,11 @@ function DashboardLayoutContent({
             flex: 1,
           }}
         >
-          {navItems.filter(item => {
-            if (activePropertyId === "all") {
-              return ["Overview", "Settings"].includes(item.name);
-            }
-            return true;
-          }).map((item) => {
-            const isActive =
-              item.path === "/dashboard"
-                ? pathname === item.path
-                : pathname === item.path || pathname.startsWith(item.path + "/");
-            return (
-              <Link
-                key={item.path}
-                href={item.path}
-                style={{
-                  padding: "0.75rem 1rem",
-                  borderRadius: "var(--radius-md)",
-                  backgroundColor: isActive
-                    ? "rgba(30, 96, 145, 0.1)"
-                    : "transparent",
-                  color: isActive ? "var(--primary)" : "var(--text-main)",
-                  fontWeight: isActive ? 600 : 400,
-                  transition: "var(--transition)",
-                }}
-              >
-                {item.name}
-              </Link>
-            );
-          })}
+          <NavItems
+            pathname={pathname}
+            activePropertyId={activePropertyId}
+            navItems={navItems}
+          />
         </nav>
 
         <div
@@ -315,19 +398,22 @@ function DashboardLayoutContent({
           <span style={{ fontWeight: 700, color: "var(--primary)", fontSize: "0.95rem" }}>
             {currentDisplayName}
           </span>
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--danger)",
-              fontWeight: 500,
-              cursor: "pointer",
-              fontSize: "0.85rem",
-            }}
-          >
-            Sign Out
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <NotificationBell role="admin" />
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--danger)",
+                fontWeight: 500,
+                cursor: "pointer",
+                fontSize: "0.85rem",
+              }}
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
 
         {/* Drawer overlay — closes on backdrop click */}

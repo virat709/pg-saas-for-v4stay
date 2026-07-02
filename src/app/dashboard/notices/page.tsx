@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useProperties } from "@/context/PropertyContext";
+import { useToast } from "@/context/ToastContext";
 
 type Notice = {
   id: string;
@@ -13,6 +14,7 @@ type Notice = {
 
 export default function NoticeBoardPage() {
   const { activePropertyId, properties } = useProperties();
+  const { toast } = useToast();
   const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,9 +65,10 @@ export default function NoticeBoardPage() {
         setContent("");
         setPriority("normal");
         setShowAddForm(false);
+        toast("Notice posted successfully!", "success");
         fetchNotices();
       } else {
-        alert("Failed to create notice.");
+        toast("Failed to create notice.", "error");
       }
     } catch (e) {
       console.error(e);
@@ -75,13 +78,13 @@ export default function NoticeBoardPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this notice?")) return;
     try {
       const res = await fetch(`/api/notices/${id}`, { method: "DELETE" });
       if (res.ok) {
+        toast("Notice deleted.", "info");
         fetchNotices();
       } else {
-        alert("Failed to delete notice.");
+        toast("Failed to delete notice.", "error");
       }
     } catch (e) {
       console.error(e);

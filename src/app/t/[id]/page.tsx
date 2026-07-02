@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import NotificationBell from "@/components/NotificationBell";
+import { useToast } from "@/context/ToastContext";
 
 export default function TenantPortal() {
   const params = useParams();
   const tenantId = params.id as string;
+  const { toast } = useToast();
 
   const [tenant, setTenant] = useState<any>(null);
   const [vacated, setVacated] = useState(false);
@@ -19,10 +22,8 @@ export default function TenantPortal() {
   const [submitting, setSubmitting] = useState(false);
 
   const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [utrNumber, setUtrNumber] = useState("");
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [phonepeClicked, setPhonepeClicked] = useState(false);
-  const [paymentConfirming, setPaymentConfirming] = useState(false);
 
   const formatDate = (dateVal: any) => {
     if (!dateVal) return "-";
@@ -110,11 +111,11 @@ export default function TenantPortal() {
         body: JSON.stringify({ category, description })
       });
       if (res.ok) {
-        alert("Complaint submitted successfully!");
+        toast("Complaint submitted successfully!", "success");
         setDescription("");
-        fetchData(); // refresh list
+        fetchData();
       } else {
-        alert("Failed to submit complaint.");
+        toast("Failed to submit complaint.", "error");
       }
     } catch (e) {
       console.error(e);
@@ -126,83 +127,35 @@ export default function TenantPortal() {
   const handleMakePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentAmount || isNaN(parseFloat(paymentAmount))) {
-      alert("Please enter a valid amount.");
+      toast("Please enter a valid amount.", "warning");
       return;
     }
 
     setProcessingPayment(true);
 
     try {
-      let finalReference = null;
-      
-      if (paymentProof) {
-        try {
-          const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
-          const { storage } = await import("@/lib/firebase");
-          const storageRef = ref(storage, `payments/${tenantId}/${Date.now()}_${paymentProof.name}`);
-          const snapshot = await uploadBytes(storageRef, paymentProof);
-          finalReference = await getDownloadURL(snapshot.ref);
-        } catch (err) {
-          console.error("Storage upload failed", err);
-          alert("Failed to upload screenshot. Please make sure Firebase Storage is configured properly, or use a Google Drive link instead.");
-          setProcessingPayment(false);
-          return;
-        }
-      }
-
       const res = await fetch(`/api/t/${tenantId}/payments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: paymentAmount, method: "UPI", reference: finalReference })
+        body: JSON.stringify({ 
+          amount: paymentAmount, 
+          method: "UPI", 
+          reference: utrNumber || "Online UPI payment" 
+        })
       });
 
       if (res.ok) {
-        alert("Payment proof submitted successfully!");
-        setPaymentProof(null);
-        fetchData(); // refresh list
-      } else {
-        alert("Failed to submit payment. Please try again.");
-      }
-    } catch (e) {
-      console.error(e);
-      alert("An error occurred during payment submission.");
-    } finally {
-      setProcessingPayment(false);
-    }
-  };
-
-  const handlePhonePeClick = () => {
-    setPhonepeClicked(true);
-  };
-
-  const handleConfirmPayment = async () => {
-    if (!paymentAmount || isNaN(parseFloat(paymentAmount))) {
-      alert("Please enter a valid amount.");
-      return;
-    }
-    setPaymentConfirming(true);
-    try {
-      const res = await fetch(`/api/t/${tenantId}/payments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: paymentAmount,
-          method: "PhonePe",
-          reference: "paid_via_phonepe"
-        }),
-      });
-      if (res.ok) {
-        alert("Payment recorded successfully! Thank you.");
-        setPhonepeClicked(false);
+        toast("Payment confirmation submitted to owner!", "success");
+        setUtrNumber("");
         fetchData();
       } else {
-        alert("Failed to record payment. Please try again.");
+        toast("Failed to submit payment confirmation. Please try again.", "error");
       }
     } catch (e) {
       console.error(e);
-      alert("An error occurred. Please try again.");
+      toast("An error occurred during submission.", "error");
     } finally {
-      setPaymentConfirming(false);
+      setProcessingPayment(false);
     }
   };
 
@@ -236,7 +189,10 @@ export default function TenantPortal() {
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem', paddingBottom: '4rem' }}>
-      <header style={{ textAlign: 'center', marginBottom: '2rem', paddingTop: '2rem' }}>
+      <header style={{ textAlign: 'center', marginBottom: '2rem', paddingTop: '2rem', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+          <NotificationBell role="tenant" tenantId={tenantId} />
+        </div>
         <h1 style={{ fontSize: '1.5rem', color: 'var(--primary)' }}>{tenant.property?.name || "PG Dashboard"}</h1>
         <p style={{ color: 'var(--text-muted)' }}>Welcome, {tenant.name}</p>
         {menu && (
@@ -320,64 +276,47 @@ export default function TenantPortal() {
 
         {tenant?.property?.upi_id ? (
           <>
-            <div style={{ marginTop: '1rem', marginBottom: '1rem', padding: '1.25rem', backgroundColor: 'var(--bg-color)', borderRadius: '12px', border: phonepeClicked ? '2px solid var(--success)' : '1px solid var(--border-color)' }}>
-              <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ backgroundColor: 'var(--success)', color: '#fff', width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>1</span>
-                Quick Pay via PhonePe
+            {/* ── UPI QR Code ─────────────────────────────────────── */}
+            <div style={{ marginTop: '1rem', marginBottom: '1.5rem', padding: '1.25rem', backgroundColor: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontWeight: 500 }}>
+                📷 Scan QR to Pay Directly
               </p>
-              <div className="input-group" style={{ marginBottom: '0.75rem' }}>
-                <label className="input-label">Amount (₹)</label>
-                <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" />
-              </div>
-
-              {!phonepeClicked ? (
-                <a
-                  href={`upi://pay?pa=${tenant.property.upi_id}&pn=${encodeURIComponent(tenant.property.name || 'PG Owner')}&am=${paymentAmount}&cu=INR`}
-                  target="_blank"
-                  onClick={handlePhonePeClick}
-                  className="btn-primary"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
-                >
-                  🚀 Pay via PhonePe
-                </a>
-              ) : (
-                <div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                    ✅ PhonePe opened. After completing payment in the UPI app, come back and click confirm below.
-                  </p>
-                  <button onClick={handleConfirmPayment} className="btn-primary" disabled={paymentConfirming} style={{ backgroundColor: 'var(--success)', color: '#0f172a', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {paymentConfirming ? "Confirming..." : "✓ I've Paid — Confirm Now"}
-                  </button>
-                </div>
-              )}
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=10&data=${encodeURIComponent(`upi://pay?pa=${tenant.property.upi_id}&pn=${encodeURIComponent(tenant.property.name || 'PG Owner')}&am=${paymentAmount || tenant.rent_amount}&cu=INR`)}`}
+                alt="UPI QR Code for rent payment"
+                style={{ width: '180px', height: '180px', borderRadius: '8px', display: 'block', margin: '0 auto' }}
+              />
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.6rem' }}>
+                UPI: <strong style={{ color: 'var(--primary)' }}>{tenant.property.upi_id}</strong>
+              </p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                Open any UPI app → Scan → Pay ₹{paymentAmount || tenant.rent_amount}
+              </p>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.5rem 0' }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500 }}>OR</span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
-            </div>
-
-            <form onSubmit={handleMakePayment} style={{ marginTop: '0.5rem' }}>
-              <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ backgroundColor: 'var(--text-muted)', color: '#fff', width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>2</span>
-                Submit Screenshot (Alternative)
+            <form onSubmit={handleMakePayment}>
+              <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem', fontWeight: 600, color: 'var(--text-main)' }}>
+                Confirm Your Payment
               </p>
               <div className="input-group" style={{ marginBottom: '0.75rem' }}>
                 <label className="input-label">Amount Paid (₹)</label>
                 <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount paid" />
               </div>
               <div className="input-group" style={{ marginBottom: '0.75rem' }}>
-                <label className="input-label">Upload Screenshot</label>
-                <input type="file" className="input-field" accept="image/*" onChange={e => setPaymentProof(e.target.files?.[0] || null)} />
+                <label className="input-label">Transaction ID / UTR / Reference (Required)</label>
+                <input type="text" className="input-field" value={utrNumber} onChange={e => setUtrNumber(e.target.value)} required placeholder="e.g. UTR 2345678901 or UPI Ref" />
+              </div>
+              <div className="input-group" style={{ marginBottom: '1.25rem', opacity: 0.6 }}>
+                <label className="input-label">📸 Upload Screenshot (Locked)</label>
+                <input type="text" className="input-field" disabled value="Coming Soon" style={{ cursor: 'not-allowed', color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }} />
               </div>
               <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-                {processingPayment ? "Submitting..." : "Submit Payment Proof"}
+                {processingPayment ? "Submitting..." : "Submit Payment Details"}
               </button>
             </form>
           </>
         ) : (
-          <form onSubmit={handleMakePayment} style={{ marginTop: '1rem' }}>
+          <form onSubmit={handleMakePayment}>
             <p style={{ fontSize: '0.875rem', marginBottom: '1rem', fontWeight: 500 }}>
               Submit your payment details:
             </p>
@@ -386,11 +325,15 @@ export default function TenantPortal() {
               <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount paid" />
             </div>
             <div className="input-group">
-              <label className="input-label">Upload Screenshot</label>
-              <input type="file" className="input-field" accept="image/*" onChange={e => setPaymentProof(e.target.files?.[0] || null)} />
+              <label className="input-label">Transaction ID / UTR / Reference (Required)</label>
+              <input type="text" className="input-field" value={utrNumber} onChange={e => setUtrNumber(e.target.value)} required placeholder="e.g. UTR 2345678901 or UPI Ref" />
+            </div>
+            <div className="input-group" style={{ opacity: 0.6 }}>
+              <label className="input-label">📸 Upload Screenshot (Locked)</label>
+              <input type="text" className="input-field" disabled value="Coming Soon" style={{ cursor: 'not-allowed', color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }} />
             </div>
             <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-              {processingPayment ? "Submitting..." : "Submit Payment Proof"}
+              {processingPayment ? "Submitting..." : "Submit Payment Details"}
             </button>
           </form>
         )}
@@ -490,7 +433,7 @@ export default function TenantPortal() {
                       )}
                     </div>
                   )}
-                  {pay.status === 'completed' && (
+                  {(pay.status === 'completed' || pay.status === 'paid') && (
                     <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
                       <a 
                         href={`/payments/receipt/${pay.id}?tenantId=${tenantId}`} 
@@ -508,10 +451,10 @@ export default function TenantPortal() {
                     fontSize: '0.75rem', 
                     padding: '4px 8px', 
                     borderRadius: '12px',
-                    backgroundColor: pay.status === 'completed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                    color: pay.status === 'completed' ? 'var(--success)' : 'var(--warning)'
+                    backgroundColor: (pay.status === 'completed' || pay.status === 'paid') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                    color: (pay.status === 'completed' || pay.status === 'paid') ? 'var(--success)' : 'var(--warning)'
                   }}>
-                    {pay.status?.toUpperCase() || 'COMPLETED'}
+                    {(pay.status === 'completed' || pay.status === 'paid') ? 'PAID' : (pay.status?.toUpperCase() || 'PENDING')}
                   </span>
                 </div>
               </div>

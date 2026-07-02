@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     const propertyIds = pSnap.docs.map(doc => doc.id);
 
     const body = await req.json();
-    const { tenantId, type, amount, amount_paid, method, propertyId } = body;
+    const { tenantId, type, amount, amount_paid, method, propertyId, payment_date, reference, payer_name } = body;
 
     let targetPropertyId = propertyId;
     if (!targetPropertyId) {
@@ -95,14 +95,56 @@ export async function POST(req: Request) {
       amount: parseFloat(amount),
       amount_paid: parseFloat(amount_paid),
       method,
-      payment_date: new Date(),
+      payment_date: payment_date ? new Date(payment_date) : new Date(),
       status: parseFloat(amount_paid) >= parseFloat(amount) ? "paid" : "partial",
-      created_at: new Date()
+      created_at: new Date(),
+      reference: reference || "",
+      payer_name: payer_name || ""
     };
     
     const newPayRef = await paymentsRef.add(newPayment);
 
     return NextResponse.json({ id: newPayRef.id, ...newPayment }, { status: 201 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+    const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
+    if (pSnap.empty) return NextResponse.json({ message: "No property found" }, { status: 404 });
+    const propertyIds = pSnap.docs.map(doc => doc.id);
+
+    const body = await req.json();
+    const { paymentId, status, propertyId } = body;
+
+    let targetPropertyId = propertyId;
+    if (!targetPropertyId) {
+      targetPropertyId = pSnap.docs[0].id;
+    } else if (!propertyIds.includes(targetPropertyId)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    if (!paymentId || !status) {
+      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+    }
+
+    await adminDb
+      .collection("properties")
+      .doc(targetPropertyId)
+      .collection("payments")
+      .doc(paymentId)
+      .update({
+        status,
+        updated_at: new Date()
+      });
+
+    return NextResponse.json({ message: "Payment updated successfully" });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });

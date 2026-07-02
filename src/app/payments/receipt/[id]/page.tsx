@@ -194,11 +194,11 @@ export default function ReceiptPage() {
                 borderRadius: "99px",
                 fontSize: "0.8rem",
                 fontWeight: 700,
-                backgroundColor: data.status === "paid" ? "#dcfce7" : "#fef9c3",
-                color: data.status === "paid" ? "#15803d" : "#a16207",
+                backgroundColor: data.status === "paid" || data.status === "completed" ? "#dcfce7" : "#fef9c3",
+                color: data.status === "paid" || data.status === "completed" ? "#15803d" : "#a16207",
               }}
             >
-              {data.status === "paid" ? "✓ Paid" : "◑ Partial Payment"}
+              {data.status === "paid" || data.status === "completed" ? "✓ Paid" : data.status === "pending" ? "◑ Pending Approval" : "◑ Partial Payment"}
             </span>
           </div>
         </div>

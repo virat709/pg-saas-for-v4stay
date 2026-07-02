@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/context/ToastContext";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -85,7 +86,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useProperties } from "@/context/PropertyContext";
+import { useToast } from "@/context/ToastContext";
 
 type Bed = {
   id: string;
@@ -20,6 +21,7 @@ type Room = {
 
 export default function RoomsPage() {
   const { activePropertyId, properties } = useProperties();
+  const { toast } = useToast();
   const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,9 +71,9 @@ export default function RoomsPage() {
       const finalFloor = floor === "custom" ? customFloor.trim() : floor;
       const finalSharing = sharingType === "custom" ? customSharing.trim() : sharingType;
 
-      if (!finalFloor) { alert("Please enter a custom floor name."); return; }
+      if (!finalFloor) { toast("Please enter a custom floor name.", "warning"); return; }
       if (!finalSharing || isNaN(parseInt(finalSharing)) || parseInt(finalSharing) < 1) {
-        alert("Please enter a valid sharing count (minimum 1)."); return;
+        toast("Please enter a valid sharing count (minimum 1).", "warning"); return;
       }
 
       const res = await fetch("/api/rooms", {
@@ -93,7 +95,7 @@ export default function RoomsPage() {
         setCustomSharing("");
         fetchRooms();
       } else {
-        alert("Failed to add room. Please try again.");
+        toast("Failed to add room. Please try again.", "error");
       }
     } catch (e) {
       console.error(e);
@@ -106,7 +108,7 @@ export default function RoomsPage() {
     
     try {
       const finalFloor = editFloor === "custom" ? editCustomFloor.trim() : editFloor;
-      if (!finalFloor) { alert("Please enter a custom floor name."); return; }
+      if (!finalFloor) { toast("Please enter a custom floor name.", "warning"); return; }
 
       const res = await fetch(`/api/rooms/${editRoomData.id}`, {
         method: "PUT",
@@ -117,7 +119,7 @@ export default function RoomsPage() {
         setEditRoomData(null);
         fetchRooms();
       } else {
-        alert("Failed to update room.");
+        toast("Failed to update room.", "error");
       }
     } catch (e) {
       console.error(e);
@@ -125,15 +127,14 @@ export default function RoomsPage() {
   };
 
   const handleDeleteRoom = async (roomId: string) => {
-    if (!confirm("Are you sure you want to delete this room? This action cannot be undone.")) return;
-    
     try {
       const res = await fetch(`/api/rooms/${roomId}`, { method: "DELETE" });
       if (res.ok) {
+        toast("Room deleted.", "info");
         fetchRooms();
       } else {
         const data = await res.json();
-        alert(data.message || "Failed to delete room.");
+        toast(data.message || "Failed to delete room.", "error");
       }
     } catch (e) {
       console.error(e);

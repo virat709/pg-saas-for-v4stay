@@ -88,6 +88,26 @@ export async function POST(req: Request) {
       created_at: new Date(),
     });
 
+    const tenantsSnap = await adminDb.collection("properties").doc(targetPropertyId).collection("tenants").where("status", "==", "active").get();
+    
+    if (!tenantsSnap.empty) {
+      const batch = adminDb.batch();
+      tenantsSnap.docs.forEach(doc => {
+        const notifRef = adminDb.collection("notifications").doc();
+        batch.set(notifRef, {
+          title: "New Notice Posted",
+          message: title,
+          read: false,
+          recipientRole: "tenant",
+          tenantId: doc.id,
+          propertyId: targetPropertyId,
+          created_at: new Date(),
+          type: "notice"
+        });
+      });
+      await batch.commit();
+    }
+
     return NextResponse.json({ message: "Notice created successfully", id: newNoticeRef.id }, { status: 201 });
   } catch (error) {
     console.error(error);

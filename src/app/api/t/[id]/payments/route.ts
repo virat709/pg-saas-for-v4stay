@@ -31,11 +31,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       method: method || "online",
       reference: reference || null,
       payment_date: new Date(),
-      status: "completed", // Assumes fully paid upon proof submission
+      status: "pending", // Tenant-submitted payments require admin confirmation
       created_at: new Date()
     };
     
     const newPayRef = await paymentsRef.add(newPayment);
+
+    await adminDb.collection("notifications").add({
+      title: "New Payment Submitted",
+      message: `Tenant has submitted a payment of ₹${amount}.`,
+      read: false,
+      recipientRole: "admin",
+      propertyId: propertyId,
+      created_at: new Date(),
+      type: "payment"
+    });
 
     return NextResponse.json({ id: newPayRef.id, ...newPayment }, { status: 201 });
   } catch (error) {

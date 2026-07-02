@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useProperties } from "@/context/PropertyContext";
 import Link from "next/link";
+import { useToast } from "@/context/ToastContext";
 
 type Tenant = { id: string; name: string; rent_amount: number; propertyId?: string };
 type Payment = {
@@ -20,6 +21,7 @@ type Payment = {
 
 export default function PaymentsPage() {
   const { activePropertyId, properties } = useProperties();
+  const { toast } = useToast();
   const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [payments, setPayments] = useState<Payment[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -27,6 +29,7 @@ export default function PaymentsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [upiId, setUpiId] = useState("");
   const [savingUpi, setSavingUpi] = useState(false);
+  const [historyTab, setHistoryTab] = useState<"all" | "online" | "offline">("all");
 
   // Form state
   const [tenantId, setTenantId] = useState("");
@@ -94,6 +97,25 @@ export default function PaymentsPage() {
     fetchData();
   }, [activePropertyId]);
 
+  const handleConfirmPending = async (paymentId: string, propertyId: string) => {
+    try {
+      const res = await fetch("/api/payments", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId, status: "completed", propertyId })
+      });
+      if (res.ok) {
+        toast("Payment confirmed successfully! Receipt is now visible to tenant.", "success");
+        fetchData();
+      } else {
+        toast("Failed to confirm payment.", "error");
+      }
+    } catch (e) {
+      console.error(e);
+      toast("Error confirming payment.", "error");
+    }
+  };
+
   const handleTenantChange = (id: string) => {
     setTenantId(id);
     const tenant = tenants.find(t => t.id === id);
@@ -154,13 +176,13 @@ export default function PaymentsPage() {
         body: JSON.stringify({ upi_id: upiId, propertyId: selectedFormPropertyId })
       });
       if (res.ok) {
-        alert("UPI ID saved successfully!");
+        toast("UPI ID saved successfully!", "success");
       } else {
-        alert("Failed to save UPI ID.");
+        toast("Failed to save UPI ID.", "error");
       }
     } catch (e) {
       console.error(e);
-      alert("Error saving UPI ID.");
+      toast("Error saving UPI ID.", "error");
     } finally {
       setSavingUpi(false);
     }
@@ -372,6 +394,50 @@ export default function PaymentsPage() {
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+
+          {/* ── History Tabs ────────────────────────────────────────── */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
+            {(["all", "online", "offline"] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setHistoryTab(tab)}
+                style={{
+                  padding: '0.85rem 1.5rem',
+                  border: 'none',
+                  borderBottom: historyTab === tab ? '3px solid var(--primary)' : '3px solid transparent',
+                  backgroundColor: 'transparent',
+                  color: historyTab === tab ? 'var(--primary)' : 'var(--text-muted)',
+                  fontWeight: historyTab === tab ? 600 : 400,
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                {tab === 'all' && '📋 All'}
+                {tab === 'online' && '📱 Online'}
+                {tab === 'offline' && '💵 Offline / Cash'}
+                <span style={{
+                  backgroundColor: historyTab === tab ? 'var(--primary)' : 'var(--border-color)',
+                  color: historyTab === tab ? '#fff' : 'var(--text-muted)',
+                  borderRadius: '20px',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  minWidth: '20px',
+                  textAlign: 'center',
+                }}>
+                  {tab === 'all'
+                    ? payments.length
+                    : tab === 'online'
+                    ? payments.filter(p => p.method !== 'Cash').length
+                    : payments.filter(p => p.method === 'Cash').length}
+                </span>
+              </button>
+            ))}
+          </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
               <tr>
@@ -385,13 +451,24 @@ export default function PaymentsPage() {
               </tr>
             </thead>
             <tbody>
-              {payments.map(payment => (
+              {payments
+                .filter(p => {
+                  if (historyTab === 'online') return p.method !== 'Cash';
+                  if (historyTab === 'offline') return p.method === 'Cash';
+                  return true;
+                })
+                .map(payment => (
                 <tr key={payment.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <td style={{ padding: '1rem' }}>
                     {formatDate(payment.payment_date)}
                   </td>
-                  <td style={{ padding: '1rem', fontWeight: 500 }}>
-                    {payment.tenant?.name || "Unknown"}
+                  <td style={{ padding: '1rem' }}>
+                    <div style={{ fontWeight: 500 }}>{payment.tenant?.name || "Unknown"}</div>
+                    {payment.payer_name && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                        Payer: {payment.payer_name}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '1rem', textTransform: 'capitalize' }}>
                     {payment.type}
@@ -428,19 +505,31 @@ export default function PaymentsPage() {
                       borderRadius: '12px', 
                       fontSize: '0.75rem', 
                       fontWeight: 500,
-                      backgroundColor: payment.status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                      color: payment.status === 'paid' ? 'var(--success)' : 'var(--warning)'
+                      backgroundColor: (payment.status === 'paid' || payment.status === 'completed') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                      color: (payment.status === 'paid' || payment.status === 'completed') ? 'var(--success)' : 'var(--warning)'
                     }}>
-                      {payment.status?.toUpperCase() ?? '-'}
+                      {(payment.status === 'paid' || payment.status === 'completed') ? 'PAID' : (payment.status?.toUpperCase() ?? '-')}
                     </span>
                   </td>
                   <td style={{ padding: '1rem' }}>
-                    <button 
-                      onClick={() => setReceiptPayment(payment)}
-                      style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'var(--primary)', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none' }}
-                    >
-                      Receipt
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      {payment.status === 'pending' && (
+                        <button 
+                          onClick={() => handleConfirmPending(payment.id, payment.propertyId)}
+                          style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: '#10b981', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none', fontWeight: 600 }}
+                        >
+                          Confirm
+                        </button>
+                      )}
+                      {(payment.status === 'paid' || payment.status === 'completed') && (
+                        <button 
+                          onClick={() => setReceiptPayment(payment)}
+                          style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'var(--primary)', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none' }}
+                        >
+                          Receipt
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

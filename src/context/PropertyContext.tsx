@@ -36,6 +36,15 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setProperties(data);
+        
+        const saved = localStorage.getItem("activePropertyId");
+        if (data.length === 1) {
+          setActivePropertyIdState(data[0].id);
+        } else if (data.length > 1 && saved && data.some((p: any) => p.id === saved)) {
+          setActivePropertyIdState(saved);
+        } else {
+          setActivePropertyIdState("all");
+        }
       }
     } catch (error) {
       console.error("Failed to fetch properties:", error);
@@ -46,11 +55,6 @@ export function PropertyProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchProperties();
-    // Load initial active property from local storage if available
-    const saved = localStorage.getItem("activePropertyId");
-    if (saved) {
-      setActivePropertyIdState(saved);
-    }
   }, []);
 
   const setActivePropertyId = (id: string) => {

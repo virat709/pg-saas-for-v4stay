@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useProperties } from "@/context/PropertyContext";
+import { useToast } from "@/context/ToastContext";
 
 type Room = { room_number: string };
 type Bed = { id: string; bed_label: string; room: Room };
@@ -19,6 +20,7 @@ type Tenant = {
 
 export default function TenantsPage() {
   const { activePropertyId, properties } = useProperties();
+  const { toast } = useToast();
   const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
@@ -60,6 +62,17 @@ export default function TenantsPage() {
   const [showCsvUpload, setShowCsvUpload] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvUploading, setCsvUploading] = useState(false);
+
+  // Offline payment quick-action state
+  const [offlinePayTenant, setOfflinePayTenant] = useState<Tenant | null>(null);
+  const [offlinePayAmount, setOfflinePayAmount] = useState("");
+  const [offlinePayNote, setOfflinePayNote] = useState("");
+  const [offlinePayDate, setOfflinePayDate] = useState("");
+  const [offlinePayPersonName, setOfflinePayPersonName] = useState("");
+  const [submittingOfflinePay, setSubmittingOfflinePay] = useState(false);
+
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
   const getDaysLeft = (billingDay: number) => {
     if (!billingDay) return 0;
     const today = new Date();
@@ -160,7 +173,7 @@ export default function TenantsPage() {
       const text = await csvFile.text();
       const lines = text.split('\n').filter(line => line.trim() !== '');
       if (lines.length < 2) {
-        alert("CSV file must contain a header and at least one row of data.");
+        toast("CSV file must contain a header and at least one row of data.", "warning");
         setCsvUploading(false);
         return;
       }
@@ -186,17 +199,17 @@ export default function TenantsPage() {
       });
 
       if (res.ok) {
-        alert("Tenants uploaded successfully!");
+        toast("Tenants uploaded successfully!", "success");
         setShowCsvUpload(false);
         setCsvFile(null);
         fetchData();
       } else {
         const data = await res.json();
-        alert(data.message || "Failed to upload tenants.");
+        toast(data.message || "Failed to upload tenants.", "error");
       }
     } catch (e) {
       console.error(e);
-      alert("Error parsing or uploading CSV.");
+      toast("Error parsing or uploading CSV.", "error");
     } finally {
       setCsvUploading(false);
     }
@@ -241,28 +254,21 @@ export default function TenantsPage() {
       }
     } catch (e: any) {
       console.error(e);
-      alert("Error saving tenant: " + (e.message || "Unknown error. Check console for details."));
+      toast("Error saving tenant: " + (e.message || "Unknown error."), "error");
     } finally {
       setUploading(false);
     }
   };
 
   const handleVacate = async (tenantId: string, tenantName: string) => {
-    if (!confirm(
-      `⚠️ Vacate "${tenantName}"?\n\n` +
-      `This will:\n` +
-      `• Free up their bed\n` +
-      `• Permanently DELETE their portal access\n` +
-      `• Their link will stop working immediately\n\n` +
-      `This action cannot be undone. Proceed?`
-    )) return;
     setActionLoading(tenantId);
     try {
       const res = await fetch(`/api/tenants/${tenantId}`, { method: "DELETE" });
       if (res.ok) {
+        toast(`"${tenantName}" has been vacated.`, "info");
         fetchData();
       } else {
-        alert("Failed to vacate tenant.");
+        toast("Failed to vacate tenant.", "error");
       }
     } catch (e) {
       console.error(e);
@@ -287,10 +293,11 @@ export default function TenantsPage() {
         })
       });
       if (res.ok) {
+        toast("Tenant updated successfully.", "success");
         setEditTenantData(null);
         fetchData();
       } else {
-        alert("Failed to update tenant.");
+        toast("Failed to update tenant.", "error");
       }
     } catch (e) {
       console.error(e);
@@ -300,18 +307,14 @@ export default function TenantsPage() {
   };
 
   const handleDeleteTenant = async (tenantId: string, tenantName: string) => {
-    if (!confirm(
-      `🧨 HARD DELETE "${tenantName}"?\n\n` +
-      `This will completely erase the tenant from the database. Use this ONLY for mistakes.\n\n` +
-      `Are you absolutely sure?`
-    )) return;
     setActionLoading(tenantId);
     try {
       const res = await fetch(`/api/tenants/${tenantId}?hard=true`, { method: "DELETE" });
       if (res.ok) {
+        toast(`"${tenantName}" permanently deleted.`, "info");
         fetchData();
       } else {
-        alert("Failed to delete tenant.");
+        toast("Failed to delete tenant.", "error");
       }
     } catch (e) {
       console.error(e);
@@ -339,6 +342,48 @@ export default function TenantsPage() {
     a.download = `tenants-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleOfflinePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!offlinePayTenant || !offlinePayAmount || isNaN(parseFloat(offlinePayAmount))) {
+      toast("Please enter a valid amount.", "warning");
+      return;
+    }
+    setSubmittingOfflinePay(true);
+    try {
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantId: offlinePayTenant.id,
+          type: "rent",
+          amount: offlinePayAmount,
+          amount_paid: offlinePayAmount,
+          method: "Cash",
+          propertyId: (offlinePayTenant as any).propertyId || "",
+          reference: offlinePayNote || "Cash payment recorded by admin",
+          payment_date: offlinePayDate || undefined,
+          payer_name: offlinePayPersonName || undefined,
+        }),
+      });
+      if (res.ok) {
+        toast(`Cash payment of ₹${offlinePayAmount} recorded for ${offlinePayTenant.name}!`, "success");
+        setOfflinePayTenant(null);
+        setOfflinePayAmount("");
+        setOfflinePayNote("");
+        setOfflinePayDate("");
+        setOfflinePayPersonName("");
+        fetchData();
+      } else {
+        toast("Failed to record payment.", "error");
+      }
+    } catch (e) {
+      console.error(e);
+      toast("An error occurred.", "error");
+    } finally {
+      setSubmittingOfflinePay(false);
+    }
   };
 
   const now = new Date();
@@ -525,7 +570,36 @@ export default function TenantsPage() {
           </div>
         </div>
       ) : (
-        <div className="card table-responsive">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* ── Search Bar ── */}
+          <div className="card" style={{ padding: '0.75rem 1.25rem', display: 'flex', gap: '0.75rem', alignItems: 'center', backgroundColor: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+            <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>🔍</span>
+            <input
+              type="text"
+              className="input-field"
+              style={{ flex: 1, border: 'none', padding: '0.25rem 0.5rem', fontSize: '1.05rem', outline: 'none', backgroundColor: 'transparent', boxShadow: 'none' }}
+              placeholder="Search tenants by name or room number..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")} 
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  color: 'var(--text-muted)', 
+                  fontSize: '0.875rem',
+                  fontWeight: 500
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <div className="card table-responsive">
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
               <tr>
@@ -538,7 +612,15 @@ export default function TenantsPage() {
               </tr>
             </thead>
             <tbody>
-              {tenants.map(tenant => (
+              {tenants
+                .filter(t => {
+                  const query = searchQuery.toLowerCase().trim();
+                  if (!query) return true;
+                  const roomMatch = t.bed?.room?.room_number?.toLowerCase().includes(query);
+                  const nameMatch = t.name?.toLowerCase().includes(query);
+                  return roomMatch || nameMatch;
+                })
+                .map(tenant => (
                 <tr key={tenant.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <td style={{ padding: '1rem' }}>
                     <div style={{ fontWeight: 500 }}>{tenant.name}</div>
@@ -609,6 +691,32 @@ export default function TenantsPage() {
                           {copiedTenantId === tenant.id ? "Copied! ✓" : "Copy Link"}
                         </button>
                       )}
+                      {tenant.status === 'active' && (
+                        <button
+                          onClick={() => {
+                            setOfflinePayTenant(tenant);
+                            setOfflinePayAmount(String(tenant.rent_amount || ""));
+                            const d = new Date();
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            setOfflinePayDate(`${d.getFullYear()}-${month}-${day}`);
+                            setOfflinePayPersonName(tenant.name);
+                            setOfflinePayNote("");
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '0.875rem',
+                            backgroundColor: '#10b981',
+                            border: 'none',
+                            color: '#fff',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 500,
+                          }}
+                        >
+                          💵 Cash Pay
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -616,7 +724,79 @@ export default function TenantsPage() {
             </tbody>
           </table>
         </div>
+      </div>
+    )}
+
+      {/* ── Offline Payment Modal ───────────────────────────────────── */}
+      {offlinePayTenant && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '420px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.3rem', color: 'var(--success)' }}>💵 Cash Payment</h2>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{offlinePayTenant.name}</p>
+              </div>
+              <button onClick={() => setOfflinePayTenant(null)} style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', lineHeight: 1, color: 'var(--text-muted)' }}>&times;</button>
+            </div>
+            <form onSubmit={handleOfflinePayment}>
+              <div className="input-group">
+                <label className="input-label">Amount Paid (₹)</label>
+                <input
+                  type="number"
+                  className="input-field"
+                  value={offlinePayAmount}
+                  onChange={e => setOfflinePayAmount(e.target.value)}
+                  min="1"
+                  required
+                  autoFocus
+                  placeholder={`Default: ₹${offlinePayTenant.rent_amount}`}
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Payment Date</label>
+                <input
+                  type="date"
+                  className="input-field"
+                  value={offlinePayDate}
+                  onChange={e => setOfflinePayDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Paid Person Name (Payer)</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={offlinePayPersonName}
+                  onChange={e => setOfflinePayPersonName(e.target.value)}
+                  required
+                  placeholder="e.g. Tenant name or parent name"
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Note (optional)</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={offlinePayNote}
+                  onChange={e => setOfflinePayNote(e.target.value)}
+                  placeholder="e.g. Cash received in person"
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setOfflinePayTenant(null)} style={{ flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, backgroundColor: '#10b981' }} disabled={submittingOfflinePay}>
+                  {submittingOfflinePay ? "Saving..." : "✓ Record Payment"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
+
+
 
       {selectedTenant && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>

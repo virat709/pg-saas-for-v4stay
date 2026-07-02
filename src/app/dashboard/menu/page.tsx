@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useProperties } from "@/context/PropertyContext";
+import { useToast } from "@/context/ToastContext";
 
 const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 const MEALS = ["breakfast", "lunch", "dinner"] as const;
@@ -31,6 +32,7 @@ function emptyMenu(): WeekMenu {
 
 export default function MenuPage() {
   const { activePropertyId, properties } = useProperties();
+  const { toast } = useToast();
   const [selectedMenuPropertyId, setSelectedMenuPropertyId] = useState("");
   const [menu, setMenu] = useState<WeekMenu>(emptyMenu());
   const [loading, setLoading] = useState(true);
@@ -84,13 +86,14 @@ export default function MenuPage() {
       });
       if (res.ok) {
         setSaved(true);
+        toast("Menu saved successfully!", "success");
         setTimeout(() => setSaved(false), 3000);
       } else {
-        alert("Failed to save menu.");
+        toast("Failed to save menu.", "error");
       }
     } catch (e) {
       console.error(e);
-      alert("Error saving menu.");
+      toast("Error saving menu.", "error");
     } finally {
       setSaving(false);
     }
