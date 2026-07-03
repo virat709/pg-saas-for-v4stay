@@ -17,6 +17,9 @@ type Payment = {
   reference?: string;
   payment_date: any;
   tenant: Tenant | null;
+  payer_name?: string;
+  propertyId?: string;
+  propertyName?: string;
 };
 
 export default function PaymentsPage() {
@@ -515,7 +518,7 @@ export default function PaymentsPage() {
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       {payment.status === 'pending' && (
                         <button 
-                          onClick={() => handleConfirmPending(payment.id, payment.propertyId)}
+                          onClick={() => handleConfirmPending(payment.id, payment.propertyId || "")}
                           style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: '#10b981', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none', fontWeight: 600 }}
                         >
                           Confirm
