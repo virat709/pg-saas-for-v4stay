@@ -7,10 +7,13 @@ import Logo from "@/components/Logo";
 import { HeroEntrance } from "@/components/animations/HeroEntrance";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { useScrollyNav } from "@/hooks/useScrollyNav";
+import CrmSheet from "@/components/CrmSheet";
 
 export default function Home() {
   const { isScrolled } = useScrollyNav(40);
   const [propertyCount, setPropertyCount] = useState(1);
+  const [crmOpen, setCrmOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div
@@ -61,7 +64,9 @@ export default function Home() {
           }}
         >
           <Logo size={30} variant="light" showTagline={false} />
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          
+          {/* Desktop Nav Items (Hidden on Mobile) */}
+          <div className="desktop-nav" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
             <a
               href="#features"
               style={{
@@ -104,6 +109,31 @@ export default function Home() {
             >
               Contact
             </a>
+            <button
+              onClick={() => setCrmOpen(true)}
+              title="Open CRM Sheet"
+              aria-label="Open CRM Sheet"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "0.6rem",
+                color: "#e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "8px",
+                transition: "background 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.07)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              <span style={{ fontSize: "1.1rem" }}>📌</span>
+            </button>
             <Link
               href="/login"
               style={{
@@ -134,6 +164,44 @@ export default function Home() {
             >
               Register PG
             </Link>
+          </div>
+
+          {/* Mobile Nav Button trigger (Visible on Mobile only) */}
+          <div className="mobile-nav-btn" style={{ display: "none", alignItems: "center", gap: "0.5rem" }}>
+            <button
+              onClick={() => setCrmOpen(true)}
+              title="Open CRM Sheet"
+              aria-label="Open CRM Sheet"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "0.5rem",
+                color: "#e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span style={{ fontSize: "1.1rem" }}>📌</span>
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open navigation menu"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "0.5rem",
+                color: "#e2e8f0",
+                fontSize: "1.4rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ☰
+            </button>
           </div>
         </nav>
       </HeroEntrance>
@@ -775,6 +843,85 @@ export default function Home() {
           </div>
         </footer>
       </AnimatedSection>
+
+      {/* CRM Sheet sliding modal (only accessible to master admin) */}
+      <CrmSheet isOpen={crmOpen} onClose={() => setCrmOpen(false)} />
+
+      {/* Mobile Drawer Overlay */}
+      {mobileMenuOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.98)",
+            backdropFilter: "blur(12px)",
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            animation: "fadeIn 0.25s ease-out",
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem 5%", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+            <Logo size={30} variant="light" showTagline={false} />
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close menu"
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: "1.75rem",
+                cursor: "pointer",
+                color: "#e2e8f0",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          
+          {/* Links list */}
+          <div style={{ display: "flex", flexDirection: "column", padding: "1rem 0" }}>
+            <a href="#features" className="mobile-drawer-link" onClick={() => setMobileMenuOpen(false)}>Features</a>
+            <a href="#pricing" className="mobile-drawer-link" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+            <a href="#contact" className="mobile-drawer-link" onClick={() => setMobileMenuOpen(false)}>Contact</a>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "2rem 1.5rem" }}>
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  padding: "0.8rem",
+                  borderRadius: "8px",
+                  textDecoration: "none",
+                  color: "#e2e8f0",
+                  fontWeight: 500,
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  textAlign: "center",
+                }}
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{
+                  padding: "0.8rem",
+                  borderRadius: "8px",
+                  textDecoration: "none",
+                  color: "#0f172a",
+                  fontWeight: 600,
+                  backgroundColor: "#00c49f",
+                  textAlign: "center",
+                  boxShadow: "0 0 15px rgba(0,196,159,0.4)",
+                }}
+              >
+                Register PG
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

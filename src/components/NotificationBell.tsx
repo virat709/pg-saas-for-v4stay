@@ -19,37 +19,75 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-function playDing() {
+// ── Shared AudioContext singleton for tenant-side notification sound ─────────
+let tenantAudioCtx: AudioContext | null = null;
+
+function getTenantAudioContext(): AudioContext | null {
   try {
+    if (tenantAudioCtx && tenantAudioCtx.state !== "closed") return tenantAudioCtx;
     const Ctx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
+    if (!Ctx) return null;
+    tenantAudioCtx = new Ctx();
+    return tenantAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
+async function playDing() {
+  try {
+    const ctx = getTenantAudioContext();
+    if (!ctx) return;
+
+    // Resume the context if suspended (browser autoplay policy)
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = "sine";
-    osc1.frequency.setValueAtTime(880, ctx.currentTime);
-    gain1.gain.setValueAtTime(0, ctx.currentTime);
-    gain1.gain.linearRampToValueAtTime(0.45, ctx.currentTime + 0.02);
-    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0, now);
+    gain1.gain.linearRampToValueAtTime(0.45, now + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
     osc1.connect(gain1);
     gain1.connect(ctx.destination);
-    osc1.start(ctx.currentTime);
-    osc1.stop(ctx.currentTime + 0.5);
+    osc1.start(now);
+    osc1.stop(now + 0.5);
 
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = "sine";
-    osc2.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
-    gain2.gain.setValueAtTime(0, ctx.currentTime + 0.15);
-    gain2.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.17);
-    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+    osc2.frequency.setValueAtTime(660, now + 0.15);
+    gain2.gain.setValueAtTime(0, now + 0.15);
+    gain2.gain.linearRampToValueAtTime(0.35, now + 0.17);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
     osc2.connect(gain2);
     gain2.connect(ctx.destination);
-    osc2.start(ctx.currentTime + 0.15);
-    osc2.stop(ctx.currentTime + 0.65);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.65);
   } catch (e) {
     console.warn("Audio play failed", e);
   }
+}
+
+// Eagerly unlock AudioContext on first user interaction
+if (typeof window !== "undefined") {
+  const unlockTenant = () => {
+    const ctx = getTenantAudioContext();
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+    window.removeEventListener("click", unlockTenant);
+    window.removeEventListener("keydown", unlockTenant);
+    window.removeEventListener("touchstart", unlockTenant);
+  };
+  window.addEventListener("click", unlockTenant, { once: true });
+  window.addEventListener("keydown", unlockTenant, { once: true });
+  window.addEventListener("touchstart", unlockTenant, { once: true });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -318,23 +356,33 @@ function TenantBell({ tenantId }: { tenantId: string }) {
       limit(20)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetched = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<AppNotification, "id">),
-      }));
-      const newUnread = fetched.filter((n) => !n.read).length;
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetched = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<AppNotification, "id">),
+        }));
+        const newUnread = fetched.filter((n) => !n.read).length;
 
-      if (!isInitialLoad.current && newUnread > prevUnread.current) {
-        playDing();
+        if (!isInitialLoad.current && newUnread > prevUnread.current) {
+          playDing();
+        }
+
+        isInitialLoad.current = false;
+        prevUnread.current = newUnread;
+
+        setNotifications(fetched);
+        setUnreadCount(newUnread);
+      },
+      (error) => {
+        console.error(
+          "[TenantNotifications] Firestore onSnapshot error:",
+          error.message,
+          "\n\nIf this is a 'requires an index' error, follow the link in the error message to create the required composite index in the Firebase Console."
+        );
       }
-
-      isInitialLoad.current = false;
-      prevUnread.current = newUnread;
-
-      setNotifications(fetched);
-      setUnreadCount(newUnread);
-    });
+    );
 
     return () => unsubscribe();
   }, [tenantId]);

@@ -82,7 +82,7 @@ export default function RegisterPage() {
     <div className="flex items-center justify-center w-full" style={{ minHeight: '100vh', padding: '1rem' }}>
       <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%' }}>
         <div className="text-center mb-8" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-          <Logo size={42} variant="dark" showTagline={true} />
+          <Logo size={42} variant="auto" showTagline={true} />
           <h1 style={{ fontSize: '1.25rem', fontWeight: 600, marginTop: '0.5rem', color: 'var(--text-main)' }}>Register a PGmate Account</h1>
         </div>
 

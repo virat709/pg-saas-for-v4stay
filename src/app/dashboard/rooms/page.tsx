@@ -165,7 +165,7 @@ export default function RoomsPage() {
                 <label className="input-label">Select Property</label>
                 <select className="input-field" value={selectedFormPropertyId} onChange={e => setSelectedFormPropertyId(e.target.value)} required>
                   {properties.map(p => (
-                    <option key={p.id} value={p.id} style={{ color: '#000' }}>{p.name}</option>
+                    <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
               </div>
@@ -180,11 +180,11 @@ export default function RoomsPage() {
                 <input type="text" className="input-field" value={customFloor} onChange={e => setCustomFloor(e.target.value)} required placeholder="e.g. 4th Floor" autoFocus />
               ) : (
                 <select className="input-field" value={floor} onChange={e => setFloor(e.target.value)}>
-                  <option value="Ground Floor" style={{ color: '#000' }}>Ground Floor</option>
-                  <option value="1st Floor" style={{ color: '#000' }}>1st Floor</option>
-                  <option value="2nd Floor" style={{ color: '#000' }}>2nd Floor</option>
-                  <option value="3rd Floor" style={{ color: '#000' }}>3rd Floor</option>
-                  <option value="custom" style={{ color: '#000' }}>+ Custom Floor...</option>
+                  <option value="Ground Floor">Ground Floor</option>
+                  <option value="1st Floor">1st Floor</option>
+                  <option value="2nd Floor">2nd Floor</option>
+                  <option value="3rd Floor">3rd Floor</option>
+                  <option value="custom">+ Custom Floor...</option>
                 </select>
               )}
             </div>
@@ -194,11 +194,11 @@ export default function RoomsPage() {
                 <input type="number" className="input-field" value={customSharing} onChange={e => setCustomSharing(e.target.value)} required min="1" placeholder="e.g. 5" autoFocus />
               ) : (
                 <select className="input-field" value={sharingType} onChange={e => setSharingType(e.target.value)}>
-                  <option value="1" style={{ color: '#000' }}>Single (1 Bed)</option>
-                  <option value="2" style={{ color: '#000' }}>Double (2 Beds)</option>
-                  <option value="3" style={{ color: '#000' }}>Triple (3 Beds)</option>
-                  <option value="4" style={{ color: '#000' }}>Four Sharing (4 Beds)</option>
-                  <option value="custom" style={{ color: '#000' }}>+ Custom Sharing...</option>
+                  <option value="1">Single (1 Bed)</option>
+                  <option value="2">Double (2 Beds)</option>
+                  <option value="3">Triple (3 Beds)</option>
+                  <option value="4">Four Sharing (4 Beds)</option>
+                  <option value="custom">+ Custom Sharing...</option>
                 </select>
               )}
             </div>
@@ -226,11 +226,11 @@ export default function RoomsPage() {
                 <input type="text" className="input-field" value={editCustomFloor} onChange={e => setEditCustomFloor(e.target.value)} required placeholder="e.g. 4th Floor" autoFocus />
               ) : (
                 <select className="input-field" value={editFloor} onChange={e => setEditFloor(e.target.value)}>
-                  <option value="Ground Floor" style={{ color: '#000' }}>Ground Floor</option>
-                  <option value="1st Floor" style={{ color: '#000' }}>1st Floor</option>
-                  <option value="2nd Floor" style={{ color: '#000' }}>2nd Floor</option>
-                  <option value="3rd Floor" style={{ color: '#000' }}>3rd Floor</option>
-                  <option value="custom" style={{ color: '#000' }}>+ Custom Floor...</option>
+                  <option value="Ground Floor">Ground Floor</option>
+                  <option value="1st Floor">1st Floor</option>
+                  <option value="2nd Floor">2nd Floor</option>
+                  <option value="3rd Floor">3rd Floor</option>
+                  <option value="custom">+ Custom Floor...</option>
                 </select>
               )}
             </div>

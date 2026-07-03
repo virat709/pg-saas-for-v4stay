@@ -40,38 +40,83 @@ const NotificationContext = createContext<NotificationContextValue>({
   markAllAsRead: async () => {},
 });
 
-function playDing() {
+// ── Shared AudioContext singleton — survives across ding calls ───────────────
+let sharedAudioCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
   try {
+    if (sharedAudioCtx && sharedAudioCtx.state !== "closed") return sharedAudioCtx;
     const Ctx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
+    if (!Ctx) return null;
+    sharedAudioCtx = new Ctx();
+    return sharedAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
+async function playDing() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    // Resume the context if it is suspended (browser autoplay policy).
+    // AudioContext starts in "suspended" state until a user gesture occurs.
+    // Since this runs in response to a Firestore snapshot change (not a click),
+    // we try to resume — it will succeed if the user has interacted with the
+    // page at least once (clicked, scrolled, typed, etc.).
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+    }
+
+    const now = ctx.currentTime;
 
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = "sine";
-    osc1.frequency.setValueAtTime(880, ctx.currentTime);
-    gain1.gain.setValueAtTime(0, ctx.currentTime);
-    gain1.gain.linearRampToValueAtTime(0.45, ctx.currentTime + 0.02);
-    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0, now);
+    gain1.gain.linearRampToValueAtTime(0.45, now + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
     osc1.connect(gain1);
     gain1.connect(ctx.destination);
-    osc1.start(ctx.currentTime);
-    osc1.stop(ctx.currentTime + 0.5);
+    osc1.start(now);
+    osc1.stop(now + 0.5);
 
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = "sine";
-    osc2.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
-    gain2.gain.setValueAtTime(0, ctx.currentTime + 0.15);
-    gain2.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.17);
-    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+    osc2.frequency.setValueAtTime(660, now + 0.15);
+    gain2.gain.setValueAtTime(0, now + 0.15);
+    gain2.gain.linearRampToValueAtTime(0.35, now + 0.17);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
     osc2.connect(gain2);
     gain2.connect(ctx.destination);
-    osc2.start(ctx.currentTime + 0.15);
-    osc2.stop(ctx.currentTime + 0.65);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.65);
   } catch (e) {
     console.warn("Audio play failed", e);
   }
+}
+
+// Eagerly unlock AudioContext on first user interaction so that future
+// notification dings can play without requiring a click at that exact moment.
+if (typeof window !== "undefined") {
+  const unlock = () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+    // Remove all listeners after first unlock
+    window.removeEventListener("click", unlock);
+    window.removeEventListener("keydown", unlock);
+    window.removeEventListener("touchstart", unlock);
+    window.removeEventListener("scroll", unlock, true);
+  };
+  window.addEventListener("click", unlock, { once: true });
+  window.addEventListener("keydown", unlock, { once: true });
+  window.addEventListener("touchstart", unlock, { once: true });
+  window.addEventListener("scroll", unlock, { once: true, capture: true });
 }
 
 interface AdminNotificationProviderProps {
@@ -93,32 +138,43 @@ export function AdminNotificationProvider({ children }: AdminNotificationProvide
       limit(30)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetched = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<AppNotification, "id">),
-      }));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetched = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<AppNotification, "id">),
+        }));
 
-      const newUnread = fetched.filter((n) => !n.read).length;
+        const newUnread = fetched.filter((n) => !n.read).length;
 
-      if (!isInitialLoad.current && newUnread > prevUnread.current) {
-        playDing();
+        if (!isInitialLoad.current && newUnread > prevUnread.current) {
+          playDing();
+        }
+
+        // Count unread by type
+        const byType: Record<string, number> = {};
+        fetched.filter(n => !n.read).forEach(n => {
+          const t = n.type || "other";
+          byType[t] = (byType[t] || 0) + 1;
+        });
+
+        isInitialLoad.current = false;
+        prevUnread.current = newUnread;
+
+        setNotifications(fetched);
+        setUnreadCount(newUnread);
+        setUnreadByType(byType);
+      },
+      (error) => {
+        // Surface Firestore query errors (e.g. missing composite index) in the console
+        console.error(
+          "[AdminNotifications] Firestore onSnapshot error:",
+          error.message,
+          "\n\nIf this is a 'requires an index' error, follow the link in the error message to create the required composite index in the Firebase Console."
+        );
       }
-
-      // Count unread by type
-      const byType: Record<string, number> = {};
-      fetched.filter(n => !n.read).forEach(n => {
-        const t = n.type || "other";
-        byType[t] = (byType[t] || 0) + 1;
-      });
-
-      isInitialLoad.current = false;
-      prevUnread.current = newUnread;
-
-      setNotifications(fetched);
-      setUnreadCount(newUnread);
-      setUnreadByType(byType);
-    });
+    );
 
     return () => unsubscribe();
   }, []);

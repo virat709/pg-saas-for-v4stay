@@ -40,7 +40,7 @@ export default function RevenueChart({ data }: RevenueChartProps) {
                   y1={y}
                   x2={Math.max(totalWidth, 300)}
                   y2={y}
-                  stroke="rgba(255,255,255,0.05)"
+                  stroke="var(--border-color)"
                   strokeWidth={1}
                 />
                 <text

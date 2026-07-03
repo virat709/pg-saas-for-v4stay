@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
     <div className="flex items-center justify-center w-full" style={{ minHeight: "100vh", padding: "1rem" }}>
       <div className="card animate-fade-in" style={{ maxWidth: "400px", width: "100%" }}>
         <div className="text-center mb-8" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-          <Logo size={42} variant="dark" showTagline={false} />
+          <Logo size={42} variant="auto" showTagline={false} />
           <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>Forgot Password?</h1>
           <p style={{ margin: 0, fontSize: "0.9rem" }}>
             Enter your email and we'll send you a link to reset your password.

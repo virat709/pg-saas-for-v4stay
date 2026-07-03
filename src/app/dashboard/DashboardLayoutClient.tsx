@@ -11,6 +11,7 @@ import Logo from "@/components/Logo";
 import { PropertyProvider, useProperties } from "@/context/PropertyContext";
 import NotificationBell from "@/components/NotificationBell";
 import { AdminNotificationProvider, useAdminNotifications } from "@/context/AdminNotificationContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function DashboardLayoutClient({
   children,
@@ -222,9 +223,12 @@ function DashboardLayoutContent({
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <Logo size={20} variant="dark" showTagline={false} />
+              <Logo size={20} variant="auto" showTagline={false} />
             </div>
-            <NotificationBell role="admin" />
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <ThemeToggle />
+              <NotificationBell role="admin" />
+            </div>
           </div>
         </div>
 
@@ -398,7 +402,8 @@ function DashboardLayoutContent({
           <span style={{ fontWeight: 700, color: "var(--primary)", fontSize: "0.95rem" }}>
             {currentDisplayName}
           </span>
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <ThemeToggle />
             <NotificationBell role="admin" />
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
@@ -409,6 +414,7 @@ function DashboardLayoutContent({
                 fontWeight: 500,
                 cursor: "pointer",
                 fontSize: "0.85rem",
+                marginLeft: "0.5rem",
               }}
             >
               Sign Out

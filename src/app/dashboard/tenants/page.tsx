@@ -171,23 +171,22 @@ export default function TenantsPage() {
     setCsvUploading(true);
     try {
       const text = await csvFile.text();
-      const lines = text.split('\n').filter(line => line.trim() !== '');
+      const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
       if (lines.length < 2) {
         toast("CSV file must contain a header and at least one row of data.", "warning");
         setCsvUploading(false);
         return;
       }
       
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      // Normalize header names by removing spaces, underscores, and special characters (e.g. "Room Number" -> "roomnumber")
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9]/g, ""));
       const tenantsData = [];
       
       for (let i = 1; i < lines.length; i++) {
-        // Handle basic CSV splitting, ignoring commas inside quotes if possible
-        // A simple split is used here for simplicity as requested
         const values = lines[i].split(',').map(v => v.trim());
         const tenantObj: any = {};
         headers.forEach((header, index) => {
-          tenantObj[header] = values[index];
+          tenantObj[header] = values[index] !== undefined ? values[index] : "";
         });
         tenantsData.push(tenantObj);
       }

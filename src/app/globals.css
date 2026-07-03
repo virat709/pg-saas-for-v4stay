@@ -1,5 +1,6 @@
-:root {
-
+:root,
+[data-theme="light"] {
+  color-scheme: light;
   --primary: #1e6091; /* Royal Blue */
   --primary-hover: #154c75;
   --bg-color: #f8fafc; /* Light gray background */
@@ -19,14 +20,13 @@
   --transition: all 0.2s ease-in-out;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-color: #081225; /* Dark Navy Background */
-    --surface-color: #0e1e38; /* Deep Navy Cards */
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --border-color: #1e2d4a;
-  }
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-color: #081225; /* Dark Navy Background */
+  --surface-color: #0e1e38; /* Deep Navy Cards */
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: #1e2d4a;
 }
 
 * {
@@ -193,4 +193,37 @@ a[href*="spline.design"] {
 @keyframes dot-pulse {
   0%, 100% { box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
   50%       { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+
+/* Landing Page Responsive Navigation Menu */
+@media (max-width: 768px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  .mobile-nav-btn {
+    display: flex !important;
+  }
+}
+@media (min-width: 769px) {
+  .desktop-nav {
+    display: flex !important;
+  }
+  .mobile-nav-btn {
+    display: none !important;
+  }
+}
+
+.mobile-drawer-link {
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s;
+}
+
+.mobile-drawer-link:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: #00c49f;
 }

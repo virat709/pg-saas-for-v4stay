@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import NotificationBell from "@/components/NotificationBell";
 import { useToast } from "@/context/ToastContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function TenantPortal() {
   const params = useParams();
@@ -190,7 +191,8 @@ export default function TenantPortal() {
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem', paddingBottom: '4rem' }}>
       <header style={{ textAlign: 'center', marginBottom: '2rem', paddingTop: '2rem', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+          <ThemeToggle />
           <NotificationBell role="tenant" tenantId={tenantId} />
         </div>
         <h1 style={{ fontSize: '1.5rem', color: 'var(--primary)' }}>{tenant.property?.name || "PG Dashboard"}</h1>
@@ -345,11 +347,11 @@ export default function TenantPortal() {
           <div className="input-group">
             <label className="input-label">Category</label>
             <select className="input-field" value={category} onChange={e => setCategory(e.target.value)} required>
-              <option value="wifi" style={{ color: '#000' }}>WiFi / Internet</option>
-              <option value="plumbing" style={{ color: '#000' }}>Plumbing / Water</option>
-              <option value="electrical" style={{ color: '#000' }}>Electrical / Appliances</option>
-              <option value="cleaning" style={{ color: '#000' }}>Housekeeping / Cleaning</option>
-              <option value="other" style={{ color: '#000' }}>Other</option>
+              <option value="wifi">WiFi / Internet</option>
+              <option value="plumbing">Plumbing / Water</option>
+              <option value="electrical">Electrical / Appliances</option>
+              <option value="cleaning">Housekeeping / Cleaning</option>
+              <option value="other">Other</option>
             </select>
           </div>
           <div className="input-group">
