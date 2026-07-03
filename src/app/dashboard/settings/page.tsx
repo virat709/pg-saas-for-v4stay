@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import {
   updatePassword,
@@ -11,8 +12,10 @@ import {
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
   const [ownerData, setOwnerData] = useState<any>(null);
+  const [propertyCount, setPropertyCount] = useState(0);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -24,11 +27,14 @@ export default function SettingsPage() {
   const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((data) => {
-        setOwnerData(data);
-        setProfile({ name: data.name || "", email: data.email || "", phone: data.phone || "" });
+    Promise.all([
+      fetch("/api/settings").then((r) => r.json()),
+      fetch("/api/properties").then((r) => r.json()),
+    ])
+      .then(([settingsData, propertiesData]) => {
+        setOwnerData(settingsData);
+        setProfile({ name: settingsData.name || "", email: settingsData.email || "", phone: settingsData.phone || "" });
+        setPropertyCount(Array.isArray(propertiesData) ? propertiesData.length : 0);
       })
       .catch(console.error)
       .finally(() => setProfileLoading(false));
@@ -249,6 +255,15 @@ export default function SettingsPage() {
               <Link href="/onboarding/subscription" className="btn-primary" style={{ textDecoration: "none", backgroundColor: "var(--success)", color: "#0f172a", fontSize: "0.85rem", padding: "0.5rem 1rem" }}>
                 Activate Subscription
               </Link>
+            )}
+            {ownerData?.subscription_status === "active" && propertyCount < (ownerData?.property_limit || 1) && (
+              <button
+                onClick={() => router.push("/onboarding/property")}
+                className="btn-primary"
+                style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "var(--primary)", border: "none", cursor: "pointer" }}
+              >
+                + Add Another PG ({propertyCount}/{ownerData?.property_limit || 1} used)
+              </button>
             )}
           </div>
         </div>

@@ -26,6 +26,9 @@ export async function GET() {
       subscription_status: data?.subscription_status || "inactive",
       subscription_plan: data?.subscription_plan || null,
       subscription_start: data?.subscription_start || null,
+      plan_tier: data?.plan_tier || null,
+      property_limit: data?.property_limit || 1,
+      subscription_activated_at: data?.subscription_activated_at || null,
     });
   } catch (error) {
     console.error("[Settings GET]", error);

@@ -13,7 +13,7 @@ import { getToken } from "next-auth/jwt";
  * NOTE: Firestore Admin SDK is NOT available in the Edge runtime.
  * We store a lightweight `subscriptionStatus` claim inside the JWT session token
  * (written when subscription is activated). This is the fastest and correct approach
- * for Edge middleware/proxy — no cold-start latency, no Firestore in the edge.
+ * for Edge proxy — no cold-start latency, no Firestore in the edge.
  *
  * The token claim is refreshed by Next-Auth on every session update (see authOptions).
  */
