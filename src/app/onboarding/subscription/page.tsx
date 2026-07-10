@@ -8,20 +8,27 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{name: string, price: number} | null>(null);
   const [propertyCount, setPropertyCount] = useState(1);
+  const [currentLimit, setCurrentLimit] = useState(0);
 
   // Check if owner already has an active subscription on mount
   useEffect(() => {
-    // If we're upgrading, don't auto-redirect to dashboard
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("upgrade") === "true") return;
-
-    fetch("/api/payments/status")
+    // Fetch settings to check current limit and active status
+    fetch("/api/settings")
       .then((res) => {
         if (res.ok) return res.json();
         throw new Error("Failed to check status");
       })
       .then((data) => {
-        if (data.activated === true) {
+        const limit = data.property_limit || 1;
+        setCurrentLimit(limit);
+        
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("upgrade") === "true") {
+          setPropertyCount(limit + 1);
+          return;
+        }
+
+        if (data.subscription_status === "active") {
           // If already active, trigger session refresh to update Next-Auth cookie, then redirect to dashboard
           fetch("/api/auth/session", {
             method: "POST",
@@ -120,8 +127,9 @@ export default function SubscriptionPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
               <button 
                 className="btn-secondary" 
-                onClick={() => setPropertyCount(prev => Math.max(1, prev - 1))}
+                onClick={() => setPropertyCount(prev => Math.max(currentLimit > 0 ? currentLimit + 1 : 1, prev - 1))}
                 style={{ padding: '0.25rem', fontSize: '1.25rem', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+                disabled={currentLimit > 0 && propertyCount <= currentLimit + 1}
               >
                 -
               </button>
@@ -134,8 +142,12 @@ export default function SubscriptionPage() {
                 +
               </button>
             </div>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0 }}>
-              {propertyCount === 1 ? "Standard base plan configuration." : `Includes 1 Base PG + ${propertyCount - 1} Additional PG Addon(s)`}
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0 }}>
+              {currentLimit > 0 
+                ? `Upgrading from your current limit of ${currentLimit} PG(s).` 
+                : propertyCount === 1 
+                ? "Standard base plan configuration." 
+                : `Includes 1 Base PG + ${propertyCount - 1} Additional PG Addon(s)`}
             </p>
           </div>
         </div>
