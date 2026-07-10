@@ -26,13 +26,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     if (!targetPropertyId) return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
 
+    // Sanitize inputs
+    const name = String(body.name || "").trim().slice(0, 100);
+    const phone = String(body.phone || "").trim().replace(/[^\d+\-\s]/g, "").slice(0, 15);
+    const rent_amount = Number(body.rent_amount);
+    const billing_cycle_day = Number(body.billing_cycle_day);
+
+    if (!name) return NextResponse.json({ message: "Name is required" }, { status: 400 });
+    if (isNaN(rent_amount) || rent_amount <= 0) return NextResponse.json({ message: "Invalid rent amount" }, { status: 400 });
+    if (isNaN(billing_cycle_day) || billing_cycle_day < 1 || billing_cycle_day > 28) return NextResponse.json({ message: "Billing day must be 1–28" }, { status: 400 });
+
     const tenantRef = adminDb.collection("properties").doc(targetPropertyId).collection("tenants").doc(tenantId);
-    
+
     await tenantRef.update({
-      name: body.name,
-      phone: body.phone,
-      rent_amount: Number(body.rent_amount),
-      billing_cycle_day: Number(body.billing_cycle_day),
+      name,
+      phone,
+      rent_amount,
+      billing_cycle_day,
       updated_at: new Date()
     });
 

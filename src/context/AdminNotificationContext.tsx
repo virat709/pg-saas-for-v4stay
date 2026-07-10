@@ -105,6 +105,8 @@ export function AdminNotificationProvider({ children }: { children: React.ReactN
   const isInitialLoad = useRef(true);
 
   const fetchNotifications = useCallback(async () => {
+    // Don't poll when tab is hidden — saves server resources
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
     try {
       const res = await fetch("/api/notifications", { cache: "no-store" });
       if (!res.ok) return;

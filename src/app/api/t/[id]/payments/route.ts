@@ -21,8 +21,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const tenantStatus = tenantDoc.data()?.status;
     if (tenantStatus === "vacated") return NextResponse.json({ message: "Account deactivated" }, { status: 403 });
 
+    const tenantName = tenantDoc.data()?.name || "A tenant";
+
     const paymentsRef = adminDb.collection("properties").doc(propertyId).collection("payments");
-    
+
     const newPayment = {
       tenantId,
       type: "rent",
@@ -31,18 +33,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       method: method || "online",
       reference: reference || null,
       payment_date: new Date(),
-      status: "pending", // Tenant-submitted payments require admin confirmation
+      status: "pending",
       created_at: new Date()
     };
-    
+
     const newPayRef = await paymentsRef.add(newPayment);
 
     await adminDb.collection("notifications").add({
       title: "New Payment Submitted",
-      message: `Tenant has submitted a payment of ₹${amount}.`,
+      message: `${tenantName} submitted a payment of ₹${amount}.`,
       read: false,
       recipientRole: "admin",
       propertyId: propertyId,
+      tenantId,
       created_at: new Date(),
       type: "payment"
     });

@@ -80,30 +80,38 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { tenantId, type, amount, amount_paid, method, propertyId, payment_date, reference, payer_name } = body;
 
-    let targetPropertyId = propertyId;
-    if (!targetPropertyId) {
-      targetPropertyId = pSnap.docs[0].id;
-    } else if (!propertyIds.includes(targetPropertyId)) {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    // Require propertyId — don't silently fall back to first property
+    if (!propertyId) return NextResponse.json({ message: "propertyId is required" }, { status: 400 });
+    if (!propertyIds.includes(propertyId)) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+
+    // Validate amounts
+    const parsedAmount = parseFloat(amount);
+    const parsedAmountPaid = parseFloat(amount_paid);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return NextResponse.json({ message: "Invalid amount" }, { status: 400 });
+    if (isNaN(parsedAmountPaid) || parsedAmountPaid < 0) return NextResponse.json({ message: "Invalid amount_paid" }, { status: 400 });
+
+    // Verify tenantId belongs to this property
+    if (tenantId) {
+      const tDoc = await adminDb.collection("properties").doc(propertyId).collection("tenants").doc(tenantId).get();
+      if (!tDoc.exists) return NextResponse.json({ message: "Tenant not found in this property" }, { status: 404 });
     }
 
-    const paymentsRef = adminDb.collection("properties").doc(targetPropertyId).collection("payments");
-    
+    const paymentsRef = adminDb.collection("properties").doc(propertyId).collection("payments");
+
     const newPayment = {
-      tenantId,
-      type,
-      amount: parseFloat(amount),
-      amount_paid: parseFloat(amount_paid),
-      method,
+      tenantId: tenantId || null,
+      type: type || "rent",
+      amount: parsedAmount,
+      amount_paid: parsedAmountPaid,
+      method: method || "cash",
       payment_date: payment_date ? new Date(payment_date) : new Date(),
-      status: parseFloat(amount_paid) >= parseFloat(amount) ? "paid" : "partial",
+      status: parsedAmountPaid >= parsedAmount ? "paid" : "partial",
       created_at: new Date(),
       reference: reference || "",
       payer_name: payer_name || ""
     };
-    
-    const newPayRef = await paymentsRef.add(newPayment);
 
+    const newPayRef = await paymentsRef.add(newPayment);
     return NextResponse.json({ id: newPayRef.id, ...newPayment }, { status: 201 });
   } catch (error) {
     console.error(error);
@@ -123,26 +131,21 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { paymentId, status, propertyId } = body;
 
-    let targetPropertyId = propertyId;
-    if (!targetPropertyId) {
-      targetPropertyId = pSnap.docs[0].id;
-    } else if (!propertyIds.includes(targetPropertyId)) {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    }
+    if (!paymentId || !status) return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
 
-    if (!paymentId || !status) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
-    }
+    // Whitelist allowed statuses
+    const ALLOWED = ["paid", "partial", "pending", "failed"];
+    if (!ALLOWED.includes(status)) return NextResponse.json({ message: `Invalid status. Allowed: ${ALLOWED.join(", ")}` }, { status: 400 });
+
+    if (!propertyId) return NextResponse.json({ message: "propertyId is required" }, { status: 400 });
+    if (!propertyIds.includes(propertyId)) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
 
     await adminDb
       .collection("properties")
-      .doc(targetPropertyId)
+      .doc(propertyId)
       .collection("payments")
       .doc(paymentId)
-      .update({
-        status,
-        updated_at: new Date()
-      });
+      .update({ status, updated_at: new Date() });
 
     return NextResponse.json({ message: "Payment updated successfully" });
   } catch (error) {
