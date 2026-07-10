@@ -24,7 +24,7 @@ export default function TenantsPage() {
   const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
-  const [availableBeds, setAvailableBeds] = useState<{id: string, label: string, propertyId?: string}[]>([]);
+  const [availableBeds, setAvailableBeds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
@@ -47,6 +47,9 @@ export default function TenantsPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [bedId, setBedId] = useState("");
+  const [formPropertyId, setFormPropertyId] = useState("");
+  const [formFloor, setFormFloor] = useState("");
+  const [formRoomNumber, setFormRoomNumber] = useState("");
   const [dateJoined, setDateJoined] = useState("");
   const [rentAmount, setRentAmount] = useState("");
   const [billingCycleDay, setBillingCycleDay] = useState("5");
@@ -85,13 +88,13 @@ export default function TenantsPage() {
     }
   };
 
-  const getPaymentStatus = (tenantId: string, billingDay: number) => {
+  const getPaymentStatus = (tenantId: string, billingDay: number, rentAmount: number) => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     
-    // Find rent payment for this tenant in the current month
-    const paid = payments.some(p => {
+    // Sum all rent payments for this tenant in the current month
+    const tenantPayments = payments.filter(p => {
       if (p.tenantId !== tenantId || p.type !== "rent") return false;
       let pDate: Date;
       if (p.payment_date?.seconds) {
@@ -104,7 +107,16 @@ export default function TenantsPage() {
       return !isNaN(pDate.getTime()) && pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear;
     });
 
-    if (paid) return { text: "Paid", color: "var(--success)", isOverdue: false };
+    const totalPaid = tenantPayments.reduce((sum, p) => sum + (p.amount_paid || 0), 0);
+    const leftPending = rentAmount - totalPaid;
+
+    if (totalPaid > 0) {
+      if (leftPending <= 0) {
+        return { text: "Paid", color: "var(--success)", isOverdue: false };
+      } else {
+        return { text: `Partial (₹${leftPending} pending)`, color: "var(--warning)", isOverdue: false };
+      }
+    }
 
     const currentDay = now.getDate();
     if (currentDay <= billingDay) {
@@ -135,13 +147,18 @@ export default function TenantsPage() {
       
       if (roomsRes.ok) {
         const roomsData = await roomsRes.json();
-        const vacantBeds: {id: string, label: string, propertyId?: string}[] = [];
+        const vacantBeds: any[] = [];
         roomsData.forEach((r: any) => {
           (r.beds || []).forEach((b: any) => {
             if (b.status === "vacant") {
               vacantBeds.push({ 
                 id: `${r.id}_${b.id}`, 
-                label: `Room ${r.room_number} - ${b.bed_label} (${r.propertyName || "PG"})`,
+                bedId: b.id,
+                bedLabel: b.bed_label,
+                roomId: r.id,
+                roomNumber: r.room_number,
+                floor: r.floor || "Ground Floor",
+                propertyName: r.propertyName || "PG",
                 propertyId: r.propertyId 
               });
             }
@@ -166,6 +183,86 @@ export default function TenantsPage() {
     fetchData();
   }, [activePropertyId]);
 
+  // Synchronize cascaded selectors
+  useEffect(() => {
+    if (availableBeds.length === 0) {
+      setFormPropertyId("");
+      setFormFloor("");
+      setFormRoomNumber("");
+      setBedId("");
+      return;
+    }
+
+    // 1. Property selector sync
+    let targetProp = formPropertyId;
+    if (activePropertyId && activePropertyId !== "all") {
+      targetProp = activePropertyId;
+    } else {
+      const props = Array.from(new Set(availableBeds.map(b => b.propertyId)));
+      if (!props.includes(targetProp)) {
+        targetProp = props[0] || "";
+      }
+    }
+    if (targetProp !== formPropertyId) {
+      setFormPropertyId(targetProp);
+    }
+
+    // Filter beds of selected property
+    const propBeds = availableBeds.filter(b => b.propertyId === targetProp);
+    if (propBeds.length === 0) {
+      setFormFloor("");
+      setFormRoomNumber("");
+      setBedId("");
+      return;
+    }
+
+    // 2. Floor selector sync
+    const floors = Array.from(new Set(propBeds.map(b => b.floor || "Ground Floor"))).sort();
+    let targetFloor = formFloor;
+    if (!floors.includes(targetFloor)) {
+      targetFloor = floors[0] || "";
+    }
+    if (targetFloor !== formFloor) {
+      setFormFloor(targetFloor);
+    }
+
+    // Filter beds of selected floor
+    const floorBeds = propBeds.filter(b => (b.floor || "Ground Floor") === targetFloor);
+    if (floorBeds.length === 0) {
+      setFormRoomNumber("");
+      setBedId("");
+      return;
+    }
+
+    // 3. Room selector sync
+    const roomNums = Array.from(new Set(floorBeds.map(b => b.roomNumber))).sort((a, b) => a.localeCompare(b));
+    let targetRoomNum = formRoomNumber;
+    if (!roomNums.includes(targetRoomNum)) {
+      targetRoomNum = roomNums[0] || "";
+    }
+    if (targetRoomNum !== formRoomNumber) {
+      setFormRoomNumber(targetRoomNum);
+    }
+
+    // Filter beds of selected room
+    const roomBeds = floorBeds.filter(b => b.roomNumber === targetRoomNum);
+    if (roomBeds.length === 0) {
+      setBedId("");
+      return;
+    }
+
+    // 4. Bed selector sync
+    let targetBedId = bedId;
+    const bedIds = roomBeds.map(b => b.id);
+    if (!bedIds.includes(targetBedId)) {
+      targetBedId = roomBeds[0].id;
+    }
+    if (targetBedId !== bedId) {
+      setBedId(targetBedId);
+    }
+    setSelectedFormPropertyId(targetProp);
+  }, [availableBeds, activePropertyId, formPropertyId, formFloor, formRoomNumber, bedId]);
+
   const handleCsvUpload = async () => {
     if (!csvFile) return;
     setCsvUploading(true);
@@ -178,12 +275,48 @@ export default function TenantsPage() {
         return;
       }
       
-      // Normalize header names by removing spaces, underscores, and special characters (e.g. "Room Number" -> "roomnumber")
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9]/g, ""));
-      const tenantsData = [];
+      // Detect delimiter (comma or semicolon)
+      const firstLine = lines[0];
+      const delimiter = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
+
+      // Robust CSV line parser helper to handle quoted values and inner commas
+      const parseCSVLine = (line: string, delim: string) => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === delim && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result.map(v => v.replace(/^["']|["']$/g, '').trim());
+      };
+
+      // Normalize header names to match what the backend expects
+      const headers = parseCSVLine(lines[0], delimiter).map(h => {
+        const norm = h.toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (norm === "room" || norm === "roomno" || norm === "roomnumber") return "roomnumber";
+        if (norm === "bed" || norm === "bedlabel" || norm === "bedno") return "bedlabel";
+        if (norm === "rent" || norm === "rentamount") return "rentamount";
+        if (norm === "billingcycleday" || norm === "billingcycle") return "billingcycleday";
+        if (norm === "securitydeposit" || norm === "deposit") return "securitydeposit";
+        if (norm === "emergencycontact" || norm === "emergencyphone") return "emergencycontact";
+        return norm;
+      });
       
+      const tenantsData = [];
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
+        const values = parseCSVLine(lines[i], delimiter);
+        // Skip blank or placeholder lines
+        if (values.every(v => v === "")) continue;
+
         const tenantObj: any = {};
         headers.forEach((header, index) => {
           tenantObj[header] = values[index] !== undefined ? values[index] : "";
@@ -266,6 +399,9 @@ export default function TenantsPage() {
       if (res.ok) {
         toast(`"${tenantName}" has been vacated.`, "info");
         fetchData();
+      } else if (res.status === 404) {
+        toast(`"${tenantName}" has already been vacated.`, "info");
+        fetchData();
       } else {
         toast("Failed to vacate tenant.", "error");
       }
@@ -309,7 +445,7 @@ export default function TenantsPage() {
     setActionLoading(tenantId);
     try {
       const res = await fetch(`/api/tenants/${tenantId}?hard=true`, { method: "DELETE" });
-      if (res.ok) {
+      if (res.ok || res.status === 404) {
         toast(`"${tenantName}" permanently deleted.`, "info");
         fetchData();
       } else {
@@ -486,19 +622,93 @@ export default function TenantsPage() {
               <label className="input-label">Phone Number</label>
               <input type="tel" className="input-field" value={phone} onChange={e => setPhone(e.target.value)} required />
             </div>
+            {/* Choose Property (only if activePropertyId is "all") */}
+            {activePropertyId === "all" && (
+              <div className="input-group mb-0">
+                <label className="input-label">Select PG Property</label>
+                <select 
+                  className="input-field" 
+                  value={formPropertyId} 
+                  onChange={e => setFormPropertyId(e.target.value)}
+                  required
+                >
+                  {Array.from(new Set(availableBeds.map(b => b.propertyId))).map(pId => {
+                    const prop = properties.find(p => p.id === pId);
+                    return (
+                      <option key={pId} value={pId}>
+                        {prop?.name || "PG Property"}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+
+            {/* Choose Floor */}
             <div className="input-group mb-0">
-              <label className="input-label">Assign Bed</label>
-              <select className="input-field" value={bedId} onChange={e => {
-                const val = e.target.value;
-                setBedId(val);
-                const bed = availableBeds.find(b => b.id === val);
-                if (bed && bed.propertyId) {
-                  setSelectedFormPropertyId(bed.propertyId);
-                }
-              }} required>
-                {availableBeds.map(b => (
-                  <option key={b.id} value={b.id}>{b.label}</option>
+              <label className="input-label">Select Floor</label>
+              <select 
+                className="input-field" 
+                value={formFloor} 
+                onChange={e => setFormFloor(e.target.value)}
+                required
+              >
+                {Array.from(new Set(
+                  availableBeds
+                    .filter(b => b.propertyId === (activePropertyId !== "all" ? activePropertyId : formPropertyId))
+                    .map(b => b.floor || "Ground Floor")
+                )).sort().map(floor => (
+                  <option key={floor} value={floor}>
+                    {floor}
+                  </option>
                 ))}
+              </select>
+            </div>
+
+            {/* Choose Room */}
+            <div className="input-group mb-0">
+              <label className="input-label">Select Room</label>
+              <select 
+                className="input-field" 
+                value={formRoomNumber} 
+                onChange={e => setFormRoomNumber(e.target.value)}
+                required
+              >
+                {Array.from(new Set(
+                  availableBeds
+                    .filter(b => 
+                      b.propertyId === (activePropertyId !== "all" ? activePropertyId : formPropertyId) && 
+                      (b.floor || "Ground Floor") === formFloor
+                    )
+                    .map(b => b.roomNumber)
+                )).sort((a, b) => a.localeCompare(b)).map(roomNum => (
+                  <option key={roomNum} value={roomNum}>
+                    Room {roomNum}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Choose Bed */}
+            <div className="input-group mb-0">
+              <label className="input-label">Select Bed</label>
+              <select 
+                className="input-field" 
+                value={bedId} 
+                onChange={e => setBedId(e.target.value)} 
+                required
+              >
+                {availableBeds
+                  .filter(b => 
+                    b.propertyId === (activePropertyId !== "all" ? activePropertyId : formPropertyId) && 
+                    (b.floor || "Ground Floor") === formFloor && 
+                    b.roomNumber === formRoomNumber
+                  )
+                  .map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.bedLabel}
+                    </option>
+                  ))}
               </select>
             </div>
             <div className="input-group mb-0">
@@ -644,7 +854,7 @@ export default function TenantsPage() {
                   <td style={{ padding: '1rem', fontWeight: 500 }}>
                     {tenant.status === 'active' ? (
                       (() => {
-                        const rentStatus = getPaymentStatus(tenant.id, tenant.billing_cycle_day);
+                        const rentStatus = getPaymentStatus(tenant.id, tenant.billing_cycle_day, tenant.rent_amount);
                         return (
                           <span style={{ 
                             padding: '4px 8px',

@@ -43,9 +43,11 @@ export async function POST(req: Request) {
     const ownerDoc = await adminDb.collection("owners").doc(session.user.id).get();
     if (ownerDoc.exists) {
       const ownerData = ownerDoc.data();
-      if (ownerData?.subscription_status === "active") {
+      const currentLimit = ownerData?.property_limit || 1;
+      // Allow upgrades: only return 409 if active AND trying to buy a count less than or equal to current limit
+      if (ownerData?.subscription_status === "active" && count <= currentLimit) {
         return NextResponse.json(
-          { message: "Subscription already active." },
+          { message: `Subscription already active with a limit of ${currentLimit} PG(s). Select a higher property count to upgrade.` },
           { status: 409 }
         );
       }

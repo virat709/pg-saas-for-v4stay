@@ -1,4 +1,5 @@
 import { adminDb } from "@/lib/firebaseAdmin";
+import { FieldPath } from "firebase-admin/firestore";
 
 // In-memory cache to map tenantId to propertyId
 const tenantPropertyCache = new Map<string, string>();
@@ -27,19 +28,19 @@ export async function getTenantAndProperty(tenantId: string) {
     tenantPropertyCache.delete(tenantId);
   }
 
-  // 2. Fallback: Scan properties in parallel
-  const pSnapList = await adminDb.collection("properties").get();
-  const checks = await Promise.all(
-    pSnapList.docs.map(async (doc) => {
-      const tDoc = await doc.ref.collection("tenants").doc(tenantId).get();
-      return tDoc.exists ? { propertyId: doc.id, tenantDoc: tDoc } : null;
-    })
-  );
+  // ponytail: use collectionGroup query to find tenant by ID across properties
+  // avoids scanning and querying all properties in parallel, reducing DB reads to O(1)
+  const tSnap = await adminDb
+    .collectionGroup("tenants")
+    .where(FieldPath.documentId(), "==", tenantId)
+    .limit(1)
+    .get();
 
-  const found = checks.find((c) => c !== null);
-  if (found) {
-    tenantPropertyCache.set(tenantId, found.propertyId);
-    return found;
+  if (!tSnap.empty) {
+    const tDoc = tSnap.docs[0];
+    const propertyId = tDoc.ref.parent.parent!.id;
+    tenantPropertyCache.set(tenantId, propertyId);
+    return { propertyId, tenantDoc: tDoc };
   }
 
   return null;

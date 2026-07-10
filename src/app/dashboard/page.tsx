@@ -40,11 +40,11 @@ export default function DashboardOverview() {
             occupiedBeds += (r.beds || []).filter((b: any) => b.status === "occupied").length;
           });
 
-          // Build a set of tenant IDs who have paid this month
+          // Build a map of tenant IDs to total amount paid this month
           const now = new Date();
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
-          const paidThisMonth = new Set<string>();
+          const totalPaidThisMonth = new Map<string, number>();
           payments.forEach((p: any) => {
             if (!p.payment_date || p.type !== "rent") return;
             let pDate: Date;
@@ -56,18 +56,23 @@ export default function DashboardOverview() {
               pDate = new Date(p.payment_date);
             }
             if (!isNaN(pDate.getTime()) && pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
-              if (p.tenantId) paidThisMonth.add(p.tenantId);
+              if (p.tenantId) {
+                const prev = totalPaidThisMonth.get(p.tenantId) || 0;
+                totalPaidThisMonth.set(p.tenantId, prev + (p.amount_paid || 0));
+              }
             }
           });
 
           tenants.forEach((t: any) => {
             if (t.status !== "active") return;
             expectedCollection += t.rent_amount || 0;
-            // Only mark overdue if past billing day AND no payment this month
-            if (now.getDate() > (t.billing_cycle_day || 0) && !paidThisMonth.has(t.id)) {
+            const paid = totalPaidThisMonth.get(t.id) || 0;
+            // Mark overdue if past billing day AND they haven't paid their full rent
+            if (now.getDate() > (t.billing_cycle_day || 0) && paid < (t.rent_amount || 0)) {
               overdueTenants += 1;
             }
           });
+
           // Build last-6-months revenue data
           const monthlyRevenue: Record<string, number> = {};
           for (let i = 5; i >= 0; i--) {
@@ -108,7 +113,8 @@ export default function DashboardOverview() {
             tenants.forEach((t: any) => {
               if (t.propertyId === p.id && t.status === "active") {
                 pExpectedCollection += t.rent_amount || 0;
-                if (now.getDate() > (t.billing_cycle_day || 0) && !paidThisMonth.has(t.id)) {
+                const paid = totalPaidThisMonth.get(t.id) || 0;
+                if (now.getDate() > (t.billing_cycle_day || 0) && paid < (t.rent_amount || 0)) {
                   pOverdueTenants += 1;
                 }
               }

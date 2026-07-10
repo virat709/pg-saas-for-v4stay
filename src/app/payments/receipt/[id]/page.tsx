@@ -178,6 +178,14 @@ export default function ReceiptPage() {
                     ₹{data.amount_paid.toLocaleString("en-IN")}
                   </td>
                 </tr>
+                {data.amount_paid < data.amount && (
+                  <tr style={{ borderTop: "1px solid #e2e8f0", backgroundColor: "#fef2f2" }}>
+                    <td style={{ padding: "1rem 1.25rem", fontWeight: 700, color: "#991b1b" }}>Pending Balance</td>
+                    <td style={{ padding: "1rem 1.25rem", textAlign: "right", fontWeight: 800, color: "#991b1b", fontSize: "1.15rem" }}>
+                      ₹{(data.amount - data.amount_paid).toLocaleString("en-IN")}
+                    </td>
+                  </tr>
+                )}
               </tfoot>
             </table>
           </div>

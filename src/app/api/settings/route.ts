@@ -17,7 +17,10 @@ export async function GET() {
       return NextResponse.json({ message: "Owner not found" }, { status: 404 });
     }
 
+    const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
     const data = ownerDoc.data();
+    const propertyLimit = data?.property_limit !== undefined ? data.property_limit : Math.max(1, pSnap.size);
+
     return NextResponse.json({
       name: data?.name || "",
       email: data?.email || "",
@@ -27,7 +30,7 @@ export async function GET() {
       subscription_plan: data?.subscription_plan || null,
       subscription_start: data?.subscription_start || null,
       plan_tier: data?.plan_tier || null,
-      property_limit: data?.property_limit || 1,
+      property_limit: propertyLimit,
       subscription_activated_at: data?.subscription_activated_at || null,
     });
   } catch (error) {

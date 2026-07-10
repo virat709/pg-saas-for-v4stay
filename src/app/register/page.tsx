@@ -45,7 +45,11 @@ export default function RegisterPage() {
       router.push("/onboarding/property");
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Registration failed");
+      if (err.code === "auth/email-already-in-use") {
+        setError("User already exists with this email.");
+      } else {
+        setError(err.message || "Registration failed");
+      }
       setLoading(false);
     }
   };

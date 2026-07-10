@@ -46,7 +46,21 @@ export default function AddPropertyPage() {
         </div>
 
         {error && (
-          <div style={{ color: 'var(--danger)', marginBottom: '1rem', textAlign: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>{error}</div>
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ color: 'var(--danger)', textAlign: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: 'var(--radius-md)', fontSize: '0.9rem', lineHeight: 1.4 }}>
+              {error}
+            </div>
+            {(error.toLowerCase().includes("limit") || error.toLowerCase().includes("upgrade")) && (
+              <button
+                type="button"
+                onClick={() => router.push("/onboarding/subscription?upgrade=true")}
+                className="btn-primary w-full mt-3"
+                style={{ backgroundColor: "var(--success)", color: "#0f172a" }}
+              >
+                Upgrade Subscription Plan
+              </button>
+            )}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="flex-col flex">

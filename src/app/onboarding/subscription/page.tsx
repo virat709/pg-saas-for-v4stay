@@ -11,6 +11,10 @@ export default function SubscriptionPage() {
 
   // Check if owner already has an active subscription on mount
   useEffect(() => {
+    // If we're upgrading, don't auto-redirect to dashboard
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upgrade") === "true") return;
+
     fetch("/api/payments/status")
       .then((res) => {
         if (res.ok) return res.json();

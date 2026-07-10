@@ -5,7 +5,7 @@ import { useProperties } from "@/context/PropertyContext";
 import Link from "next/link";
 import { useToast } from "@/context/ToastContext";
 
-type Tenant = { id: string; name: string; rent_amount: number; propertyId?: string };
+type Tenant = { id: string; name: string; rent_amount: number; propertyId?: string; status?: string };
 type Payment = {
   id: string;
   tenantId?: string;
@@ -78,14 +78,15 @@ export default function PaymentsPage() {
         setUpiId(uData.upi_id || "");
       }
       if (tenRes.ok) {
-        const tData = await tenRes.json();
+        const tData: Tenant[] = await tenRes.json();
         setTenants(tData);
-        if (tData.length > 0) {
-          setTenantId(tData[0].id);
-          setAmount(tData[0].rent_amount.toString());
-          setAmountPaid(tData[0].rent_amount.toString());
-          if (tData[0].propertyId) {
-            setSelectedFormPropertyId(tData[0].propertyId);
+        const activeTenants = tData.filter(t => t.status === "active");
+        if (activeTenants.length > 0) {
+          setTenantId(activeTenants[0].id);
+          setAmount(activeTenants[0].rent_amount.toString());
+          setAmountPaid(activeTenants[0].rent_amount.toString());
+          if (activeTenants[0].propertyId) {
+            setSelectedFormPropertyId(activeTenants[0].propertyId);
           }
         }
       }
@@ -194,6 +195,9 @@ export default function PaymentsPage() {
   // Calculate summary
   const currentMonthPayments = payments.filter(p => {
     if (!p.payment_date) return false;
+    // ponytail: exclude payments from vacated tenants
+    if (p.tenant && p.tenant.status === "vacated") return false;
+
     let pDate: Date;
     if (typeof p.payment_date === "object") {
       if (typeof p.payment_date.seconds === "number") {
@@ -211,7 +215,10 @@ export default function PaymentsPage() {
     return pDate.getMonth() === today.getMonth() && pDate.getFullYear() === today.getFullYear();
   });
 
-  const totalExpectedRent = tenants.reduce((acc, t) => acc + (t.rent_amount || 0), 0);
+  // ponytail: only sum rent from active tenants
+  const totalExpectedRent = tenants
+    .filter(t => t.status === "active")
+    .reduce((acc, t) => acc + (t.rent_amount || 0), 0);
   const totalCollectedThisMonth = currentMonthPayments.reduce((acc, p) => acc + (p.amount_paid || 0), 0);
   const totalDueThisMonth = Math.max(0, totalExpectedRent - totalCollectedThisMonth);
 
@@ -340,7 +347,7 @@ export default function PaymentsPage() {
             <div className="input-group mb-0">
               <label className="input-label">Tenant</label>
               <select className="input-field" value={tenantId} onChange={e => handleTenantChange(e.target.value)} required>
-                {tenants.map(t => (
+                {tenants.filter(t => t.status === "active").map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>

@@ -3,12 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
-import {
-  updatePassword,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-} from "firebase/auth";
+
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 
 export default function SettingsPage() {
@@ -20,11 +15,7 @@ export default function SettingsPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordSaving, setPasswordSaving] = useState(false);
-  const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
 
   useEffect(() => {
     Promise.all([
@@ -59,39 +50,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setPasswordMsg({ type: "error", text: "New passwords do not match." });
-      return;
-    }
-    if (newPassword.length < 6) {
-      setPasswordMsg({ type: "error", text: "Password must be at least 6 characters." });
-      return;
-    }
-    setPasswordSaving(true);
-    setPasswordMsg(null);
-    try {
-      const user = auth.currentUser;
-      if (!user || !user.email) throw new Error("Not authenticated. Please log out and log back in.");
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(user, credential);
-      await updatePassword(user, newPassword);
-      setPasswordMsg({ type: "success", text: "Password changed successfully!" });
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: any) {
-      const msg = err.code === "auth/wrong-password"
-        ? "Current password is incorrect."
-        : err.code === "auth/too-many-requests"
-        ? "Too many attempts. Please try again later."
-        : err.message || "Failed to change password.";
-      setPasswordMsg({ type: "error", text: msg });
-    } finally {
-      setPasswordSaving(false);
-    }
-  };
+
 
   if (profileLoading) {
     return (
@@ -265,75 +224,20 @@ export default function SettingsPage() {
                 + Add Another PG ({propertyCount}/{ownerData?.property_limit || 1} used)
               </button>
             )}
+            {ownerData?.subscription_status === "active" && propertyCount >= (ownerData?.property_limit || 1) && (
+              <button
+                onClick={() => router.push("/onboarding/subscription?upgrade=true")}
+                className="btn-primary"
+                style={{ fontSize: "0.85rem", padding: "0.5rem 1rem", backgroundColor: "var(--success)", color: "#0f172a", border: "none", cursor: "pointer" }}
+              >
+                Upgrade Plan ({propertyCount}/{ownerData?.property_limit || 1} used)
+              </button>
+            )}
           </div>
         </div>
       </AnimatedSection>
 
-      {/* ── Change Password Section ──────────────── */}
-      <AnimatedSection delay={160}>
-        <div className="card" style={{ marginBottom: "1.5rem" }}>
-          <h2 style={{ marginBottom: "0.5rem" }}>Change Password</h2>
-          <p style={{ marginBottom: "1.5rem", fontSize: "0.875rem" }}>
-            Only applies to email/password accounts. Google sign-in accounts cannot set a password here.
-          </p>
 
-          {passwordMsg && (
-            <div style={{
-              padding: "0.75rem 1rem",
-              borderRadius: "var(--radius-md)",
-              marginBottom: "1rem",
-              backgroundColor: passwordMsg.type === "success" ? "rgba(0,196,159,0.1)" : "rgba(239,68,68,0.1)",
-              color: passwordMsg.type === "success" ? "var(--success)" : "var(--danger)",
-              border: `1px solid ${passwordMsg.type === "success" ? "rgba(0,196,159,0.3)" : "rgba(239,68,68,0.3)"}`,
-              fontSize: "0.875rem",
-            }}>
-              {passwordMsg.text}
-            </div>
-          )}
-
-          <form onSubmit={handlePasswordChange}>
-            <div className="input-group">
-              <label className="input-label" htmlFor="current-password">Current Password</label>
-              <input
-                id="current-password"
-                type="password"
-                className="input-field"
-                placeholder="••••••••"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="input-group">
-              <label className="input-label" htmlFor="new-password">New Password</label>
-              <input
-                id="new-password"
-                type="password"
-                className="input-field"
-                placeholder="Min. 6 characters"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="input-group">
-              <label className="input-label" htmlFor="confirm-password">Confirm New Password</label>
-              <input
-                id="confirm-password"
-                type="password"
-                className="input-field"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit" className="btn-primary" disabled={passwordSaving}>
-              {passwordSaving ? "Updating..." : "Update Password"}
-            </button>
-          </form>
-        </div>
-      </AnimatedSection>
 
       {/* ── Danger Zone ─────────────────────────── */}
       <AnimatedSection delay={240}>
