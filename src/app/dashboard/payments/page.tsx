@@ -219,8 +219,19 @@ export default function PaymentsPage() {
   const totalExpectedRent = tenants
     .filter(t => t.status === "active")
     .reduce((acc, t) => acc + (t.rent_amount || 0), 0);
-  const totalCollectedThisMonth = currentMonthPayments.reduce((acc, p) => acc + (p.amount_paid || 0), 0);
-  const totalDueThisMonth = Math.max(0, totalExpectedRent - totalCollectedThisMonth);
+  const totalCollectedThisMonth = currentMonthPayments
+    .filter(p => p.type === "rent")
+    .reduce((acc, p) => acc + (p.amount_paid || 0), 0);
+  const totalDueThisMonth = tenants
+    .filter(t => t.status === "active")
+    .reduce((acc, t) => {
+      const tenantRentPayments = currentMonthPayments.filter(
+        p => p.tenantId === t.id && p.type === "rent"
+      );
+      const paid = tenantRentPayments.reduce((sum, p) => sum + (p.amount_paid || 0), 0);
+      const due = Math.max(0, (t.rent_amount || 0) - paid);
+      return acc + due;
+    }, 0);
 
   const exportCSV = () => {
     const headers = ["Date", "Tenant", "Type", "Amount", "Amount Paid", "Method", "Status"];
