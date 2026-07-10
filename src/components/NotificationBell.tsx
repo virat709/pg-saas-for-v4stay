@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAdminNotifications } from "@/context/AdminNotificationContext";
 import { useFaviconBadge } from "@/hooks/useFaviconBadge";
 import { AppNotification } from "@/context/AdminNotificationContext";
@@ -239,56 +240,73 @@ function BellDropdown({
                   🔕 No notifications yet
                 </div>
               ) : (
-                notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => { if (!n.read) onMarkAsRead(n.id); }}
-                    style={{
-                      padding: "0.8rem 1rem",
-                      borderBottom: "1px solid var(--border-color)",
-                      backgroundColor: n.read ? "transparent" : "rgba(30,96,145,0.06)",
-                      cursor: n.read ? "default" : "pointer",
-                      transition: "background 0.2s",
-                      display: "flex",
-                      gap: "0.75rem",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <span style={{ fontSize: "1.1rem", flexShrink: 0, marginTop: "1px" }}>
-                      {n.type === "complaint" ? "🛠️" : n.type === "payment" ? "💰" : "📢"}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: "0.85rem",
-                          fontWeight: n.read ? 400 : 600,
-                          color: n.read ? "var(--text-muted)" : "var(--text-main)",
-                          marginBottom: "0.2rem",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {n.title}
+                notifications.map((n) => {
+                  const linkHref =
+                    n.type === "complaint"
+                      ? "/dashboard/complaints"
+                      : n.type === "payment"
+                      ? "/dashboard/payments"
+                      : null;
+
+                  const row = (
+                    <div
+                      key={n.id}
+                      onClick={() => { if (!n.read) onMarkAsRead(n.id); setIsOpen(false); }}
+                      style={{
+                        padding: "0.8rem 1rem",
+                        borderBottom: "1px solid var(--border-color)",
+                        backgroundColor: n.read ? "transparent" : "rgba(30,96,145,0.06)",
+                        cursor: "pointer",
+                        transition: "background 0.2s",
+                        display: "flex",
+                        gap: "0.75rem",
+                        alignItems: "flex-start",
+                        textDecoration: "none",
+                        color: "inherit",
+                      }}
+                    >
+                      <span style={{ fontSize: "1.1rem", flexShrink: 0, marginTop: "1px" }}>
+                        {n.type === "complaint" ? "🛠️" : n.type === "payment" ? "💰" : "📢"}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: "0.85rem",
+                            fontWeight: n.read ? 400 : 600,
+                            color: n.read ? "var(--text-muted)" : "var(--text-main)",
+                            marginBottom: "0.2rem",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {n.title}
+                        </div>
+                        <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+                          {n.message}
+                        </div>
                       </div>
-                      <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
-                        {n.message}
-                      </div>
+                      {!n.read && (
+                        <div
+                          style={{
+                            width: "7px",
+                            height: "7px",
+                            borderRadius: "50%",
+                            backgroundColor: "#ef4444",
+                            flexShrink: 0,
+                            marginTop: "5px",
+                          }}
+                        />
+                      )}
                     </div>
-                    {!n.read && (
-                      <div
-                        style={{
-                          width: "7px",
-                          height: "7px",
-                          borderRadius: "50%",
-                          backgroundColor: "#ef4444",
-                          flexShrink: 0,
-                          marginTop: "5px",
-                        }}
-                      />
-                    )}
-                  </div>
-                ))
+                  );
+
+                  return linkHref ? (
+                    <Link key={n.id} href={linkHref} style={{ textDecoration: "none", display: "block" }}>
+                      {row}
+                    </Link>
+                  ) : row;
+                })
               )}
             </div>
           </div>

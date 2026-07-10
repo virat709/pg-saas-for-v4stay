@@ -19,6 +19,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const tenantStatus = tenantDoc.data()?.status;
     if (tenantStatus === "vacated") return NextResponse.json({ message: "Account deactivated" }, { status: 403 });
 
+    const tenantName = tenantDoc.data()?.name || "A tenant";
+
     const complaintsRef = adminDb.collection("properties").doc(propertyId).collection("maintenanceRequests");
     const complaintRef = await complaintsRef.add({
       tenantId,
@@ -31,10 +33,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     await adminDb.collection("notifications").add({
       title: "New Complaint Submitted",
-      message: `Tenant has submitted a new complaint (${category}).`,
+      message: `${tenantName} submitted a new complaint: ${category}.`,
       read: false,
       recipientRole: "admin",
       propertyId: propertyId,
+      tenantId,
       created_at: new Date(),
       type: "complaint"
     });
