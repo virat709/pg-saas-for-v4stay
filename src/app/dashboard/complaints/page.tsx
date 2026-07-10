@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useProperties } from "@/context/PropertyContext";
+import { useToast } from "@/context/ToastContext";
 
 export default function ComplaintsPage() {
   const { activePropertyId } = useProperties();
+  const { toast } = useToast();
   const [complaints, setComplaints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,10 +44,15 @@ export default function ComplaintsPage() {
         body: JSON.stringify({ id, status: "resolved" })
       });
       if (res.ok) {
+        toast("Complaint marked as resolved!", "success");
         fetchData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast(data.message || "Failed to mark complaint as resolved.", "error");
       }
     } catch (e) {
       console.error(e);
+      toast("Error marking complaint as resolved.", "error");
     }
   };
 
