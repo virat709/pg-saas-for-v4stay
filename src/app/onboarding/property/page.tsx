@@ -28,6 +28,16 @@ export default function AddPropertyPage() {
         throw new Error(data.message || "Failed to add property");
       }
 
+      // Check subscription status
+      const settingsRes = await fetch("/api/settings").catch(() => null);
+      if (settingsRes && settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        if (settingsData.subscription_status === "active") {
+          router.push("/dashboard");
+          return;
+        }
+      }
+
       // Redirect to subscription step
       router.push("/onboarding/subscription");
     } catch (err) {

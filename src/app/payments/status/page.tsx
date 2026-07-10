@@ -61,7 +61,27 @@ function PaymentStatusContent() {
             body: JSON.stringify({}),
           })
             .catch((err) => console.error("[status page] Session update failed:", err))
-            .finally(() => {
+            .finally(async () => {
+              try {
+                // Fetch settings and properties to determine the redirect path
+                const [settingsRes, propertiesRes] = await Promise.all([
+                  fetch("/api/settings"),
+                  fetch("/api/properties"),
+                ]);
+                if (settingsRes.ok && propertiesRes.ok) {
+                  const settingsData = await settingsRes.json();
+                  const propertiesData = await propertiesRes.json();
+                  const limit = settingsData.property_limit || 1;
+                  const count = Array.isArray(propertiesData) ? propertiesData.length : 0;
+                  
+                  if (count < limit) {
+                    setTimeout(() => router.push("/onboarding/property"), 1500);
+                    return;
+                  }
+                }
+              } catch (e) {
+                console.error("Redirect check failed, falling back to dashboard:", e);
+              }
               setTimeout(() => router.push("/dashboard"), 1500);
             });
           return;
