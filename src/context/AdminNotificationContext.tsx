@@ -95,7 +95,7 @@ if (typeof window !== "undefined") {
   window.addEventListener("scroll", unlock, { once: true, capture: true });
 }
 
-const POLL_MS = 15_000; // poll every 15 seconds
+const POLL_MS = 8_000; // poll every 8 seconds
 
 export function AdminNotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);

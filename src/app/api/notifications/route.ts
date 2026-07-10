@@ -14,20 +14,21 @@ export async function GET() {
     const snap = await adminDb
       .collection("notifications")
       .where("recipientRole", "==", "admin")
-      .orderBy("created_at", "desc")
-      .limit(30)
+      .limit(50)
       .get();
 
-    const items = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-      // Serialize Firestore Timestamp → plain millis so JSON works
-      created_at: d.data().created_at?.toMillis?.() ?? null,
-    }));
+    const items = snap.docs
+      .map((d) => ({
+        id: d.id,
+        ...d.data(),
+        created_at: d.data().created_at?.toMillis?.() ?? null,
+      }))
+      .sort((a: any, b: any) => (b.created_at ?? 0) - (a.created_at ?? 0))
+      .slice(0, 30);
 
     return NextResponse.json(items);
   } catch (error) {
-    console.error("[Notifications GET]", error);
+    console.error("[Notifications GET] Failed to fetch:", error);
     return NextResponse.json([], { status: 200 });
   }
 }
