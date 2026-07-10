@@ -166,15 +166,21 @@ export default function SubscriptionPage() {
               flexDirection: "column",
             }}
           >
-            <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>PGmate Starter — 6 Months</h3>
+            <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>
+              {currentLimit > 0 ? "Upgrade — 6 Months" : "PGmate Starter — 6 Months"}
+            </h3>
             <div style={{ fontSize: "2.5rem", fontWeight: 800, lineHeight: 1, margin: "1rem 0" }}>
-              ₹{(6999 + (propertyCount - 1) * 4999).toLocaleString()}
+              ₹{(currentLimit > 0 ? (propertyCount - currentLimit) * 4999 : 6999 + (propertyCount - 1) * 4999).toLocaleString()}
             </div>
-            {propertyCount > 1 && (
+            {currentLimit > 0 ? (
+              <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
+                Upgrade: {propertyCount - currentLimit} × ₹4,999 additional PG addon(s)
+              </div>
+            ) : propertyCount > 1 ? (
               <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
                 ₹6,999 base + {propertyCount - 1} × ₹4,999 addons
               </div>
-            )}
+            ) : null}
             
             <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
               {[
@@ -194,7 +200,7 @@ export default function SubscriptionPage() {
             <button
               className="btn-secondary w-full"
               style={{ fontSize: '1.05rem', padding: '0.875rem' }}
-              onClick={() => handleSelectPlan('PGmate Starter 6 Months', 6999 + (propertyCount - 1) * 4999, propertyCount)}
+              onClick={() => handleSelectPlan('PGmate Starter 6 Months', currentLimit > 0 ? (propertyCount - currentLimit) * 4999 : 6999 + (propertyCount - 1) * 4999, propertyCount)}
               disabled={loading}
             >
               Get Started
@@ -218,11 +224,17 @@ export default function SubscriptionPage() {
               BEST VALUE
             </div>
 
-            <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>PGmate Premium — 1 Year</h3>
+            <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>
+              {currentLimit > 0 ? "Upgrade — 1 Year" : "PGmate Premium — 1 Year"}
+            </h3>
             <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--success)", lineHeight: 1, margin: "1rem 0" }}>
-              ₹{(11999 + (propertyCount - 1) * 6999).toLocaleString()}
+              ₹{(currentLimit > 0 ? (propertyCount - currentLimit) * 6999 : 11999 + (propertyCount - 1) * 6999).toLocaleString()}
             </div>
-            {propertyCount > 1 ? (
+            {currentLimit > 0 ? (
+              <div style={{ color: "var(--success)", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>
+                Upgrade: {propertyCount - currentLimit} × ₹6,999 additional PG addon(s)
+              </div>
+            ) : propertyCount > 1 ? (
               <div style={{ color: "var(--success)", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>
                 ₹11,999 base + {propertyCount - 1} × ₹6,999 addons
               </div>
@@ -254,7 +266,7 @@ export default function SubscriptionPage() {
             <button
               className="btn-primary w-full"
               style={{ fontSize: '1.05rem', padding: '0.875rem', backgroundColor: 'var(--success)', color: '#0f172a' }}
-              onClick={() => handleSelectPlan('PGmate Premium 1 Year', 11999 + (propertyCount - 1) * 6999, propertyCount)}
+              onClick={() => handleSelectPlan('PGmate Premium 1 Year', currentLimit > 0 ? (propertyCount - currentLimit) * 6999 : 11999 + (propertyCount - 1) * 6999, propertyCount)}
               disabled={loading}
             >
               Get Started

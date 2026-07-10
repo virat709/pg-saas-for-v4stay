@@ -20,16 +20,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Invalid property count." }, { status: 400 });
     }
 
+    const ownerDoc = await adminDb.collection("owners").doc(session.user.id).get();
+    const ownerData = ownerDoc?.data();
+    const isUpgrade = ownerDoc?.exists && ownerData?.subscription_status === "active";
+    const currentLimit = isUpgrade ? (ownerData?.property_limit || 1) : 0;
+
     let expectedPrice = 0;
-    if (planName === "PGmate Starter 6 Months") {
-      expectedPrice = 6999 + (count - 1) * 4999;
-    } else if (planName === "PGmate Premium 1 Year") {
-      expectedPrice = 11999 + (count - 1) * 6999;
+    if (isUpgrade) {
+      if (count <= currentLimit) {
+        return NextResponse.json(
+          { message: `Subscription already active with a limit of ${currentLimit} PG(s). Select a higher property count to upgrade.` },
+          { status: 409 }
+        );
+      }
+      const additionalCount = count - currentLimit;
+      if (planName === "PGmate Starter 6 Months") {
+        expectedPrice = additionalCount * 4999;
+      } else if (planName === "PGmate Premium 1 Year") {
+        expectedPrice = additionalCount * 6999;
+      } else {
+        return NextResponse.json(
+          { message: "Invalid plan name. Choose 'PGmate Starter 6 Months' or 'PGmate Premium 1 Year'." },
+          { status: 400 }
+        );
+      }
     } else {
-      return NextResponse.json(
-        { message: "Invalid plan name. Choose 'PGmate Starter 6 Months' or 'PGmate Premium 1 Year'." },
-        { status: 400 }
-      );
+      if (planName === "PGmate Starter 6 Months") {
+        expectedPrice = 6999 + (count - 1) * 4999;
+      } else if (planName === "PGmate Premium 1 Year") {
+        expectedPrice = 11999 + (count - 1) * 6999;
+      } else {
+        return NextResponse.json(
+          { message: "Invalid plan name. Choose 'PGmate Starter 6 Months' or 'PGmate Premium 1 Year'." },
+          { status: 400 }
+        );
+      }
     }
 
     if (typeof price !== "number" || price !== expectedPrice) {
@@ -37,20 +62,6 @@ export async function POST(req: Request) {
         { message: `Price mismatch. Expected ₹${expectedPrice} but received ₹${price}` },
         { status: 400 }
       );
-    }
-
-    // ── Check owner doesn't already have an active subscription ───────────
-    const ownerDoc = await adminDb.collection("owners").doc(session.user.id).get();
-    if (ownerDoc.exists) {
-      const ownerData = ownerDoc.data();
-      const currentLimit = ownerData?.property_limit || 1;
-      // Allow upgrades: only return 409 if active AND trying to buy a count less than or equal to current limit
-      if (ownerData?.subscription_status === "active" && count <= currentLimit) {
-        return NextResponse.json(
-          { message: `Subscription already active with a limit of ${currentLimit} PG(s). Select a higher property count to upgrade.` },
-          { status: 409 }
-        );
-      }
     }
 
     // Generate unique transaction ID
