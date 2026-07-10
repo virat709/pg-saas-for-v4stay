@@ -10,6 +10,7 @@ import { useProperties } from "@/context/PropertyContext";
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showOverdueModal, setShowOverdueModal] = useState(false);
   const { activePropertyId, properties, setActivePropertyId } = useProperties();
 
   useEffect(() => {
@@ -63,13 +64,39 @@ export default function DashboardOverview() {
             }
           });
 
+          const overdueList: any[] = [];
           tenants.forEach((t: any) => {
             if (t.status !== "active") return;
             expectedCollection += t.rent_amount || 0;
             const paid = totalPaidThisMonth.get(t.id) || 0;
+            const leftPending = (t.rent_amount || 0) - paid;
             // Mark overdue if past billing day AND they haven't paid their full rent
-            if (now.getDate() > (t.billing_cycle_day || 0) && paid < (t.rent_amount || 0)) {
+            const isOverdue = now.getDate() > (t.billing_cycle_day || 0) && leftPending > 0;
+            if (isOverdue) {
               overdueTenants += 1;
+              
+              // Find room and bed
+              let roomNum = "";
+              let bedLabel = "";
+              rooms.forEach((r: any) => {
+                (r.beds || []).forEach((b: any) => {
+                  if (b.tenantId === t.id || b.id === t.bedId) {
+                    roomNum = r.room_number;
+                    bedLabel = b.bed_label;
+                  }
+                });
+              });
+
+              overdueList.push({
+                id: t.id,
+                name: t.name,
+                phone: t.phone,
+                rent_amount: t.rent_amount,
+                left_pending: leftPending,
+                billing_cycle_day: t.billing_cycle_day || 5,
+                roomNumber: roomNum,
+                bedLabel: bedLabel,
+              });
             }
           });
 
@@ -139,6 +166,7 @@ export default function DashboardOverview() {
             occupancyRate: totalBeds ? Math.round((occupiedBeds / totalBeds) * 100) : 0,
             expectedCollection,
             overdueTenants,
+            overdueList,
             revenueChart: Object.entries(monthlyRevenue).map(([month, amount]) => ({ month, amount })),
             propertiesStats: propStats,
           });
@@ -241,12 +269,12 @@ export default function DashboardOverview() {
             </div>
             <p style={{ margin: 0, fontSize: "0.875rem" }}>Tenants behind on rent</p>
             {stats?.overdueTenants > 0 && (
-              <Link
-                href="/dashboard/payments"
-                style={{ display: "inline-block", marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--primary)", fontWeight: 500 }}
+              <button
+                onClick={() => setShowOverdueModal(true)}
+                style={{ display: "inline-block", marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--primary)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}
               >
                 View list &rarr;
-              </Link>
+              </button>
             )}
           </div>
         </AnimatedSection>
@@ -361,6 +389,100 @@ export default function DashboardOverview() {
           </div>
         </div>
       </AnimatedSection>
+      {/* ── Overdue Payments Modal ───────────────────────────────────── */}
+      {showOverdueModal && stats?.overdueList && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '600px', maxHeight: '85vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.3rem', color: 'var(--danger)' }}>⚠️ Overdue Payments</h2>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>List of active tenants with pending balance this month.</p>
+              </div>
+              <button onClick={() => setShowOverdueModal(false)} style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', lineHeight: 1, color: 'var(--text-muted)' }}>&times;</button>
+            </div>
+            
+            {stats.overdueList.length === 0 ? (
+              <p style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)' }}>All tenants have paid their rent. Good job!</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {stats.overdueList.map((tenant: any) => {
+                  const dueDate = new Date();
+                  dueDate.setDate(tenant.billing_cycle_day);
+                  const dateStr = dueDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+                  
+                  return (
+                    <div 
+                      key={tenant.id} 
+                      className="card" 
+                      style={{ 
+                        padding: '1rem', 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        flexWrap: 'wrap', 
+                        gap: '1rem',
+                        borderLeft: '4px solid var(--danger)',
+                        backgroundColor: 'var(--bg-color)'
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-main)' }}>{tenant.name}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                          📞 {tenant.phone} · Room {tenant.roomNumber || "?"} - {tenant.bedLabel || "?"}
+                        </div>
+                      </div>
+                      
+                      <div style={{ minWidth: '150px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          Rent: ₹{tenant.rent_amount}
+                        </div>
+                        <div style={{ fontWeight: 700, color: 'var(--danger)', marginTop: '0.1rem' }}>
+                          Pending: ₹{tenant.left_pending}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                          Due: {dateStr}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <button
+                          onClick={() => {
+                            const cleanPhone = tenant.phone.replace(/\D/g, "");
+                            const formattedPhone = cleanPhone.startsWith("91") || cleanPhone.length > 10 ? cleanPhone : "91" + cleanPhone;
+                            const formattedDate = dueDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+                            const message = `Dear ${tenant.name}, this is a friendly reminder from your PG management. Your rent payment of ₹${tenant.left_pending} (for Room ${tenant.roomNumber || "?"} - ${tenant.bedLabel || "?"}) was due on ${formattedDate}. Please pay at your earliest convenience. Thank you!`;
+                            const url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(message)}`;
+                            window.open(url, "_blank");
+                          }}
+                          className="btn-primary"
+                          style={{ 
+                            backgroundColor: '#25D366', 
+                            color: '#fff', 
+                            border: 'none', 
+                            fontSize: '0.85rem', 
+                            padding: '0.5rem 1.25rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.588 1.977 14.12 1.95 12.012 1.95c-5.438 0-9.863 4.374-9.867 9.802-.001 1.73.476 3.41 1.378 4.885l-.994 3.633 3.71-.975zm13.11-7.79c-.067-.112-.247-.179-.517-.314-.27-.134-1.597-.787-1.845-.877-.247-.09-.427-.135-.607.135-.179.27-.697.877-.854 1.057-.158.18-.315.202-.585.067-.27-.135-1.14-.42-2.172-1.341-.803-.715-1.345-1.6-1.502-1.87-.158-.27-.017-.417.118-.552.122-.122.27-.315.405-.472.135-.158.18-.27.27-.45.09-.18.045-.337-.022-.472-.068-.135-.608-1.464-.833-2.004-.22-.528-.48-.456-.66-.465-.17-.008-.367-.01-.563-.01-.197 0-.517.074-.787.37-.27.298-1.03 1.007-1.03 2.457s1.057 2.846 1.203 3.049c.146.202 2.08 3.178 5.04 4.456.703.304 1.252.486 1.68.622.709.226 1.353.194 1.863.118.57-.085 1.597-.652 1.823-1.282.225-.63.225-1.17.157-1.282zm0 0"/>
+                          </svg>
+                          Remind
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            <button className="btn-primary w-full" style={{ marginTop: '1.5rem' }} onClick={() => setShowOverdueModal(false)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
