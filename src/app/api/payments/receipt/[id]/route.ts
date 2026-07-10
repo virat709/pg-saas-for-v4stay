@@ -16,74 +16,64 @@ export async function GET(
     const tenantId = searchParams.get("tenantId");
     const { id } = await params;
 
-    console.log(`[Receipt API GET] ID: ${id}, tenantId: ${tenantId}, adminSession:`, session?.user?.id);
-
-    let propertyId = null;
-    let propertyData = null;
-    let authorized = false;
+    let propertyId: string | null = null;
+    let propertyData: any = null;
+    let payData: any = null;
 
     if (session?.user?.id) {
-      // Find owner's property
+      // Search across ALL owner properties for this payment
       const pSnap = await adminDb
         .collection("properties")
         .where("ownerId", "==", session.user.id)
         .get();
 
-      if (!pSnap.empty) {
-        const propertyDoc = pSnap.docs[0];
-        propertyId = propertyDoc.id;
-        propertyData = propertyDoc.data();
-        authorized = true;
-        console.log(`[Receipt API] Admin authorized for property: ${propertyId}`);
+      for (const pDoc of pSnap.docs) {
+        const payDoc = await adminDb
+          .collection("properties")
+          .doc(pDoc.id)
+          .collection("payments")
+          .doc(id)
+          .get();
+        if (payDoc.exists) {
+          propertyId = pDoc.id;
+          propertyData = pDoc.data();
+          payData = { id: payDoc.id, ...payDoc.data() };
+          break;
+        }
       }
     }
 
-    if (!authorized && tenantId) {
-      // Verify tenant exists and retrieve their propertyId using our helper
+    if (!payData && tenantId) {
+      // Tenant auth: resolve their property then look up payment directly
       const res = await getTenantAndProperty(tenantId);
       if (res) {
-        propertyId = res.propertyId;
-        const pDoc = await adminDb.collection("properties").doc(propertyId).get();
+        const pDoc = await adminDb.collection("properties").doc(res.propertyId).get();
         if (pDoc.exists) {
-          propertyData = pDoc.data();
-          authorized = true;
-          console.log(`[Receipt API] Tenant authorized for property: ${propertyId}`);
+          const payDoc = await adminDb
+            .collection("properties")
+            .doc(res.propertyId)
+            .collection("payments")
+            .doc(id)
+            .get();
+          if (payDoc.exists) {
+            const pd = payDoc.data()!;
+            // Ensure this payment belongs to the requesting tenant
+            if (pd.tenantId !== tenantId) {
+              return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+            }
+            propertyId = res.propertyId;
+            propertyData = pDoc.data();
+            payData = { id: payDoc.id, ...pd };
+          }
         }
-      } else {
-        console.log(`[Receipt API] Tenant helper returned null for tenantId: ${tenantId}`);
       }
     }
 
-    if (!authorized || !propertyId || !propertyData) {
-      console.log(`[Receipt API] Authorization failed: authorized=${authorized}, propertyId=${propertyId}`);
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!payData || !propertyId || !propertyData) {
+      return NextResponse.json({ message: "Payment not found or unauthorized" }, { status: 404 });
     }
 
-    // Fetch the specific payment
-    const payDoc = await adminDb
-      .collection("properties")
-      .doc(propertyId)
-      .collection("payments")
-      .doc(id)
-      .get();
-
-    if (!payDoc.exists) {
-      console.log(`[Receipt API] Payment document not found: ${id} under property ${propertyId}`);
-      return NextResponse.json({ message: "Payment not found" }, { status: 404 });
-    }
-
-    const payData = payDoc.data()!;
-    console.log(`[Receipt API] Payment data retrieved. tenantId on payment: ${payData.tenantId}`);
-
-    // Additional check: if authorized via tenantId, ensure the payment actually belongs to this tenant!
-    const authorizedAsAdmin = session?.user?.id && (propertyData?.ownerId === session.user.id);
-    if (!authorizedAsAdmin && tenantId && payData.tenantId !== tenantId) {
-      console.log(`[Receipt API] Mismatch check failed. Payment tenantId (${payData.tenantId}) !== requested tenantId (${tenantId})`);
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    }
-
-
-    // Fetch tenant
+    // Fetch tenant + room
     let tenantData = null;
     if (payData.tenantId) {
       const tDoc = await adminDb
@@ -95,21 +85,27 @@ export async function GET(
       if (tDoc.exists) {
         const td = tDoc.data()!;
         let room = null;
-        if (td.roomId) {
+        const roomId = td.roomId;
+        if (roomId) {
           const rDoc = await adminDb
-            .collection("properties")
-            .doc(propertyId)
-            .collection("rooms")
-            .doc(td.roomId)
-            .get();
+            .collection("properties").doc(propertyId)
+            .collection("rooms").doc(roomId).get();
           if (rDoc.exists) room = { id: rDoc.id, ...rDoc.data() };
+        } else if (td.bedId) {
+          // Beds are nested under rooms — find the room that contains this bed
+          const roomsSnap = await adminDb
+            .collection("properties").doc(propertyId)
+            .collection("rooms").get();
+          for (const rDoc of roomsSnap.docs) {
+            const bedDoc = await rDoc.ref.collection("beds").doc(td.bedId).get();
+            if (bedDoc.exists) { room = { id: rDoc.id, ...rDoc.data() }; break; }
+          }
         }
         tenantData = { id: tDoc.id, ...td, room };
       }
     }
 
     return NextResponse.json({
-      id: payDoc.id,
       ...payData,
       tenant: tenantData,
       property: {

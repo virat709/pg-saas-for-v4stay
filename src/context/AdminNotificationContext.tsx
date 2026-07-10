@@ -1,23 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  limit,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export interface AppNotification {
   id: string;
   title: string;
   message: string;
   read: boolean;
-  created_at: any;
+  created_at: number | null; // millis from server
   type?: string;
   propertyId?: string;
   tenantId?: string;
@@ -39,7 +29,7 @@ const NotificationContext = createContext<NotificationContextValue>({
   markAllAsRead: async () => {},
 });
 
-// ── Shared AudioContext singleton — survives across ding calls ───────────────
+// ── Shared AudioContext singleton ────────────────────────────────────────────
 let sharedAudioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
@@ -58,18 +48,9 @@ async function playDing() {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
-
-    // Resume the context if it is suspended (browser autoplay policy).
-    // AudioContext starts in "suspended" state until a user gesture occurs.
-    // Since this runs in response to a Firestore snapshot change (not a click),
-    // we try to resume — it will succeed if the user has interacted with the
-    // page at least once (clicked, scrolled, typed, etc.).
-    if (ctx.state === "suspended") {
-      await ctx.resume();
-    }
+    if (ctx.state === "suspended") await ctx.resume();
 
     const now = ctx.currentTime;
-
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = "sine";
@@ -98,15 +79,11 @@ async function playDing() {
   }
 }
 
-// Eagerly unlock AudioContext on first user interaction so that future
-// notification dings can play without requiring a click at that exact moment.
+// Eagerly unlock AudioContext on first user interaction
 if (typeof window !== "undefined") {
   const unlock = () => {
     const ctx = getAudioContext();
-    if (ctx && ctx.state === "suspended") {
-      ctx.resume().catch(() => {});
-    }
-    // Remove all listeners after first unlock
+    if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
     window.removeEventListener("click", unlock);
     window.removeEventListener("keydown", unlock);
     window.removeEventListener("touchstart", unlock);
@@ -118,83 +95,83 @@ if (typeof window !== "undefined") {
   window.addEventListener("scroll", unlock, { once: true, capture: true });
 }
 
-interface AdminNotificationProviderProps {
-  children: React.ReactNode;
-}
+const POLL_MS = 15_000; // poll every 15 seconds
 
-export function AdminNotificationProvider({ children }: AdminNotificationProviderProps) {
+export function AdminNotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadByType, setUnreadByType] = useState<Record<string, number>>({});
-  const isInitialLoad = useRef(true);
   const prevUnread = useRef(0);
+  const isInitialLoad = useRef(true);
 
-  useEffect(() => {
-    const q = query(
-      collection(db, "notifications"),
-      where("recipientRole", "==", "admin"),
-      limit(30)
-    );
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications", { cache: "no-store" });
+      if (!res.ok) return;
+      const fetched: AppNotification[] = await res.json();
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const fetched = snapshot.docs
-          .map((d) => ({
-            id: d.id,
-            ...(d.data() as Omit<AppNotification, "id">),
-          }))
-          .sort((a, b) => {
-            const getTime = (n: any) => n?.created_at?.toMillis?.() ?? (n?.created_at?.seconds ? n.created_at.seconds * 1000 : 0);
-            return getTime(b) - getTime(a);
-          });
+      const newUnread = fetched.filter((n) => !n.read).length;
+      if (!isInitialLoad.current && newUnread > prevUnread.current) playDing();
 
-        const newUnread = fetched.filter((n) => !n.read).length;
+      const byType: Record<string, number> = {};
+      fetched.filter((n) => !n.read).forEach((n) => {
+        const t = n.type || "other";
+        byType[t] = (byType[t] || 0) + 1;
+      });
 
-        if (!isInitialLoad.current && newUnread > prevUnread.current) {
-          playDing();
-        }
-
-        // Count unread by type
-        const byType: Record<string, number> = {};
-        fetched.filter(n => !n.read).forEach(n => {
-          const t = n.type || "other";
-          byType[t] = (byType[t] || 0) + 1;
-        });
-
-        isInitialLoad.current = false;
-        prevUnread.current = newUnread;
-
-        setNotifications(fetched);
-        setUnreadCount(newUnread);
-        setUnreadByType(byType);
-      },
-      (error) => {
-        // Surface Firestore query errors (e.g. missing composite index) in the console
-        console.error(
-          "[AdminNotifications] Firestore onSnapshot error:",
-          error.message,
-          "\n\nIf this is a 'requires an index' error, follow the link in the error message to create the required composite index in the Firebase Console."
-        );
-      }
-    );
-
-    return () => unsubscribe();
+      isInitialLoad.current = false;
+      prevUnread.current = newUnread;
+      setNotifications(fetched);
+      setUnreadCount(newUnread);
+      setUnreadByType(byType);
+    } catch {
+      // silently ignore network errors during background polling
+    }
   }, []);
 
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, POLL_MS);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
   const markAsRead = useCallback(async (id: string) => {
+    // Optimistic update
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
     try {
-      await updateDoc(doc(db, "notifications", id), { read: true });
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
     } catch (e) {
       console.error("markAsRead failed", e);
     }
   }, []);
 
   const markAllAsRead = useCallback(async () => {
-    await Promise.all(
-      notifications.filter((n) => !n.read).map((n) => markAsRead(n.id))
-    );
-  }, [notifications, markAsRead]);
+    // Optimistic update
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await fetch("/api/notifications", { method: "POST" });
+    } catch (e) {
+      console.error("markAllAsRead failed", e);
+    }
+  }, []);
+
+  // Recompute counts whenever notifications change
+  useEffect(() => {
+    const unread = notifications.filter((n) => !n.read);
+    setUnreadCount(unread.length);
+    const byType: Record<string, number> = {};
+    unread.forEach((n) => {
+      const t = n.type || "other";
+      byType[t] = (byType[t] || 0) + 1;
+    });
+    setUnreadByType(byType);
+  }, [notifications]);
 
   return (
     <NotificationContext.Provider value={{ notifications, unreadCount, unreadByType, markAsRead, markAllAsRead }}>
