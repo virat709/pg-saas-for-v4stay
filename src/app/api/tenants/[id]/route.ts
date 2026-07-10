@@ -109,3 +109,82 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 }
 
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+    const { id: tenantId } = await params;
+    const body = await req.json();
+    const { newRoomId, newBedId } = body;
+
+    if (!newRoomId || !newBedId) {
+      return NextResponse.json({ message: "newRoomId and newBedId are required" }, { status: 400 });
+    }
+
+    const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
+    if (pSnap.empty) return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+    const propertyIds = pSnap.docs.map(doc => doc.id);
+
+    let targetPropertyId = null;
+    let oldRoomId = null;
+    let oldBedId = null;
+
+    for (const pId of propertyIds) {
+      const tDoc = await adminDb.collection("properties").doc(pId).collection("tenants").doc(tenantId).get();
+      if (tDoc.exists) {
+        targetPropertyId = pId;
+        oldRoomId = tDoc.data()?.roomId || null;
+        oldBedId = tDoc.data()?.bedId || null;
+        break;
+      }
+    }
+
+    if (!targetPropertyId) return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
+
+    // Verify new bed is vacant
+    const newBedRef = adminDb.collection("properties").doc(targetPropertyId).collection("rooms").doc(newRoomId).collection("beds").doc(newBedId);
+    const newBedSnap = await newBedRef.get();
+    if (!newBedSnap.exists) {
+      return NextResponse.json({ message: "Target bed not found" }, { status: 404 });
+    }
+    if (newBedSnap.data()?.status === "occupied" && newBedSnap.data()?.tenantId !== tenantId) {
+      return NextResponse.json({ message: "Target bed is already occupied" }, { status: 400 });
+    }
+
+    const batch = adminDb.batch();
+
+    // 1. Free up old bed if any
+    if (oldRoomId && oldBedId) {
+      const oldBedRef = adminDb.collection("properties").doc(targetPropertyId).collection("rooms").doc(oldRoomId).collection("beds").doc(oldBedId);
+      batch.update(oldBedRef, {
+        status: "vacant",
+        tenantId: null,
+        updated_at: new Date()
+      });
+    }
+
+    // 2. Assign new bed
+    batch.update(newBedRef, {
+      status: "occupied",
+      tenantId: tenantId,
+      updated_at: new Date()
+    });
+
+    // 3. Update tenant record
+    const tenantRef = adminDb.collection("properties").doc(targetPropertyId).collection("tenants").doc(tenantId);
+    batch.update(tenantRef, {
+      roomId: newRoomId,
+      bedId: newBedId,
+      updated_at: new Date()
+    });
+
+    await batch.commit();
+
+    return NextResponse.json({ message: "Room changed successfully" });
+  } catch (error) {
+    console.error("Error changing room:", error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
+  }
+}
+

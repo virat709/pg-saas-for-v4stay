@@ -16,6 +16,7 @@ type Tenant = {
   bed?: Bed;
   security_deposit_amount?: string;
   date_joined?: string;
+  propertyId?: string;
 };
 
 export default function TenantsPage() {
@@ -29,6 +30,11 @@ export default function TenantsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [copiedTenantId, setCopiedTenantId] = useState<string | null>(null);
+  const [roomChangeTenant, setRoomChangeTenant] = useState<Tenant | null>(null);
+  const [changeRoomFloor, setChangeRoomFloor] = useState("");
+  const [changeRoomRoomNumber, setChangeRoomRoomNumber] = useState("");
+  const [changeRoomBedId, setChangeRoomBedId] = useState("");
+  const [changingRoom, setChangingRoom] = useState(false);
 
   useEffect(() => {
     if (activePropertyId && activePropertyId !== "all") {
@@ -125,6 +131,74 @@ export default function TenantsPage() {
     } else {
       const daysOverdue = currentDay - billingDay;
       return { text: `Overdue ${daysOverdue}d`, color: "var(--danger)", isOverdue: true };
+    }
+  };
+
+  // Synchronize Change Room modal dropdown cascading state
+  useEffect(() => {
+    if (!roomChangeTenant) return;
+    const propId = roomChangeTenant.propertyId || selectedFormPropertyId;
+    const filtered = availableBeds.filter(b => b.propertyId === propId);
+    
+    // Get unique floors
+    const floors = Array.from(new Set(filtered.map(b => b.floor || "Ground Floor")));
+    
+    let currentFloor = changeRoomFloor;
+    if (!currentFloor || !floors.includes(currentFloor)) {
+      currentFloor = floors[0] || "";
+      setChangeRoomFloor(currentFloor);
+    }
+    
+    // Get rooms on current floor
+    const roomsOnFloor = Array.from(new Set(filtered.filter(b => b.floor === currentFloor).map(b => b.roomNumber)));
+    
+    let currentRoom = changeRoomRoomNumber;
+    if (!currentRoom || !roomsOnFloor.includes(currentRoom)) {
+      currentRoom = roomsOnFloor[0] || "";
+      setChangeRoomRoomNumber(currentRoom);
+    }
+    
+    // Get beds in current room on current floor
+    const beds = filtered.filter(b => b.floor === currentFloor && b.roomNumber === currentRoom);
+    
+    let currentBed = changeRoomBedId;
+    if (beds.length > 0) {
+      if (!currentBed || !beds.some(b => b.id === currentBed)) {
+        currentBed = beds[0].id;
+        setChangeRoomBedId(currentBed);
+      }
+    } else {
+      setChangeRoomBedId("");
+    }
+  }, [roomChangeTenant, changeRoomFloor, changeRoomRoomNumber, availableBeds]);
+
+  const handleChangeRoomSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!roomChangeTenant || !changeRoomBedId) return;
+    
+    setChangingRoom(true);
+    const [newRoomId, newBedId] = changeRoomBedId.split("_");
+    
+    try {
+      const res = await fetch(`/api/tenants/${roomChangeTenant.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newRoomId, newBedId })
+      });
+      
+      if (res.ok) {
+        toast("Room changed successfully!", "success");
+        setRoomChangeTenant(null);
+        fetchData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast(data.message || "Failed to change room.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast("Error changing room.", "error");
+    } finally {
+      setChangingRoom(false);
     }
   };
 
@@ -1005,6 +1079,76 @@ export default function TenantsPage() {
         </div>
       )}
 
+      {/* ── Change Room Modal ───────────────────────────────────── */}
+      {roomChangeTenant && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '420px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.3rem', color: 'var(--primary)' }}>🔄 Change Room</h2>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{roomChangeTenant.name}</p>
+              </div>
+              <button onClick={() => setRoomChangeTenant(null)} style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', lineHeight: 1, color: 'var(--text-muted)' }}>&times;</button>
+            </div>
+            <form onSubmit={handleChangeRoomSubmit}>
+              {/* Floor Selector */}
+              <div className="input-group">
+                <label className="input-label">Select Floor</label>
+                <select 
+                  className="input-field" 
+                  value={changeRoomFloor} 
+                  onChange={e => setChangeRoomFloor(e.target.value)}
+                  required
+                >
+                  {Array.from(new Set(availableBeds.filter(b => b.propertyId === (roomChangeTenant.propertyId || selectedFormPropertyId)).map(b => b.floor || "Ground Floor"))).map(floor => (
+                    <option key={floor} value={floor}>{floor}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Room Selector */}
+              <div className="input-group">
+                <label className="input-label">Select Room</label>
+                <select 
+                  className="input-field" 
+                  value={changeRoomRoomNumber} 
+                  onChange={e => setChangeRoomRoomNumber(e.target.value)}
+                  required
+                >
+                  {Array.from(new Set(availableBeds.filter(b => b.propertyId === (roomChangeTenant.propertyId || selectedFormPropertyId) && b.floor === changeRoomFloor).map(b => b.roomNumber))).map(roomNo => (
+                    <option key={roomNo} value={roomNo}>Room {roomNo}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Bed Selector */}
+              <div className="input-group">
+                <label className="input-label">Select Bed</label>
+                <select 
+                  className="input-field" 
+                  value={changeRoomBedId} 
+                  onChange={e => setChangeRoomBedId(e.target.value)}
+                  required
+                >
+                  {availableBeds.filter(b => b.propertyId === (roomChangeTenant.propertyId || selectedFormPropertyId) && b.floor === changeRoomFloor && b.roomNumber === changeRoomRoomNumber).map(bed => (
+                    <option key={bed.id} value={bed.id}>{bed.bedLabel}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+                <button type="button" onClick={() => setRoomChangeTenant(null)} style={{ flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={changingRoom || !changeRoomBedId}>
+                  {changingRoom ? "Updating..." : "✓ Change Room"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
 
 
       {selectedTenant && (
@@ -1103,13 +1247,21 @@ export default function TenantsPage() {
                 </button>
               </div>
               {selectedTenant.status === 'active' && (
-                <button 
-                  onClick={() => { handleVacate(selectedTenant.id, selectedTenant.name); setSelectedTenant(null); }} 
-                  disabled={actionLoading === selectedTenant.id}
-                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
-                >
-                  {actionLoading === selectedTenant.id ? '...' : '🚪 Vacate Room'}
-                </button>
+                <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
+                  <button 
+                    onClick={() => { setRoomChangeTenant(selectedTenant); setSelectedTenant(null); }} 
+                    style={{ flex: 1, padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
+                  >
+                    🔄 Change Room
+                  </button>
+                  <button 
+                    onClick={() => { handleVacate(selectedTenant.id, selectedTenant.name); setSelectedTenant(null); }} 
+                    disabled={actionLoading === selectedTenant.id}
+                    style={{ flex: 1, padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
+                  >
+                    {actionLoading === selectedTenant.id ? '...' : '🚪 Vacate Room'}
+                  </button>
+                </div>
               )}
               <button className="btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} onClick={() => setSelectedTenant(null)}>Close</button>
             </div>

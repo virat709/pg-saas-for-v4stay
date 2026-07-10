@@ -220,7 +220,7 @@ export default function PaymentsPage() {
     .filter(t => t.status === "active")
     .reduce((acc, t) => acc + (t.rent_amount || 0), 0);
   const totalCollectedThisMonth = currentMonthPayments
-    .filter(p => p.type === "rent")
+    .filter(p => p.type === "rent" && p.tenant && p.tenant.status === "active")
     .reduce((acc, p) => acc + (p.amount_paid || 0), 0);
   const totalDueThisMonth = tenants
     .filter(t => t.status === "active")
