@@ -6,7 +6,6 @@ import {
   query,
   where,
   onSnapshot,
-  orderBy,
   limit,
   doc,
   updateDoc,
@@ -134,17 +133,21 @@ export function AdminNotificationProvider({ children }: AdminNotificationProvide
     const q = query(
       collection(db, "notifications"),
       where("recipientRole", "==", "admin"),
-      orderBy("created_at", "desc"),
       limit(30)
     );
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const fetched = snapshot.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as Omit<AppNotification, "id">),
-        }));
+        const fetched = snapshot.docs
+          .map((d) => ({
+            id: d.id,
+            ...(d.data() as Omit<AppNotification, "id">),
+          }))
+          .sort((a, b) => {
+            const getTime = (n: any) => n?.created_at?.toMillis?.() ?? (n?.created_at?.seconds ? n.created_at.seconds * 1000 : 0);
+            return getTime(b) - getTime(a);
+          });
 
         const newUnread = fetched.filter((n) => !n.read).length;
 
