@@ -84,6 +84,11 @@ export default function TenantsPage() {
   const [offlinePayPersonName, setOfflinePayPersonName] = useState("");
   const [submittingOfflinePay, setSubmittingOfflinePay] = useState(false);
 
+  // Initial payment on tenant creation
+  const [initPayOption, setInitPayOption] = useState<"none" | "rent" | "advance">("none");
+  const [initPayAmount, setInitPayAmount] = useState("");
+  const [initAdvanceAmount, setInitAdvanceAmount] = useState("");
+
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
   const getDaysLeft = (billingDay: number) => {
@@ -458,11 +463,35 @@ export default function TenantsPage() {
         })
       });
       if (res.ok) {
+        const newTenant = await res.json();
+        const newTenantId = newTenant.id;
+
+        // Record initial payment if selected
+        if (newTenantId && initPayOption !== "none" && initPayAmount) {
+          const payments: Array<{ type: string; amount: string; amount_paid: string; reference: string }> = [];
+          if (initPayOption === "rent" || initPayOption === "advance") {
+            payments.push({ type: "rent", amount: initPayAmount, amount_paid: initPayAmount, reference: "Initial rent collected at joining" });
+          }
+          if (initPayOption === "advance" && initAdvanceAmount) {
+            payments.push({ type: "advance", amount: initAdvanceAmount, amount_paid: initAdvanceAmount, reference: "Advance collected at joining" });
+          }
+          await Promise.all(payments.map(p =>
+            fetch("/api/payments", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tenantId: newTenantId, method: "Cash", propertyId: selectedFormPropertyId, ...p }),
+            })
+          ));
+        }
+
         setShowAddForm(false);
         setPhotoFile(null);
         setPhotoPreview(null);
         setIdProofFile(null);
         setIdProofPreview(null);
+        setInitPayOption("none");
+        setInitPayAmount("");
+        setInitAdvanceAmount("");
         fetchData();
       }
     } catch (e: any) {
@@ -820,9 +849,65 @@ export default function TenantsPage() {
                 🪪 ID upload — coming soon
               </div>
             </div>
+            {/* Initial Payment Section */}
+            <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+              <label className="input-label" style={{ marginBottom: '0.75rem', display: 'block' }}>💰 Initial Payment Collected?</label>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                {(['none', 'rent', 'advance'] as const).map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => { setInitPayOption(opt); setInitPayAmount(""); setInitAdvanceAmount(""); }}
+                    style={{
+                      padding: '0.5rem 1.1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: `2px solid ${initPayOption === opt ? 'var(--primary)' : 'var(--border-color)'}`,
+                      backgroundColor: initPayOption === opt ? 'rgba(30,96,145,0.12)' : 'var(--bg-color)',
+                      color: initPayOption === opt ? 'var(--primary)' : 'var(--text-muted)',
+                      fontWeight: initPayOption === opt ? 700 : 400,
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {opt === 'none' && '✖ No Payment'}
+                    {opt === 'rent' && '✅ Rent Paid'}
+                    {opt === 'advance' && '⭐ Rent + Advance'}
+                  </button>
+                ))}
+              </div>
+              {(initPayOption === 'rent' || initPayOption === 'advance') && (
+                <div style={{ display: 'grid', gridTemplateColumns: initPayOption === 'advance' ? '1fr 1fr' : '1fr', gap: '1rem' }}>
+                  <div className="input-group mb-0">
+                    <label className="input-label">Rent Amount Paid (₹)</label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      placeholder={rentAmount ? `e.g. ${rentAmount}` : "Enter amount"}
+                      value={initPayAmount}
+                      onChange={e => setInitPayAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {initPayOption === 'advance' && (
+                    <div className="input-group mb-0">
+                      <label className="input-label">Advance Amount (₹)</label>
+                      <input
+                        type="number"
+                        className="input-field"
+                        placeholder="Enter advance"
+                        value={initAdvanceAmount}
+                        onChange={e => setInitAdvanceAmount(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center" style={{ marginTop: '1.5rem', gridColumn: '1 / -1' }}>
               <button type="submit" className="btn-primary w-full" disabled={uploading}>
-                {uploading ? "Uploading & Saving..." : "Save Tenant"}
+                {uploading ? "Saving..." : "Save Tenant"}
               </button>
             </div>
           </form>
