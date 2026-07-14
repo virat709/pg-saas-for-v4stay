@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAdminNotifications } from "@/context/AdminNotificationContext";
 import { useFaviconBadge } from "@/hooks/useFaviconBadge";
 import { AppNotification } from "@/context/AdminNotificationContext";
 
 // ── Tenant-side bell (keeps its own Firestore sub) ────────────────────────
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import {
   collection,
   query,
@@ -105,6 +105,11 @@ function BellDropdown({
   onMarkAllAsRead: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Auto-mark all as read the moment the panel opens
+  useEffect(() => {
+    if (isOpen && unreadCount > 0) onMarkAllAsRead();
+  }, [isOpen]);
 
   return (
     <div style={{ position: "relative" }}>
