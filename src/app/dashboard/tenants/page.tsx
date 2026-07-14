@@ -810,23 +810,15 @@ export default function TenantsPage() {
             </div>
             <div className="input-group mb-0" style={{ display: 'flex', flexDirection: 'column' }}>
               <label className="input-label">Tenant Photo</label>
-              <input type="file" accept="image/*" className="input-field" onChange={e => {
-                const file = e.target?.files?.[0] || null;
-                setPhotoFile(file);
-                if (file) setPhotoPreview(URL.createObjectURL(file));
-                else setPhotoPreview(null);
-              }} style={{ padding: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }} />
-              {photoPreview && <img src={photoPreview} alt="Tenant profile photo preview" style={{ marginTop: '0.5rem', height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px' }} />}
+              <div style={{ padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                📷 Photo upload — coming soon
+              </div>
             </div>
             <div className="input-group mb-0" style={{ display: 'flex', flexDirection: 'column' }}>
               <label className="input-label">ID Proof Document</label>
-              <input type="file" accept="image/*,.pdf" className="input-field" onChange={e => {
-                const file = e.target?.files?.[0] || null;
-                setIdProofFile(file);
-                if (file && file.type.startsWith('image/')) setIdProofPreview(URL.createObjectURL(file));
-                else setIdProofPreview(null);
-              }} style={{ padding: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }} />
-              {idProofPreview && <img src={idProofPreview} alt="Tenant identification proof document preview" style={{ marginTop: '0.5rem', height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px' }} />}
+              <div style={{ padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                🪪 ID upload — coming soon
+              </div>
             </div>
             <div className="flex items-center" style={{ marginTop: '1.5rem', gridColumn: '1 / -1' }}>
               <button type="submit" className="btn-primary w-full" disabled={uploading}>
