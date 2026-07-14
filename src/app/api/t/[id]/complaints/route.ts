@@ -31,12 +31,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       updated_at: new Date()
     });
 
+    const propertyDoc = await adminDb.collection("properties").doc(propertyId).get();
+    const ownerId = propertyDoc.data()?.ownerId || null;
+
     await adminDb.collection("notifications").add({
       title: "New Complaint Submitted",
       message: `${tenantName} submitted a new complaint: ${category}.`,
       read: false,
       recipientRole: "admin",
       propertyId: propertyId,
+      ownerId,
       tenantId,
       created_at: new Date(),
       type: "complaint"

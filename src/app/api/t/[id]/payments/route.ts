@@ -39,12 +39,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const newPayRef = await paymentsRef.add(newPayment);
 
+    const propertyDoc = await adminDb.collection("properties").doc(propertyId).get();
+    const ownerId = propertyDoc.data()?.ownerId || null;
+
     await adminDb.collection("notifications").add({
       title: "New Payment Submitted",
       message: `${tenantName} submitted a payment of ₹${amount}.`,
       read: false,
       recipientRole: "admin",
       propertyId: propertyId,
+      ownerId,
       tenantId,
       created_at: new Date(),
       type: "payment"
