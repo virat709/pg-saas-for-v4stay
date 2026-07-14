@@ -9,13 +9,7 @@ const bucketName = 'pg-project-b8e78.firebasestorage.app';
 
 const corsConfig = [
   {
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',
-      'http://localhost:3003',
-      'http://192.168.0.109:3002',
-    ],
+    origin: ['*'],
     method: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'],
     maxAgeSeconds: 3600,
     responseHeader: [
