@@ -106,7 +106,7 @@ export default function PaymentsPage() {
       const res = await fetch("/api/payments", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId, status: "completed", propertyId })
+        body: JSON.stringify({ paymentId, status: "paid", propertyId })
       });
       if (res.ok) {
         toast("Payment confirmed successfully! Receipt is now visible to tenant.", "success");
