@@ -32,39 +32,23 @@ export async function GET(req: Request) {
 
     await Promise.all(
       targets.map(async (pId) => {
-        const tSnap = await adminDb.collection("properties").doc(pId).collection("tenants").get();
-        
-        const bedsMap: Record<string, any> = {};
+        // Bulk fetch: all tenants + all rooms (with their beds) in parallel — 2 queries instead of 2×N
+        const [tSnap, rSnap] = await Promise.all([
+          adminDb.collection("properties").doc(pId).collection("tenants").get(),
+          adminDb.collection("properties").doc(pId).collection("rooms").get(),
+        ]);
+
+        // Build rooms map with nested beds fetched in bulk
         const roomsMap: Record<string, any> = {};
+        const bedsMap: Record<string, any> = {};
 
         await Promise.all(
-          tSnap.docs.map(async (tDoc) => {
-            const tData = tDoc.data();
-            if (tData.roomId && tData.bedId) {
-              try {
-                const bedRef = adminDb.collection("properties").doc(pId).collection("rooms").doc(tData.roomId).collection("beds").doc(tData.bedId);
-                const roomRef = adminDb.collection("properties").doc(pId).collection("rooms").doc(tData.roomId);
-
-                const [bedSnap, roomSnap] = await Promise.all([
-                  bedRef.get(),
-                  roomsMap[tData.roomId] ? Promise.resolve(null) : roomRef.get()
-                ]);
-
-                if (roomSnap && roomSnap.exists) {
-                  roomsMap[tData.roomId] = { id: roomSnap.id, ...roomSnap.data() };
-                }
-
-                if (bedSnap.exists) {
-                  bedsMap[tData.bedId] = {
-                    id: bedSnap.id,
-                    ...bedSnap.data(),
-                    room: roomsMap[tData.roomId] || null
-                  };
-                }
-              } catch (e) {
-                console.error(`Failed to load bed/room details for tenant ${tDoc.id}:`, e);
-              }
-            }
+          rSnap.docs.map(async (rDoc) => {
+            roomsMap[rDoc.id] = { id: rDoc.id, ...rDoc.data() };
+            const bSnap = await rDoc.ref.collection("beds").get();
+            bSnap.docs.forEach((bDoc) => {
+              bedsMap[bDoc.id] = { id: bDoc.id, ...bDoc.data(), room: roomsMap[rDoc.id] };
+            });
           })
         );
 
@@ -81,6 +65,7 @@ export async function GET(req: Request) {
         });
       })
     );
+
 
     // Sort descending by created_at
     allTenants.sort((a: any, b: any) => {
