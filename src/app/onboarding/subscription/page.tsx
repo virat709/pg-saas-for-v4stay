@@ -9,6 +9,7 @@ export default function SubscriptionPage() {
   const [selectedPlan, setSelectedPlan] = useState<{name: string, price: number} | null>(null);
   const [propertyCount, setPropertyCount] = useState(1);
   const [currentLimit, setCurrentLimit] = useState(0);
+  const [isUpgrade, setIsUpgrade] = useState(false);
 
   // Check if owner already has an active subscription on mount
   useEffect(() => {
@@ -21,22 +22,23 @@ export default function SubscriptionPage() {
       .then((data) => {
         const limit = data.property_limit || 1;
         setCurrentLimit(limit);
+        const active = data.subscription_status === "active";
+        setIsUpgrade(active);
         
+        if (active) {
+          setPropertyCount(limit + 1);
+        }
+
         const params = new URLSearchParams(window.location.search);
         if (params.get("upgrade") === "true") {
+          setIsUpgrade(true);
           setPropertyCount(limit + 1);
           return;
         }
 
-        if (data.subscription_status === "active") {
-          // If already active, trigger session refresh to update Next-Auth cookie, then redirect to dashboard
-          fetch("/api/auth/session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          }).finally(() => {
-            router.push("/dashboard");
-          });
+        if (active) {
+          // If already active, redirect immediately to dashboard without blocking on session call
+          router.push("/dashboard");
         }
       })
       .catch((err) => console.error("Mount status check failed:", err));
@@ -127,9 +129,9 @@ export default function SubscriptionPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
               <button 
                 className="btn-secondary" 
-                onClick={() => setPropertyCount(prev => Math.max(currentLimit > 0 ? currentLimit + 1 : 1, prev - 1))}
+                onClick={() => setPropertyCount(prev => Math.max(isUpgrade ? currentLimit + 1 : 1, prev - 1))}
                 style={{ padding: '0.25rem', fontSize: '1.25rem', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
-                disabled={currentLimit > 0 && propertyCount <= currentLimit + 1}
+                disabled={isUpgrade && propertyCount <= currentLimit + 1}
               >
                 -
               </button>
@@ -143,7 +145,7 @@ export default function SubscriptionPage() {
               </button>
             </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0 }}>
-              {currentLimit > 0 
+              {isUpgrade 
                 ? `Upgrading from your current limit of ${currentLimit} PG(s).` 
                 : propertyCount === 1 
                 ? "Standard base plan configuration." 
@@ -167,12 +169,12 @@ export default function SubscriptionPage() {
             }}
           >
             <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>
-              {currentLimit > 0 ? "Upgrade — 6 Months" : "PGmate Starter — 6 Months"}
+              {isUpgrade ? "Upgrade — 6 Months" : "PGmate Starter — 6 Months"}
             </h3>
             <div style={{ fontSize: "2.5rem", fontWeight: 800, lineHeight: 1, margin: "1rem 0" }}>
-              ₹{(currentLimit > 0 ? (propertyCount - currentLimit) * 4999 : 6999 + (propertyCount - 1) * 4999).toLocaleString()}
+              ₹{(isUpgrade ? (propertyCount - currentLimit) * 4999 : 6999 + (propertyCount - 1) * 4999).toLocaleString()}
             </div>
-            {currentLimit > 0 ? (
+            {isUpgrade ? (
               <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
                 Upgrade: {propertyCount - currentLimit} × ₹4,999 additional PG addon(s)
               </div>
@@ -200,7 +202,7 @@ export default function SubscriptionPage() {
             <button
               className="btn-secondary w-full"
               style={{ fontSize: '1.05rem', padding: '0.875rem' }}
-              onClick={() => handleSelectPlan('PGmate Starter 6 Months', currentLimit > 0 ? (propertyCount - currentLimit) * 4999 : 6999 + (propertyCount - 1) * 4999, propertyCount)}
+              onClick={() => handleSelectPlan('PGmate Starter 6 Months', isUpgrade ? (propertyCount - currentLimit) * 4999 : 6999 + (propertyCount - 1) * 4999, propertyCount)}
               disabled={loading}
             >
               Get Started
@@ -225,12 +227,12 @@ export default function SubscriptionPage() {
             </div>
 
             <h3 style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>
-              {currentLimit > 0 ? "Upgrade — 1 Year" : "PGmate Premium — 1 Year"}
+              {isUpgrade ? "Upgrade — 1 Year" : "PGmate Premium — 1 Year"}
             </h3>
             <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--success)", lineHeight: 1, margin: "1rem 0" }}>
-              ₹{(currentLimit > 0 ? (propertyCount - currentLimit) * 6999 : 11999 + (propertyCount - 1) * 6999).toLocaleString()}
+              ₹{(isUpgrade ? (propertyCount - currentLimit) * 6999 : 11999 + (propertyCount - 1) * 6999).toLocaleString()}
             </div>
-            {currentLimit > 0 ? (
+            {isUpgrade ? (
               <div style={{ color: "var(--success)", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>
                 Upgrade: {propertyCount - currentLimit} × ₹6,999 additional PG addon(s)
               </div>
@@ -266,7 +268,7 @@ export default function SubscriptionPage() {
             <button
               className="btn-primary w-full"
               style={{ fontSize: '1.05rem', padding: '0.875rem', backgroundColor: 'var(--success)', color: '#0f172a' }}
-              onClick={() => handleSelectPlan('PGmate Premium 1 Year', currentLimit > 0 ? (propertyCount - currentLimit) * 6999 : 11999 + (propertyCount - 1) * 6999, propertyCount)}
+              onClick={() => handleSelectPlan('PGmate Premium 1 Year', isUpgrade ? (propertyCount - currentLimit) * 6999 : 11999 + (propertyCount - 1) * 6999, propertyCount)}
               disabled={loading}
             >
               Get Started

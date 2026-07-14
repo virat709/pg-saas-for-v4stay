@@ -190,27 +190,29 @@ export default function TenantPortal() {
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem', paddingBottom: '4rem' }}>
-      <header style={{ textAlign: 'center', marginBottom: '2rem', paddingTop: '2rem', position: 'relative' }}>
-        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+      <header style={{ marginBottom: '2rem', paddingTop: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
           <ThemeToggle />
           <NotificationBell role="tenant" tenantId={tenantId} />
         </div>
-        <h1 style={{ fontSize: '1.5rem', color: 'var(--primary)' }}>{tenant.property?.name || "PG Dashboard"}</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Welcome, {tenant.name}</p>
-        {menu && (
-          <button 
-            onClick={() => setShowMenu(true)} 
-            className="btn-primary" 
-            style={{ marginTop: '1rem', backgroundColor: 'var(--surface-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            🍽️ View Weekly Menu
-          </button>
-        )}
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '1.5rem', color: 'var(--primary)', margin: '0 0 0.25rem 0' }}>{tenant.property?.name || "PG Dashboard"}</h1>
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Welcome, {tenant.name}</p>
+          {menu && (
+            <button 
+              onClick={() => setShowMenu(true)} 
+              className="btn-primary" 
+              style={{ marginTop: '1rem', backgroundColor: 'var(--surface-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              🍽️ View Weekly Menu
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="card mb-8">
         <h3>My Stay</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
           <div>
             <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Name</div>
             <div style={{ fontWeight: 500 }}>{tenant.name}</div>
@@ -237,16 +239,18 @@ export default function TenantPortal() {
           </div>
           <div>
             <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Status</div>
-            <span style={{ 
-              padding: '4px 8px', 
-              borderRadius: '12px', 
-              fontSize: '0.75rem', 
-              fontWeight: 500,
-              backgroundColor: tenant.status === 'active' ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-color)',
-              color: tenant.status === 'active' ? 'var(--success)' : 'var(--text-muted)'
-            }}>
-              {tenant.status?.toUpperCase() ?? 'UNKNOWN'}
-            </span>
+            <div>
+              <span style={{ 
+                padding: '4px 8px', 
+                borderRadius: '12px', 
+                fontSize: '0.75rem', 
+                fontWeight: 500,
+                backgroundColor: tenant.status === 'active' ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-color)',
+                color: tenant.status === 'active' ? 'var(--success)' : 'var(--text-muted)'
+              }}>
+                {tenant.status?.toUpperCase() ?? 'UNKNOWN'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -288,7 +292,7 @@ export default function TenantPortal() {
                 alt="UPI QR Code for rent payment"
                 style={{ width: '180px', height: '180px', borderRadius: '8px', display: 'block', margin: '0 auto' }}
               />
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.6rem' }}>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.6rem', wordBreak: 'break-all' }}>
                 UPI: <strong style={{ color: 'var(--primary)' }}>{tenant.property.upi_id}</strong>
               </p>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
@@ -392,7 +396,7 @@ export default function TenantPortal() {
                         {isToday && <span style={{ backgroundColor: '#facc15', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.5px' }}>TODAY</span>}
                       </strong>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', fontSize: '0.875rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem', fontSize: '0.875rem' }}>
                       <div>
                         <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 500 }}>☀️ Breakfast</div>
                         <div style={{ whiteSpace: 'pre-line' }}>{menu[day].breakfast || '-'}</div>

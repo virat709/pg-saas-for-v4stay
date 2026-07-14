@@ -53,37 +53,32 @@ function PaymentStatusContent() {
           setMessage("Payment confirmed! Updating session and taking you to your dashboard…");
           cleanup();
           
-          // Trigger a session refresh so Next-Auth updates the JWT cookie with active status.
-          // This allows the middleware to instantly fast-path on subsequent dashboard route requests.
-          fetch("/api/auth/session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          })
-            .catch((err) => console.error("[status page] Session update failed:", err))
-            .finally(async () => {
-              try {
-                // Fetch settings and properties to determine the redirect path
-                const [settingsRes, propertiesRes] = await Promise.all([
-                  fetch("/api/settings"),
-                  fetch("/api/properties"),
-                ]);
-                if (settingsRes.ok && propertiesRes.ok) {
-                  const settingsData = await settingsRes.json();
-                  const propertiesData = await propertiesRes.json();
-                  const limit = settingsData.property_limit || 1;
-                  const count = Array.isArray(propertiesData) ? propertiesData.length : 0;
-                  
-                  if (count < limit) {
-                    setTimeout(() => router.push("/onboarding/property"), 1500);
-                    return;
-                  }
+          // Redirect immediately without waiting for session call to avoid deadlocks/hangs in serverless environments.
+          // The session JWT token's subscriptionStatus claim will automatically be refreshed by the middleware/API 
+          // time-based JWT check (30s) or on manual logout/login.
+          (async () => {
+            try {
+              // Fetch settings and properties to determine the redirect path
+              const [settingsRes, propertiesRes] = await Promise.all([
+                fetch("/api/settings"),
+                fetch("/api/properties"),
+              ]);
+              if (settingsRes.ok && propertiesRes.ok) {
+                const settingsData = await settingsRes.json();
+                const propertiesData = await propertiesRes.json();
+                const limit = settingsData.property_limit || 1;
+                const count = Array.isArray(propertiesData) ? propertiesData.length : 0;
+                
+                if (count < limit) {
+                  setTimeout(() => router.push("/onboarding/property"), 1500);
+                  return;
                 }
-              } catch (e) {
-                console.error("Redirect check failed, falling back to dashboard:", e);
               }
-              setTimeout(() => router.push("/dashboard"), 1500);
-            });
+            } catch (e) {
+              console.error("Redirect check failed, falling back to dashboard:", e);
+            }
+            setTimeout(() => router.push("/dashboard"), 1500);
+          })();
           return;
         }
 

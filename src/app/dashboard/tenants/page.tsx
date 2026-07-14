@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useProperties } from "@/context/PropertyContext";
 import { useToast } from "@/context/ToastContext";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 type Room = { room_number: string };
 type Bed = { id: string; bed_label: string; room: Room };
@@ -17,6 +19,8 @@ type Tenant = {
   security_deposit_amount?: string;
   date_joined?: string;
   propertyId?: string;
+  photo?: string;
+  id_proof_doc?: string;
 };
 
 export default function TenantsPage() {
@@ -430,13 +434,16 @@ export default function TenantsPage() {
 
 
 
-      // Temporarily bypass file uploads to Firebase Storage
       if (photoFile) {
-        console.log("Skipping photo upload as per user request.");
+        const storageRef = ref(storage, `properties/${selectedFormPropertyId}/tenants/${Date.now()}_photo_${photoFile.name}`);
+        const snapshot = await uploadBytes(storageRef, photoFile);
+        photoUrl = await getDownloadURL(snapshot.ref);
       }
 
       if (idProofFile) {
-        console.log("Skipping ID proof upload as per user request.");
+        const storageRef = ref(storage, `properties/${selectedFormPropertyId}/tenants/${Date.now()}_id_${idProofFile.name}`);
+        const snapshot = await uploadBytes(storageRef, idProofFile);
+        idProofUrl = await getDownloadURL(snapshot.ref);
       }
 
       const res = await fetch("/api/tenants", {
@@ -801,24 +808,24 @@ export default function TenantsPage() {
               <label className="input-label">Billing Cycle Day</label>
               <input type="number" min="1" max="31" className="input-field" value={billingCycleDay} onChange={e => setBillingCycleDay(e.target.value)} required placeholder="e.g. 5" />
             </div>
-            <div className="input-group mb-0" style={{ display: 'flex', flexDirection: 'column', opacity: 0.5 }}>
-              <label className="input-label">Tenant Photo (Locked for now)</label>
-              <input type="file" accept="image/*" disabled className="input-field" onChange={e => {
+            <div className="input-group mb-0" style={{ display: 'flex', flexDirection: 'column' }}>
+              <label className="input-label">Tenant Photo</label>
+              <input type="file" accept="image/*" className="input-field" onChange={e => {
                 const file = e.target?.files?.[0] || null;
                 setPhotoFile(file);
                 if (file) setPhotoPreview(URL.createObjectURL(file));
                 else setPhotoPreview(null);
-              }} style={{ padding: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', cursor: 'not-allowed' }} />
+              }} style={{ padding: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }} />
               {photoPreview && <img src={photoPreview} alt="Tenant profile photo preview" style={{ marginTop: '0.5rem', height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px' }} />}
             </div>
-            <div className="input-group mb-0" style={{ display: 'flex', flexDirection: 'column', opacity: 0.5 }}>
-              <label className="input-label">ID Proof Document (Locked for now)</label>
-              <input type="file" accept="image/*,.pdf" disabled className="input-field" onChange={e => {
+            <div className="input-group mb-0" style={{ display: 'flex', flexDirection: 'column' }}>
+              <label className="input-label">ID Proof Document</label>
+              <input type="file" accept="image/*,.pdf" className="input-field" onChange={e => {
                 const file = e.target?.files?.[0] || null;
                 setIdProofFile(file);
                 if (file && file.type.startsWith('image/')) setIdProofPreview(URL.createObjectURL(file));
                 else setIdProofPreview(null);
-              }} style={{ padding: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', cursor: 'not-allowed' }} />
+              }} style={{ padding: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }} />
               {idProofPreview && <img src={idProofPreview} alt="Tenant identification proof document preview" style={{ marginTop: '0.5rem', height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px' }} />}
             </div>
             <div className="flex items-center" style={{ marginTop: '1.5rem', gridColumn: '1 / -1' }}>
@@ -1228,6 +1235,26 @@ export default function TenantsPage() {
                   {selectedTenant.status}
                 </div>
               </div>
+              {selectedTenant.photo && (
+                <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Tenant Photo</div>
+                  <img src={selectedTenant.photo} alt="Tenant profile" style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)' }} />
+                </div>
+              )}
+              {selectedTenant.id_proof_doc && (
+                <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>ID Proof Document</div>
+                  {selectedTenant.id_proof_doc.toLowerCase().includes('.pdf') || selectedTenant.id_proof_doc.includes('?alt=media') && !selectedTenant.id_proof_doc.toLowerCase().match(/\.(jpg|jpeg|png|webp|gif)/) ? (
+                    <a href={selectedTenant.id_proof_doc} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '8px 16px', backgroundColor: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500, fontSize: '0.9rem' }}>
+                      📄 View ID Document / PDF
+                    </a>
+                  ) : (
+                    <a href={selectedTenant.id_proof_doc} target="_blank" rel="noopener noreferrer" style={{ display: 'block', maxWidth: 'max-content' }}>
+                      <img src={selectedTenant.id_proof_doc} alt="ID Proof" style={{ maxWidth: '100%', maxHeight: '150px', objectFit: 'contain', borderRadius: '6px', border: '1px solid var(--border-color)' }} />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
