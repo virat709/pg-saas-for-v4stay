@@ -19,28 +19,24 @@ export async function GET(req: Request) {
       console.warn("[CRON] Running without CRON_SECRET authorization check (development mode).");
     }
 
-    const propertiesRef = adminDb.collection("properties");
-    const pSnap = await propertiesRef.get();
+    const pSnap = await adminDb.collection("properties").get();
     
-    let activeTenants: any[] = [];
+    const activeTenants: any[] = [];
     
     for (const p of pSnap.docs) {
       const pData = p.data();
-      const tenantsRef = adminDb.collection("properties").doc(p.id).collection("tenants");
-      const tSnap = await tenantsRef.where("status", "==", "active").get();
-      
+      const tSnap = await adminDb.collection("properties").doc(p.id).collection("tenants")
+        .where("status", "==", "active").get();
       tSnap.forEach(t => {
-         activeTenants.push({
-            id: t.id,
-            ...t.data(),
-            property: { id: p.id, ...pData }
-         });
+        activeTenants.push({ id: t.id, ...t.data(), property: { id: p.id, ...pData } });
       });
     }
 
     const today = new Date();
     const currentDay = today.getDate();
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    // Month key for deduplication — e.g. "2026-07"
+    const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
     const remindersSent: any[] = [];
 
@@ -56,14 +52,29 @@ export async function GET(req: Request) {
         const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
         const magicLink = `${baseUrl}/t/${tenant.id}`;
 
-        remindersSent.push({
+        // ── Deduplication: skip if already reminded this billing month ───────────
+        const dedupKey = `reminder_${tenant.id}_${monthKey}`;
+        const dedupSnap = await adminDb.collection("cron_dedup").doc(dedupKey).get();
+        if (dedupSnap.exists) {
+          console.log(`[CRON] Skipping ${tenant.name} — already reminded this month.`);
+          continue;
+        }
+
+        remindersSent.push({ tenantId: tenant.id, name: tenant.name, phone: tenant.phone, daysLeft });
+
+        // ── Push in-app notification to tenant portal bell ──────────────────────
+        await adminDb.collection("notifications").add({
+          title: "💰 Rent Due in 5 Days",
+          message: `Your rent of ₹${tenant.rent_amount} is due on day ${tenant.billing_cycle_day}. Please arrange payment soon.`,
+          read: false,
+          recipientRole: "tenant",
           tenantId: tenant.id,
-          name: tenant.name,
-          phone: tenant.phone,
-          daysLeft,
+          propertyId: tenant.property.id,
+          type: "rent_reminder",
+          created_at: new Date(),
         });
 
-        // Send reminder email if tenant has an email on file
+        // ── Send reminder email if tenant has an email on file ───────────────────
         if (tenant.email) {
           await sendEmail({
             to: tenant.email,
@@ -77,8 +88,15 @@ export async function GET(req: Request) {
             }),
           });
         } else {
-          console.log(`[CRON] No email for tenant ${tenant.name} (${tenant.phone}). Skipping reminder.`);
+          console.log(`[CRON] No email for tenant ${tenant.name} (${tenant.phone}). Skipping email.`);
         }
+
+        // ── Record dedup marker so we don't resend this month ────────────────────
+        await adminDb.collection("cron_dedup").doc(dedupKey).set({
+          tenantId: tenant.id,
+          month: monthKey,
+          sent_at: new Date(),
+        });
       }
     }
 
