@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const { upi_id, propertyId } = body;
 
     // Validate UPI ID format (e.g. name@bank or phone@upi) — allow empty to clear
-    if (upi_id && (upi_id.length > 100 || (upi_id.trim() !== "" && !/^[a-zA-Z0-9._\-]+@[a-zA-Z0-9]+$/.test(upi_id.trim())))) {
+    if (upi_id && (upi_id.length > 100 || (upi_id.trim() !== "" && !/^[a-zA-Z0-9._\-]+@[a-zA-Z0-9.\-_]+$/.test(upi_id.trim())))) {
       return NextResponse.json({ message: "Invalid UPI ID format. Example: 9876543210@ybl or name@oksbi" }, { status: 400 });
     }
 

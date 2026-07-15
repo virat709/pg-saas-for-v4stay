@@ -53,14 +53,15 @@ export async function GET() {
           : new Date(data.subscription_activated_at)
         : null;
 
-      const planTier = data.plan_tier || data.subscription_plan || "Free / Trial";
-      const status = data.subscription_status || "inactive";
+      const planTier = data.plan_tier || data.subscription_plan || "No Active Plan";
+      let status = data.subscription_status || "inactive";
 
       // Calculate subscription duration
+      const planTierLower = planTier.toLowerCase();
       let durationMonths = 0;
-      if (planTier.includes("6 Months") || planTier.includes("Starter")) {
+      if (planTierLower.includes("6 months") || planTierLower.includes("starter")) {
         durationMonths = 6;
-      } else if (planTier.includes("1 Year") || planTier.includes("Premium")) {
+      } else if (planTierLower.includes("1 year") || planTierLower.includes("premium")) {
         durationMonths = 12;
       }
 
@@ -73,6 +74,13 @@ export async function GET() {
         
         const diffTime = expiresAt.getTime() - Date.now();
         daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 0) {
+          daysLeft = 0;
+          status = "expired";
+        }
+      } else if (status === "active") {
+        // Active status but missing activation or duration => treat as inactive
+        status = "inactive";
       }
 
       return {

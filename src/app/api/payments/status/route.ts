@@ -31,7 +31,41 @@ export async function GET(req: Request) {
     }
 
     const ownerData = ownerDoc.data()!;
-    const subscriptionStatus = (ownerData.subscription_status as string) || "inactive";
+    let subscriptionStatus = (ownerData.subscription_status as string) || "inactive";
+
+    // Parse activation date
+    const activatedAtVal = ownerData.subscription_activated_at;
+    const activatedAt = activatedAtVal
+      ? typeof activatedAtVal === "object" && activatedAtVal.seconds
+        ? new Date(activatedAtVal.seconds * 1000)
+        : new Date(activatedAtVal)
+      : null;
+
+    const planTier = ownerData.plan_tier || ownerData.subscription_plan || "No Active Plan";
+    const planTierLower = planTier.toLowerCase();
+    let durationMonths = 0;
+    if (planTierLower.includes("6 months") || planTierLower.includes("starter")) {
+      durationMonths = 6;
+    } else if (planTierLower.includes("1 year") || planTierLower.includes("premium")) {
+      durationMonths = 12;
+    }
+
+    let expiresAt: Date | null = null;
+    let daysLeft: number | null = null;
+
+    if (subscriptionStatus === "active" && activatedAt && durationMonths > 0) {
+      expiresAt = new Date(activatedAt);
+      expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+      
+      const diffTime = expiresAt.getTime() - Date.now();
+      daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (daysLeft <= 0) {
+        daysLeft = 0;
+        subscriptionStatus = "inactive"; // plan completed
+      }
+    } else if (subscriptionStatus === "active") {
+      subscriptionStatus = "inactive"; // no active paid plan
+    }
 
     // Optionally also check the transaction record for more context
     let transactionStatus = "unknown";
@@ -46,6 +80,9 @@ export async function GET(req: Request) {
       subscriptionStatus,
       transactionStatus,
       activated: subscriptionStatus === "active",
+      planTier,
+      daysLeft,
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
     });
   } catch (error) {
     console.error("[/api/payments/status] Error:", error);

@@ -138,10 +138,16 @@ export function AdminNotificationProvider({ children }: { children: React.ReactN
   }, [fetchNotifications]);
 
   const markAsRead = useCallback(async (id: string) => {
-    // Optimistic update
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    // Optimistic update — also recompute counts immediately
+    setNotifications((prev) => {
+      const next = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
+      const unread = next.filter((n) => !n.read);
+      setUnreadCount(unread.length);
+      const byType: Record<string, number> = {};
+      unread.forEach((n) => { const t = n.type || "other"; byType[t] = (byType[t] || 0) + 1; });
+      setUnreadByType(byType);
+      return next;
+    });
     try {
       await fetch("/api/notifications", {
         method: "PATCH",
@@ -154,8 +160,10 @@ export function AdminNotificationProvider({ children }: { children: React.ReactN
   }, []);
 
   const markAllAsRead = useCallback(async () => {
-    // Optimistic update
+    // Optimistic update — zero out counts immediately
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadCount(0);
+    setUnreadByType({});
     try {
       await fetch("/api/notifications", { method: "POST" });
     } catch (e) {
@@ -163,17 +171,9 @@ export function AdminNotificationProvider({ children }: { children: React.ReactN
     }
   }, []);
 
-  // Recompute counts whenever notifications change
-  useEffect(() => {
-    const unread = notifications.filter((n) => !n.read);
-    setUnreadCount(unread.length);
-    const byType: Record<string, number> = {};
-    unread.forEach((n) => {
-      const t = n.type || "other";
-      byType[t] = (byType[t] || 0) + 1;
-    });
-    setUnreadByType(byType);
-  }, [notifications]);
+  // ponytail: counts are computed inline in fetchNotifications and mark* callbacks.
+  // The extra useEffect was removed — it caused a render-cycle race where
+  // optimistic updates were overwritten by a stale notifications snapshot.
 
   return (
     <NotificationContext.Provider value={{ notifications, unreadCount, unreadByType, markAsRead, markAllAsRead }}>

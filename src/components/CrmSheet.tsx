@@ -287,8 +287,8 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
                       </tr>
                     ) : (
                       filteredOwners.map((owner) => {
-                        const isExpired = owner.status === "active" && owner.daysLeft !== null && owner.daysLeft <= 0;
-                        const isTrial = owner.planTier.includes("Free") || owner.planTier.includes("Trial");
+                        const isExpired = owner.status === "expired" || (owner.status === "active" && owner.daysLeft !== null && owner.daysLeft <= 0);
+                        const isNoPlan = owner.planTier === "No Active Plan" || owner.status === "inactive";
                         
                         return (
                           <tr
@@ -317,8 +317,8 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
                                   borderRadius: "12px",
                                   fontSize: "0.75rem",
                                   fontWeight: 600,
-                                  backgroundColor: isTrial ? "rgba(245, 158, 11, 0.1)" : "rgba(30, 96, 145, 0.1)",
-                                  color: isTrial ? "var(--warning)" : "var(--primary)",
+                                  backgroundColor: isNoPlan ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
+                                  color: isNoPlan ? "var(--danger)" : "var(--success)",
                                 }}
                               >
                                 {owner.planTier}
@@ -328,18 +328,20 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
                               {formatDate(owner.activatedAt)}
                             </td>
                             <td style={{ padding: "1rem" }}>
-                              {owner.status === "active" && owner.daysLeft !== null ? (
+                              {isExpired ? (
+                                <span style={{ fontWeight: 600, color: "var(--danger)" }}>Expired</span>
+                              ) : owner.status === "active" && owner.daysLeft !== null ? (
                                 <span
                                   style={{
                                     fontWeight: 600,
-                                    color: isExpired
+                                    color: owner.daysLeft <= 10
                                       ? "var(--danger)"
-                                      : owner.daysLeft <= 15
+                                      : owner.daysLeft <= 30
                                       ? "var(--warning)"
                                       : "var(--success)",
                                   }}
                                 >
-                                  {isExpired ? "Expired" : `${owner.daysLeft} days left`}
+                                  {owner.daysLeft} days left
                                 </span>
                               ) : (
                                 <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>

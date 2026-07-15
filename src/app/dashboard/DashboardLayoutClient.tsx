@@ -37,6 +37,24 @@ function DashboardLayoutContent({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { properties, activePropertyId, setActivePropertyId } = useProperties();
 
+  // Subscription information state
+  const [subInfo, setSubInfo] = useState<{ planTier: string; daysLeft: number | null; expiresAt: string | null } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/payments/status")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setSubInfo({
+            planTier: data.planTier,
+            daysLeft: data.daysLeft,
+            expiresAt: data.expiresAt,
+          });
+        }
+      })
+      .catch((err) => console.error("Error fetching subscription status:", err));
+  }, []);
+
   // Redirect to dashboard if active property is "all" and we are on a property-specific subpage
   useEffect(() => {
     if (activePropertyId === "all") {
@@ -89,10 +107,12 @@ function DashboardLayoutContent({
     pathname,
     activePropertyId,
     navItems,
+    subInfo,
   }: {
     pathname: string;
     activePropertyId: string;
     navItems: { name: string; path: string }[];
+    subInfo: { planTier: string; daysLeft: number | null; expiresAt: string | null } | null;
   }) => {
     const { unreadByType } = useAdminNotifications();
 
@@ -119,6 +139,9 @@ function DashboardLayoutContent({
               : null;
           const dotCount = dotType ? (unreadByType[dotType] || 0) : 0;
 
+          const isOverview = item.name === "Overview";
+          const showExpiryDot = isOverview && subInfo && subInfo.daysLeft !== null && subInfo.daysLeft <= 30;
+
           return (
             <Link
               key={item.path}
@@ -135,7 +158,23 @@ function DashboardLayoutContent({
                 justifyContent: "space-between",
               }}
             >
-              <span>{item.name}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {item.name}
+                {showExpiryDot && (
+                  <span
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      backgroundColor: "#ef4444",
+                      display: "inline-block",
+                      boxShadow: "0 0 0 2px rgba(239, 68, 68, 0.4)",
+                      animation: "dot-pulse 1.5s infinite",
+                    }}
+                    title={`Expiring in ${subInfo.daysLeft} days`}
+                  />
+                )}
+              </span>
               {dotCount > 0 && (
                 <span
                   style={{
@@ -244,6 +283,7 @@ function DashboardLayoutContent({
             pathname={pathname}
             activePropertyId={activePropertyId}
             navItems={navItems}
+            subInfo={subInfo}
           />
         </nav>
 
@@ -280,6 +320,24 @@ function DashboardLayoutContent({
           min-height: 100vh;
           background-color: var(--bg-color);
           overflow-x: hidden;
+          transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        /* Last 10 Days Expiry Alert Red Theme */
+        .dashboard-root.alert-red {
+          --bg-color: #450a0a !important;
+          --surface-color: #7f1d1d !important;
+          --border-color: #991b1b !important;
+          --primary: #f87171 !important;
+          --text-main: #fecdd3 !important;
+          --text-muted: #fda4af !important;
+        }
+        [data-theme='light'] .dashboard-root.alert-red {
+          --bg-color: #fef2f2 !important;
+          --surface-color: #ffe4e6 !important;
+          --border-color: #fecdd3 !important;
+          --primary: #e11d48 !important;
+          --text-main: #4c0519 !important;
+          --text-muted: #881337 !important;
         }
         /* Desktop sidebar */
         .dashboard-sidebar {
@@ -360,6 +418,16 @@ function DashboardLayoutContent({
           transition: 0.2s;
         }
 
+        @keyframes dot-pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.3); opacity: 0.7; }
+        }
+
+        @keyframes pulse-banner {
+          from { opacity: 0.93; }
+          to { opacity: 1; }
+        }
+
         @media (max-width: 768px) {
           .dashboard-root {
             flex-direction: column;
@@ -382,7 +450,7 @@ function DashboardLayoutContent({
         />
       )}
 
-      <div className="dashboard-root">
+      <div className={`dashboard-root ${subInfo && subInfo.daysLeft !== null && subInfo.daysLeft <= 10 ? "alert-red" : ""}`}>
         {/* ── Desktop sidebar ───────────────────────────────────────────── */}
         <aside className="dashboard-sidebar">
           <SidebarContent pathname={pathname} />
@@ -454,6 +522,46 @@ function DashboardLayoutContent({
 
         {/* ── Main content ──────────────────────────────────────────────── */}
         <main className="dashboard-main">
+          {/* Expiry Banner */}
+          {subInfo && subInfo.daysLeft !== null && subInfo.daysLeft <= 30 && (
+            <div
+              style={{
+                padding: "0.8rem 1.2rem",
+                borderRadius: "var(--radius-md)",
+                backgroundColor: subInfo.daysLeft <= 10 ? "rgba(239, 68, 68, 0.15)" : "rgba(245, 158, 11, 0.15)",
+                border: `1px solid ${subInfo.daysLeft <= 10 ? "#ef4444" : "#f59e0b"}`,
+                color: subInfo.daysLeft <= 10 ? "var(--danger, #ef4444)" : "var(--warning, #f59e0b)",
+                fontSize: "0.88rem",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "1rem",
+                marginBottom: "1.5rem",
+                animation: "pulse-banner 2s infinite alternate",
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {subInfo.daysLeft <= 10 ? "🚨" : "⚠️"} <strong>Subscription Expiring:</strong> Your plan ({subInfo.planTier}) has only {subInfo.daysLeft} days remaining. Renew now to avoid lockouts.
+              </span>
+              <Link
+                href="/onboarding/subscription?upgrade=true"
+                style={{
+                  padding: "0.4rem 0.8rem",
+                  borderRadius: "6px",
+                  backgroundColor: subInfo.daysLeft <= 10 ? "#ef4444" : "#f59e0b",
+                  color: "#fff",
+                  textDecoration: "none",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                }}
+              >
+                Renew Now
+              </Link>
+            </div>
+          )}
           {children}
         </main>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAdminNotifications } from "@/context/AdminNotificationContext";
 import { useFaviconBadge } from "@/hooks/useFaviconBadge";
@@ -109,7 +109,8 @@ function BellDropdown({
   // Auto-mark all as read the moment the panel opens
   useEffect(() => {
     if (isOpen && unreadCount > 0) onMarkAllAsRead();
-  }, [isOpen]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]); // intentionally omit onMarkAllAsRead/unreadCount — we only want to fire once on open
 
   return (
     <div style={{ position: "relative" }}>
@@ -254,7 +255,6 @@ function BellDropdown({
 
                   const row = (
                     <div
-                      key={n.id}
                       onClick={() => { if (!n.read) onMarkAsRead(n.id); setIsOpen(false); }}
                       style={{
                         padding: "0.8rem 1rem",
@@ -309,7 +309,7 @@ function BellDropdown({
                     <Link key={n.id} href={linkHref} style={{ textDecoration: "none", display: "block" }}>
                       {row}
                     </Link>
-                  ) : row;
+                  ) : <React.Fragment key={n.id}>{row}</React.Fragment>;
                 })
               )}
             </div>

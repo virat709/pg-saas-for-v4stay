@@ -112,7 +112,38 @@ export const authOptions: AuthOptions = {
           const ownerDoc = await adminDb.collection("owners").doc(token.sub).get();
           if (ownerDoc.exists) {
             const data = ownerDoc.data();
-            token.subscriptionStatus = data?.subscription_status ?? "inactive";
+            let status = data?.subscription_status ?? "inactive";
+
+            // Plan expiration check:
+            if (status === "active") {
+              const activatedAtVal = data?.subscription_activated_at;
+              const activatedAt = activatedAtVal
+                ? typeof activatedAtVal === "object" && activatedAtVal.seconds
+                  ? new Date(activatedAtVal.seconds * 1000)
+                  : new Date(activatedAtVal)
+                : null;
+
+              const planTier = data?.plan_tier || data?.subscription_plan || "No Active Plan";
+              const planTierLower = planTier.toLowerCase();
+              let durationMonths = 0;
+              if (planTierLower.includes("6 months") || planTierLower.includes("starter")) {
+                durationMonths = 6;
+              } else if (planTierLower.includes("1 year") || planTierLower.includes("premium")) {
+                durationMonths = 12;
+              }
+
+              if (activatedAt && durationMonths > 0) {
+                const expiresAt = new Date(activatedAt);
+                expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+                if (Date.now() > expiresAt.getTime()) {
+                  status = "inactive"; // plan completed / expired
+                }
+              } else {
+                status = "inactive"; // no active paid plan
+              }
+            }
+
+            token.subscriptionStatus = status;
             token.lastCheckedSub = now;
             console.log(`[AUTH][JWT] Refreshed subscription status: ${token.subscriptionStatus}`);
           }

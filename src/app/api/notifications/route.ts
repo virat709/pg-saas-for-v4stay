@@ -28,7 +28,7 @@ export async function GET() {
         .collection("notifications")
         .where("recipientRole", "==", "admin")
         .where("propertyId", "in", propertyIds)
-        .limit(50)
+        .orderBy("created_at", "desc")
         .get();
       snapDocs = snap.docs;
     } else {
@@ -42,7 +42,7 @@ export async function GET() {
             .collection("notifications")
             .where("recipientRole", "==", "admin")
             .where("propertyId", "in", batch)
-            .limit(50)
+            .orderBy("created_at", "desc")
             .get()
         )
       );
