@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/context/ToastContext";
+import Script from "next/script";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -106,6 +107,18 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-1P4KX7R5CE"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-1P4KX7R5CE');
+          `}
+        </Script>
         <ThemeProvider>
           <ToastProvider>{children}</ToastProvider>
         </ThemeProvider>
