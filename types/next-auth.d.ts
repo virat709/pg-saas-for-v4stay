@@ -8,6 +8,8 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
       subscriptionStatus?: string;
+      role?: "owner" | "staff";
+      staffPropertyId?: string;
     };
   }
 }

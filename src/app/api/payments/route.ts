@@ -17,6 +17,7 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const propertyIdParam = searchParams.get("propertyId");
+    const monthParam = searchParams.get("month"); // "YYYY-MM"
 
     let targets = propertyIds;
     if (propertyIdParam && propertyIdParam !== "all") {
@@ -40,6 +41,20 @@ export async function GET(req: Request) {
 
         paySnap.docs.forEach((payDoc) => {
           const payData = payDoc.data();
+          
+          if (monthParam) {
+            const rawDate = payData.payment_date || payData.created_at;
+            const pDate = rawDate?.toDate ? rawDate.toDate() : (rawDate ? new Date(rawDate) : null);
+            if (pDate && !isNaN(pDate.getTime())) {
+              const year = pDate.getFullYear();
+              const month = String(pDate.getMonth() + 1).padStart(2, "0");
+              const yyyymm = `${year}-${month}`;
+              if (yyyymm !== monthParam) return;
+            } else {
+              return;
+            }
+          }
+
           const tenantData = payData.tenantId ? (tenantsMap[payData.tenantId] || null) : null;
           allPayments.push({
             id: payDoc.id,

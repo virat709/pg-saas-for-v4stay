@@ -16,5 +16,10 @@
     }
   ],
   "categories": ["business", "productivity"],
-  "lang": "en-IN"
+  "lang": "en-IN",
+  "shortcuts": [
+    { "name": "Tenants", "url": "/dashboard/tenants", "description": "Manage Tenants" },
+    { "name": "Payments", "url": "/dashboard/payments", "description": "View Payments" },
+    { "name": "Expenses", "url": "/dashboard/expenses", "description": "Track Expenses" }
+  ]
 }

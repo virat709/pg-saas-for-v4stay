@@ -23,11 +23,26 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const transactionId = searchParams.get("transactionId");
 
+    const isStaff = (session.user as any).role === "staff";
+    let ownerId = session.user.id;
+
+    if (isStaff) {
+      const sPropId = (session.user as any).staffPropertyId;
+      if (!sPropId) {
+        return NextResponse.json({ role: "staff", activated: true, planTier: "Staff Access", daysLeft: null, expiresAt: null });
+      }
+      const pDoc = await adminDb.collection("properties").doc(sPropId).get();
+      if (!pDoc.exists) {
+        return NextResponse.json({ role: "staff", activated: true, planTier: "Staff Access", daysLeft: null, expiresAt: null });
+      }
+      ownerId = pDoc.data()!.ownerId;
+    }
+
     // Read the owner's current subscription status from DB
-    const ownerDoc = await adminDb.collection("owners").doc(session.user.id).get();
+    const ownerDoc = await adminDb.collection("owners").doc(ownerId).get();
 
     if (!ownerDoc.exists) {
-      return NextResponse.json({ status: "not_found" }, { status: 404 });
+      return NextResponse.json({ status: "not_found", role: isStaff ? "staff" : "owner" }, { status: 404 });
     }
 
     const ownerData = ownerDoc.data()!;
@@ -67,16 +82,22 @@ export async function GET(req: Request) {
       subscriptionStatus = "inactive"; // no active paid plan
     }
 
-    // Optionally also check the transaction record for more context
+    // Optionally check the transaction record for context
     let transactionStatus = "unknown";
     if (transactionId) {
-      const payDoc = await adminDb.collection("payments").doc(transactionId).get();
-      if (payDoc.exists) {
-        transactionStatus = (payDoc.data()?.status as string) || "unknown";
+      // payments are stored per-property, search across owner's properties
+      const pSnap2 = await adminDb.collection("properties").where("ownerId", "==", ownerId).get();
+      for (const pDoc of pSnap2.docs) {
+        const payDoc = await adminDb.collection("properties").doc(pDoc.id).collection("payments").doc(transactionId).get();
+        if (payDoc.exists) {
+          transactionStatus = (payDoc.data()?.status as string) || "unknown";
+          break;
+        }
       }
     }
 
     return NextResponse.json({
+      role: isStaff ? "staff" : "owner",
       subscriptionStatus,
       transactionStatus,
       activated: subscriptionStatus === "active",

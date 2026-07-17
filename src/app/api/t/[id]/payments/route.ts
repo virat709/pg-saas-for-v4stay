@@ -44,7 +44,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     await adminDb.collection("notifications").add({
       title: "New Payment Submitted",
-      message: `${tenantName} submitted a payment of ₹${amount}.`,
+      message: `${tenantName} submitted a payment of ₹${parseFloat(amount).toLocaleString("en-IN")}.`,
       read: false,
       recipientRole: "admin",
       propertyId: propertyId,

@@ -15,21 +15,44 @@ export default function SettingsPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-
-
+  // Staff management state
+  const [properties, setProperties] = useState<any[]>([]);
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [staffLoading, setStaffLoading] = useState(true);
+  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [staffName, setStaffName] = useState("");
+  const [staffEmail, setStaffEmail] = useState("");
+  const [staffPassword, setStaffPassword] = useState("");
+  const [staffPropertyId, setStaffPropertyId] = useState("");
+  const [staffSaving, setStaffSaving] = useState(false);
+  const [staffMsg, setStaffMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   useEffect(() => {
     Promise.all([
       fetch("/api/settings").then((r) => r.json()),
       fetch("/api/properties").then((r) => r.json()),
     ])
       .then(([settingsData, propertiesData]) => {
+        if (settingsData && settingsData.role === "staff") {
+          router.replace("/dashboard");
+          return;
+        }
         setOwnerData(settingsData);
-        setProfile({ name: settingsData.name || "", email: settingsData.email || "", phone: settingsData.phone || "" });
-        setPropertyCount(Array.isArray(propertiesData) ? propertiesData.length : 0);
+        setProfile({ name: settingsData?.name || "", email: settingsData?.email || "", phone: settingsData?.phone || "" });
+        const propList = Array.isArray(propertiesData) ? propertiesData : [];
+        setPropertyCount(propList.length);
+        setProperties(propList);
+        if (propList.length > 0) setStaffPropertyId(propList[0].id);
       })
       .catch(console.error)
       .finally(() => setProfileLoading(false));
-  }, []);
+
+    // Load staff list
+    fetch("/api/staff")
+      .then(r => r.ok ? r.json() : [])
+      .then(setStaffList)
+      .catch(() => {})
+      .finally(() => setStaffLoading(false));
+  }, [router]);
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +71,35 @@ export default function SettingsPage() {
     } finally {
       setProfileSaving(false);
     }
+  };
+
+  const handleAddStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStaffSaving(true);
+    setStaffMsg(null);
+    try {
+      const res = await fetch("/api/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: staffName, email: staffEmail, password: staffPassword, propertyId: staffPropertyId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStaffMsg({ type: "success", text: `Staff account for ${data.name} created!` });
+        setStaffName(""); setStaffEmail(""); setStaffPassword(""); setShowAddStaff(false);
+        setStaffList(prev => [...prev, data]);
+      } else {
+        setStaffMsg({ type: "error", text: data.message || "Failed to create staff." });
+      }
+    } catch {
+      setStaffMsg({ type: "error", text: "Server error." });
+    } finally { setStaffSaving(false); }
+  };
+
+  const handleDeleteStaff = async (staffId: string, propertyId: string) => {
+    if (!confirm("Remove this staff member?")) return;
+    await fetch(`/api/staff?staffId=${staffId}&propertyId=${propertyId}`, { method: "DELETE" });
+    setStaffList(prev => prev.filter(s => s.id !== staffId));
   };
 
 
@@ -239,7 +291,93 @@ export default function SettingsPage() {
 
 
 
-      {/* ── Danger Zone ─────────────────────────── */}
+      {/* ── Staff Management Section ──────────────────────────────── */}
+      <AnimatedSection delay={160}>
+        <div className="card" style={{ marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <div>
+              <h2 style={{ marginBottom: "0.25rem" }}>Staff &amp; Caretakers</h2>
+              <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--text-muted)" }}>Manage caretaker accounts for your properties.</p>
+            </div>
+            <button className="btn-primary" onClick={() => setShowAddStaff(!showAddStaff)} style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }}>
+              {showAddStaff ? "Cancel" : "+ Add Staff"}
+            </button>
+          </div>
+
+          {staffMsg && (
+            <div style={{ padding: "0.75rem 1rem", borderRadius: "var(--radius-md)", marginBottom: "1rem", backgroundColor: staffMsg.type === "success" ? "rgba(0,196,159,0.1)" : "rgba(239,68,68,0.1)", color: staffMsg.type === "success" ? "var(--success)" : "var(--danger)", border: `1px solid ${staffMsg.type === "success" ? "rgba(0,196,159,0.3)" : "rgba(239,68,68,0.3)"}`, fontSize: "0.875rem" }}>
+              {staffMsg.text}
+            </div>
+          )}
+
+          {/* Property ID display (for sharing with staff) */}
+          {properties.length > 0 && (
+            <div style={{ marginBottom: "1rem" }}>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>Staff need this Property ID to log in at <strong>/staff-login</strong>:</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                {properties.map(p => (
+                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0.75rem", borderRadius: "6px", backgroundColor: "var(--bg-color)", border: "1px solid var(--border-color)", fontFamily: "monospace", fontSize: "0.85rem" }}>
+                    <span style={{ color: "var(--text-muted)" }}>{p.name}:</span>
+                    <span style={{ fontWeight: 600, color: "var(--primary)" }}>{p.id}</span>
+                    <button onClick={() => { navigator.clipboard.writeText(p.id); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", color: "var(--text-muted)", padding: "2px 6px" }}>Copy</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showAddStaff && (
+            <form onSubmit={handleAddStaff} style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "1rem", marginBottom: "1rem", backgroundColor: "var(--bg-color)" }}>
+              <h3 style={{ margin: "0 0 1rem" }}>New Staff Account</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                <div className="input-group mb-0">
+                  <label className="input-label">Full Name</label>
+                  <input type="text" className="input-field" value={staffName} onChange={e => setStaffName(e.target.value)} required />
+                </div>
+                <div className="input-group mb-0">
+                  <label className="input-label">Email</label>
+                  <input type="email" className="input-field" value={staffEmail} onChange={e => setStaffEmail(e.target.value)} required />
+                </div>
+                <div className="input-group mb-0">
+                  <label className="input-label">Password (min 6 chars)</label>
+                  <input type="password" className="input-field" value={staffPassword} onChange={e => setStaffPassword(e.target.value)} minLength={6} required />
+                </div>
+                <div className="input-group mb-0">
+                  <label className="input-label">Assign to Property</label>
+                  <select className="input-field" value={staffPropertyId} onChange={e => setStaffPropertyId(e.target.value)} required>
+                    {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <button type="submit" className="btn-primary" disabled={staffSaving} style={{ marginTop: "1rem" }}>
+                {staffSaving ? "Creating..." : "Create Staff Account"}
+              </button>
+            </form>
+          )}
+
+          {staffLoading ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>Loading staff...</p>
+          ) : staffList.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>No staff accounts yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              {staffList.map(s => (
+                <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-color)" }}>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{s.name}</div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{s.email} · {s.propertyName}</div>
+                  </div>
+                  <button onClick={() => handleDeleteStaff(s.id, s.propertyId)} style={{ background: "none", border: "1px solid var(--danger)", color: "var(--danger)", borderRadius: "6px", padding: "4px 10px", cursor: "pointer", fontSize: "0.8rem" }}>
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </AnimatedSection>
+
+      {/* ── Danger Zone ────────────────────────────────── */}
       <AnimatedSection delay={240}>
         <div className="card" style={{ borderLeft: "4px solid var(--danger)" }}>
           <h2 style={{ color: "var(--danger)", marginBottom: "0.5rem" }}>Danger Zone</h2>

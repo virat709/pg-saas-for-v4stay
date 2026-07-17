@@ -26,6 +26,18 @@ type Tenant = {
 export default function TenantsPage() {
   const { activePropertyId, properties } = useProperties();
   const { toast } = useToast();
+  const [isStaff, setIsStaff] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/payments/status")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d && d.role === "staff") {
+          setIsStaff(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [selectedFormPropertyId, setSelectedFormPropertyId] = useState("");
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
@@ -39,6 +51,15 @@ export default function TenantsPage() {
   const [changeRoomRoomNumber, setChangeRoomRoomNumber] = useState("");
   const [changeRoomBedId, setChangeRoomBedId] = useState("");
   const [changingRoom, setChangingRoom] = useState(false);
+
+  // Security deposit ledger state
+  const [depositData, setDepositData] = useState<any>(null);
+  const [depositLoading, setDepositLoading] = useState(false);
+  const [depositType, setDepositType] = useState<'collected'|'returned'|'deduction'>('collected');
+  const [depositAmount, setDepositAmount] = useState('');
+  const [depositNote, setDepositNote] = useState('');
+  const [depositDate, setDepositDate] = useState(new Date().toISOString().slice(0, 10));
+  const [savingDeposit, setSavingDeposit] = useState(false);
 
   useEffect(() => {
     if (activePropertyId && activePropertyId !== "all") {
@@ -662,18 +683,22 @@ export default function TenantsPage() {
       <div className="flex justify-between items-center mb-8" style={{ flexWrap: "wrap", gap: "1rem" }}>
         <h1>Tenants</h1>
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          <button
-            onClick={exportCSV}
-            style={{ padding: "0.6rem 1.1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", backgroundColor: "var(--surface-color)", color: "var(--text-main)", fontWeight: 500, cursor: "pointer", fontSize: "0.875rem" }}
-          >
-            ⬇ Export CSV
-          </button>
-          <button className="btn-secondary" onClick={() => setShowCsvUpload(!showCsvUpload)} style={{ padding: "0.6rem 1.1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--primary)", backgroundColor: "transparent", color: "var(--primary)", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}>
-            {showCsvUpload ? "Cancel Upload" : "Upload CSV"}
-          </button>
-          <button className="btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
-            {showAddForm ? "Cancel" : "+ Add Tenant"}
-          </button>
+          {!isStaff && (
+            <>
+              <button
+                onClick={exportCSV}
+                style={{ padding: "0.6rem 1.1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", backgroundColor: "var(--surface-color)", color: "var(--text-main)", fontWeight: 500, cursor: "pointer", fontSize: "0.875rem" }}
+              >
+                ⬇ Export CSV
+              </button>
+              <button className="btn-secondary" onClick={() => setShowCsvUpload(!showCsvUpload)} style={{ padding: "0.6rem 1.1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--primary)", backgroundColor: "transparent", color: "var(--primary)", cursor: "pointer", fontWeight: 500, fontSize: "0.875rem" }}>
+                {showCsvUpload ? "Cancel Upload" : "Upload CSV"}
+              </button>
+              <button className="btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
+                {showAddForm ? "Cancel" : "+ Add Tenant"}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -1235,6 +1260,19 @@ export default function TenantsPage() {
 
 
 
+      {selectedTenant && ((() => {
+        // Fetch deposit ledger when modal opens
+        const loadDeposit = (tenantId: string) => {
+          setDepositLoading(true);
+          setDepositData(null);
+          fetch(`/api/tenants/${tenantId}/deposit`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { setDepositData(d); setDepositLoading(false); })
+            .catch(() => setDepositLoading(false));
+        };
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        return null;
+      })())}
       {selectedTenant && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>
           <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
@@ -1334,6 +1372,100 @@ export default function TenantsPage() {
               )}
             </div>
 
+            {/* ── Security Deposit Ledger ── */}
+            <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1rem' }}>🔐 Security Deposit Ledger</h3>
+                <button
+                  onClick={() => {
+                    setDepositLoading(true);
+                    setDepositData(null);
+                    fetch(`/api/tenants/${selectedTenant.id}/deposit`)
+                      .then(r => r.ok ? r.json() : null)
+                      .then(d => { setDepositData(d); setDepositLoading(false); })
+                      .catch(() => setDepositLoading(false));
+                  }}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                >
+                  {depositLoading ? 'Loading...' : depositData ? '↻ Refresh' : 'Load Ledger'}
+                </button>
+              </div>
+
+              {depositData && (
+                <>
+                  {/* Balance summary */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <div style={{ padding: '0.75rem', borderRadius: '8px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Agreed Deposit</div>
+                      <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>₹{Number(depositData.security_deposit_amount || 0).toLocaleString()}</div>
+                    </div>
+                    <div style={{ padding: '0.75rem', borderRadius: '8px', backgroundColor: depositData.balance > 0 ? 'rgba(16,185,129,0.08)' : depositData.balance < 0 ? 'rgba(239,68,68,0.08)' : 'var(--bg-color)', border: `1px solid ${depositData.balance > 0 ? 'rgba(16,185,129,0.3)' : depositData.balance < 0 ? 'rgba(239,68,68,0.3)' : 'var(--border-color)'}` }}>
+                      <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Balance Held</div>
+                      <div style={{ fontWeight: 700, fontSize: '1.1rem', color: depositData.balance > 0 ? 'var(--success)' : depositData.balance < 0 ? 'var(--danger)' : 'var(--text-main)' }}>₹{Number(depositData.balance || 0).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  {/* Ledger entries */}
+                  {depositData.entries.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem', maxHeight: '160px', overflowY: 'auto' }}>
+                      {depositData.entries.map((e: any) => (
+                        <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', borderRadius: '6px', backgroundColor: 'var(--bg-color)', fontSize: '0.85rem' }}>
+                          <div>
+                            <span style={{ fontWeight: 600, color: e.type === 'collected' ? 'var(--success)' : 'var(--danger)', marginRight: '0.5rem' }}>
+                              {e.type === 'collected' ? '+' : '-'}₹{Number(e.amount).toLocaleString()}
+                            </span>
+                            <span style={{ color: 'var(--text-muted)', textTransform: 'capitalize' }}>{e.type}</span>
+                            {e.note && <span style={{ color: 'var(--text-muted)', marginLeft: '0.4rem' }}>· {e.note}</span>}
+                          </div>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                            {e.date ? new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Quick-add form */}
+                  <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', backgroundColor: 'var(--surface-color)' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.6rem', color: 'var(--text-muted)' }}>Record Entry</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                      <select value={depositType} onChange={e => setDepositType(e.target.value as any)} className="input-field" style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}>
+                        <option value="collected">Collected</option>
+                        <option value="returned">Returned</option>
+                        <option value="deduction">Deduction</option>
+                      </select>
+                      <input type="number" placeholder="Amount ₹" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} className="input-field" style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }} />
+                      <input type="date" value={depositDate} onChange={e => setDepositDate(e.target.value)} className="input-field" style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }} />
+                      <input type="text" placeholder="Note (optional)" value={depositNote} onChange={e => setDepositNote(e.target.value)} className="input-field" style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }} />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!depositAmount || isNaN(parseFloat(depositAmount))) return;
+                        setSavingDeposit(true);
+                        try {
+                          const res = await fetch(`/api/tenants/${selectedTenant.id}/deposit`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ type: depositType, amount: depositAmount, date: depositDate, note: depositNote })
+                          });
+                          if (res.ok) {
+                            setDepositAmount(''); setDepositNote('');
+                            const updated = await fetch(`/api/tenants/${selectedTenant.id}/deposit`);
+                            if (updated.ok) setDepositData(await updated.json());
+                            toast('Entry recorded!', 'success');
+                          } else toast('Failed to save.', 'error');
+                        } catch { toast('Error.', 'error'); } finally { setSavingDeposit(false); }
+                      }}
+                      className="btn-primary"
+                      disabled={savingDeposit || !depositAmount}
+                      style={{ marginTop: '0.6rem', width: '100%', padding: '0.45rem', fontSize: '0.85rem' }}
+                    >
+                      {savingDeposit ? 'Saving...' : '+ Add Entry'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
             <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button 
@@ -1342,13 +1474,15 @@ export default function TenantsPage() {
                 >
                   ✏️ Edit Details
                 </button>
-                <button 
-                  onClick={() => { handleDeleteTenant(selectedTenant.id, selectedTenant.name); setSelectedTenant(null); }} 
-                  disabled={actionLoading === selectedTenant.id}
-                  style={{ flex: 1, padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
-                >
-                  🗑️ Delete
-                </button>
+                {!isStaff && (
+                  <button 
+                    onClick={() => { handleDeleteTenant(selectedTenant.id, selectedTenant.name); setSelectedTenant(null); }} 
+                    disabled={actionLoading === selectedTenant.id}
+                    style={{ flex: 1, padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
+                  >
+                    🗑️ Delete
+                  </button>
+                )}
               </div>
               {selectedTenant.status === 'active' && (
                 <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
@@ -1358,13 +1492,15 @@ export default function TenantsPage() {
                   >
                     🔄 Change Room
                   </button>
-                  <button 
-                    onClick={() => { handleVacate(selectedTenant.id, selectedTenant.name); setSelectedTenant(null); }} 
-                    disabled={actionLoading === selectedTenant.id}
-                    style={{ flex: 1, padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
-                  >
-                    {actionLoading === selectedTenant.id ? '...' : '🚪 Vacate Room'}
-                  </button>
+                  {!isStaff && (
+                    <button 
+                      onClick={() => { handleVacate(selectedTenant.id, selectedTenant.name); setSelectedTenant(null); }} 
+                      disabled={actionLoading === selectedTenant.id}
+                      style={{ flex: 1, padding: '10px', fontSize: '0.9rem', backgroundColor: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
+                    >
+                      {actionLoading === selectedTenant.id ? '...' : '🚪 Vacate Room'}
+                    </button>
+                  )}
                 </div>
               )}
               <button className="btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} onClick={() => setSelectedTenant(null)}>Close</button>

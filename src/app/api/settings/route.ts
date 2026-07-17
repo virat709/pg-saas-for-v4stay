@@ -12,6 +12,23 @@ export async function GET() {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    const isStaff = (session.user as any).role === "staff";
+    if (isStaff) {
+      return NextResponse.json({
+        role: "staff",
+        name: session.user.name || "Staff",
+        email: session.user.email || "",
+        phone: "",
+        created_at: null,
+        subscription_status: "active",
+        subscription_plan: "Staff Access",
+        subscription_start: null,
+        plan_tier: "Staff Access",
+        property_limit: 1,
+        subscription_activated_at: null,
+      });
+    }
+
     const ownerDoc = await adminDb.collection("owners").doc(session.user.id).get();
     if (!ownerDoc.exists) {
       return NextResponse.json({ message: "Owner not found" }, { status: 404 });
@@ -44,6 +61,11 @@ export async function PATCH(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const isStaff = (session.user as any).role === "staff";
+    if (isStaff) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     const body = await req.json();

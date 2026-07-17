@@ -39,6 +39,7 @@ function DashboardLayoutContent({
 
   // Subscription information state
   const [subInfo, setSubInfo] = useState<{ planTier: string; daysLeft: number | null; expiresAt: string | null } | null>(null);
+  const [userRole, setUserRole] = useState<string>("owner");
 
   useEffect(() => {
     fetch("/api/payments/status")
@@ -50,6 +51,9 @@ function DashboardLayoutContent({
             daysLeft: data.daysLeft,
             expiresAt: data.expiresAt,
           });
+          if (data.role) {
+            setUserRole(data.role);
+          }
         }
       })
       .catch((err) => console.error("Error fetching subscription status:", err));
@@ -62,6 +66,7 @@ function DashboardLayoutContent({
         "/dashboard/rooms",
         "/dashboard/tenants",
         "/dashboard/payments",
+        "/dashboard/expenses",
         "/dashboard/complaints",
         "/dashboard/notices",
         "/dashboard/menu"
@@ -96,29 +101,31 @@ function DashboardLayoutContent({
     { name: "Rooms & Beds", path: "/dashboard/rooms" },
     { name: "Tenants", path: "/dashboard/tenants" },
     { name: "Payments", path: "/dashboard/payments" },
-    { name: "Complaints", path: "/dashboard/complaints" },
-    { name: "Notice Board", path: "/dashboard/notices" },
+    { name: "Expenses", path: "/dashboard/expenses" },
+    { name: "Updates", path: "/dashboard/complaints" },
     { name: "Menu", path: "/dashboard/menu" },
     { name: "Settings", path: "/dashboard/settings" },
   ];
 
-  // ── NavItems: separate component so useAdminNotifications is called at top level ──
   const NavItems = ({
     pathname,
     activePropertyId,
     navItems,
     subInfo,
+    isStaff,
   }: {
     pathname: string;
     activePropertyId: string;
     navItems: { name: string; path: string }[];
     subInfo: { planTier: string; daysLeft: number | null; expiresAt: string | null } | null;
+    isStaff: boolean;
   }) => {
     const { unreadByType } = useAdminNotifications();
 
     const filtered = navItems.filter((item) => {
+      if (isStaff && item.name === "Settings") return false;
       if (activePropertyId === "all") {
-        return ["Overview", "Settings"].includes(item.name);
+        return ["Overview", "Expenses", "Settings"].includes(item.name);
       }
       return true;
     });
@@ -284,6 +291,7 @@ function DashboardLayoutContent({
             activePropertyId={activePropertyId}
             navItems={navItems}
             subInfo={subInfo}
+            isStaff={userRole === "staff"}
           />
         </nav>
 

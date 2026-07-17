@@ -10,6 +10,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = await req.json();
     const { category, description } = body;
 
+    const ALLOWED_CATEGORIES = ["plumbing", "electrical", "cleanliness", "noise", "appliance", "security", "other"];
+    if (!category || !ALLOWED_CATEGORIES.includes(category))
+      return NextResponse.json({ message: "Invalid category" }, { status: 400 });
+    const cleanDesc = (description || "").trim().slice(0, 500);
+    if (!cleanDesc)
+      return NextResponse.json({ message: "Description is required" }, { status: 400 });
+
     const result = await getTenantAndProperty(tenantId);
     if (!result) {
       return NextResponse.json({ message: "Tenant not found" }, { status: 404 });
@@ -25,7 +32,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const complaintRef = await complaintsRef.add({
       tenantId,
       category,
-      description,
+      description: cleanDesc,
       status: "open",
       created_at: new Date(),
       updated_at: new Date()

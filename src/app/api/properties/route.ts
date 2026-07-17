@@ -13,6 +13,17 @@ export async function GET() {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    const isStaff = (session.user as any).role === "staff";
+    if (isStaff) {
+      const sPropId = (session.user as any).staffPropertyId;
+      if (!sPropId) return NextResponse.json([], { status: 200 });
+      const pDoc = await adminDb.collection("properties").doc(sPropId).get();
+      if (!pDoc.exists) return NextResponse.json([], { status: 200 });
+      return NextResponse.json([{ id: pDoc.id, ...pDoc.data() }], {
+        headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' }
+      });
+    }
+
     const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
     const properties = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -31,6 +42,11 @@ export async function POST(req: Request) {
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const isStaff = (session.user as any).role === "staff";
+    if (isStaff) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     const { name, address, city } = await req.json();

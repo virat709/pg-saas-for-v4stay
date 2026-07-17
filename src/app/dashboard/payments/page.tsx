@@ -33,6 +33,7 @@ export default function PaymentsPage() {
   const [upiId, setUpiId] = useState("");
   const [savingUpi, setSavingUpi] = useState(false);
   const [historyTab, setHistoryTab] = useState<"all" | "online" | "offline">("all");
+  const [totalExpenses, setTotalExpenses] = useState(0);
 
   // Form state
   const [tenantId, setTenantId] = useState("");
@@ -65,17 +66,27 @@ export default function PaymentsPage() {
 
   const fetchData = async () => {
     try {
+      const now = new Date();
+      const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
-      const [payRes, tenRes, upiRes] = await Promise.all([
+      const expQuery = activePropertyId ? `?propertyId=${activePropertyId}&month=${currentMonthStr}` : `?month=${currentMonthStr}`;
+
+      const [payRes, tenRes, upiRes, expRes] = await Promise.all([
         fetch(`/api/payments${queryParam}`),
         fetch(`/api/tenants${queryParam}`),
-        fetch(`/api/property/upi${queryParam}`)
+        fetch(`/api/property/upi${queryParam}`),
+        fetch(`/api/expenses${expQuery}`)
       ]);
       
       if (payRes.ok) setPayments(await payRes.json());
       if (upiRes.ok) {
         const uData = await upiRes.json();
         setUpiId(uData.upi_id || "");
+      }
+      if (expRes.ok) {
+        const expData = await expRes.json();
+        const totalExp = expData.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+        setTotalExpenses(totalExp);
       }
       if (tenRes.ok) {
         const tData: Tenant[] = await tenRes.json();
@@ -311,18 +322,41 @@ export default function PaymentsPage() {
         </form>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div className="card" style={{ borderLeft: '4px solid var(--success)' }}>
-          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, textTransform: 'uppercase' }}>Collected This Month</h3>
-          <div style={{ fontSize: '2rem', fontWeight: 700, margin: '0.5rem 0', color: 'var(--success)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+        <div className="card" style={{ borderLeft: '4px solid var(--success)', padding: '1rem' }}>
+          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase' }}>Collected</h3>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0.25rem 0', color: 'var(--success)' }}>
             ₹{totalCollectedThisMonth.toLocaleString()}
           </div>
+          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>This month</p>
         </div>
-        <div className="card" style={{ borderLeft: totalDueThisMonth > 0 ? '4px solid var(--danger)' : '4px solid var(--text-main)' }}>
-          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, textTransform: 'uppercase' }}>Due This Month</h3>
-          <div style={{ fontSize: '2rem', fontWeight: 700, margin: '0.5rem 0', color: totalDueThisMonth > 0 ? 'var(--danger)' : 'var(--text-main)' }}>
+        <div className="card" style={{ borderLeft: totalDueThisMonth > 0 ? '4px solid var(--danger)' : '4px solid var(--text-main)', padding: '1rem' }}>
+          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase' }}>Due</h3>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0.25rem 0', color: totalDueThisMonth > 0 ? 'var(--danger)' : 'var(--text-main)' }}>
             ₹{totalDueThisMonth.toLocaleString()}
           </div>
+          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Outstanding</p>
+        </div>
+        <div className="card" style={{ borderLeft: '4px solid #ef4444', padding: '1rem' }}>
+          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase' }}>Expenses</h3>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0.25rem 0', color: '#ef4444' }}>
+            ₹{totalExpenses.toLocaleString()}
+          </div>
+          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>This month</p>
+        </div>
+        <div className="card" style={{ borderLeft: `4px solid ${totalCollectedThisMonth - totalExpenses >= 0 ? 'var(--success)' : 'var(--danger)'}`, padding: '1rem' }}>
+          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase' }}>Net Profit</h3>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0.25rem 0', color: totalCollectedThisMonth - totalExpenses >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+            ₹{(totalCollectedThisMonth - totalExpenses).toLocaleString()}
+          </div>
+          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Revenue - Expenses</p>
+        </div>
+        <div className="card" style={{ borderLeft: '4px solid var(--primary)', padding: '1rem' }}>
+          <h3 style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase' }}>Efficiency</h3>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0.25rem 0', color: 'var(--primary)' }}>
+            {totalExpectedRent > 0 ? Math.round((totalCollectedThisMonth / totalExpectedRent) * 100) : 0}%
+          </div>
+          <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Rent Collection</p>
         </div>
       </div>
 
@@ -459,16 +493,17 @@ export default function PaymentsPage() {
               </button>
             ))}
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '640px' }}>
             <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
               <tr>
-                <th style={{ padding: '1rem', fontWeight: 600 }}>Date</th>
-                <th style={{ padding: '1rem', fontWeight: 600 }}>Tenant</th>
-                <th style={{ padding: '1rem', fontWeight: 600 }}>Type</th>
-                <th style={{ padding: '1rem', fontWeight: 600 }}>Amount</th>
-                <th style={{ padding: '1rem', fontWeight: 600 }}>Method</th>
-                <th style={{ padding: '1rem', fontWeight: 600 }}>Status</th>
-                <th style={{ padding: '1rem', fontWeight: 600 }}>Actions</th>
+                <th style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Date</th>
+                <th style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Tenant</th>
+                <th style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Type</th>
+                <th style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Amount</th>
+                <th style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Method</th>
+                <th style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Status</th>
+                <th style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -480,7 +515,7 @@ export default function PaymentsPage() {
                 })
                 .map(payment => (
                 <tr key={payment.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '1rem' }}>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                     {formatDate(payment.payment_date)}
                   </td>
                   <td style={{ padding: '1rem' }}>
@@ -491,10 +526,10 @@ export default function PaymentsPage() {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '1rem', textTransform: 'capitalize' }}>
+                  <td style={{ padding: '1rem', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>
                     {payment.type}
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                     <div style={{ fontWeight: 600 }}>₹{payment.amount_paid}</div>
                     {payment.amount_paid < payment.amount && (
                       <div style={{ fontSize: '0.75rem', color: 'var(--danger)' }}>
@@ -520,7 +555,7 @@ export default function PaymentsPage() {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                     <span style={{ 
                       padding: '4px 8px', 
                       borderRadius: '12px', 
@@ -532,7 +567,7 @@ export default function PaymentsPage() {
                       {(payment.status === 'paid' || payment.status === 'completed') ? 'PAID' : (payment.status?.toUpperCase() ?? '-')}
                     </span>
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       {payment.status === 'pending' && (
                         <button 
@@ -556,6 +591,7 @@ export default function PaymentsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

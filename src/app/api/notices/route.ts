@@ -79,12 +79,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Title and content are required" }, { status: 400 });
     }
 
+    const cleanTitle = title.trim().slice(0, 100);
+    const cleanContent = content.trim().slice(0, 2000);
+
     const newNoticeRef = adminDb.collection("properties").doc(targetPropertyId).collection("notices").doc();
     
     await newNoticeRef.set({
-      title,
-      content,
-      priority: priority || "normal",
+      title: cleanTitle,
+      content: cleanContent,
+      priority: ["normal", "high"].includes(priority) ? priority : "normal",
       created_at: new Date(),
     });
 

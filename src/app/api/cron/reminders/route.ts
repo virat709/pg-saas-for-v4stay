@@ -4,19 +4,21 @@ import { sendEmail, rentReminderEmail } from "@/lib/email";
 
 export async function GET(req: Request) {
   try {
-    // Optional Cron Secret Authorization Check
+    // Require cron secret authorization
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
-      const authHeader = req.headers.get("authorization");
-      if (authHeader !== `Bearer ${cronSecret}`) {
-        console.warn("[CRON] Unauthorized request blocked.");
-        return new Response(JSON.stringify({ message: "Unauthorized" }), { 
-          status: 401,
-          headers: { "Content-Type": "application/json" }
-        });
+    const authHeader = req.headers.get("authorization");
+    if (!cronSecret) {
+      // Allow in local dev only (no secret configured)
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json({ message: "CRON_SECRET not configured" }, { status: 500 });
       }
-    } else {
-      console.warn("[CRON] Running without CRON_SECRET authorization check (development mode).");
+      console.warn("[CRON] Running without CRON_SECRET (development only).");
+    } else if (authHeader !== `Bearer ${cronSecret}`) {
+      console.warn("[CRON] Unauthorized request blocked.");
+      return new Response(JSON.stringify({ message: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     const pSnap = await adminDb.collection("properties").get();
