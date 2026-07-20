@@ -131,6 +131,9 @@ export default function SubscriptionPage() {
   const premiumPrice = isUpgrade
     ? (propertyCount - currentLimit) * 6999
     : 11999 + (propertyCount - 1) * 6999;
+  // GST @ 18% — charged in Razorpay, not shown on page
+  const starterTotal = Math.floor(starterPrice * 1.18);
+  const premiumTotal = Math.floor(premiumPrice * 1.18);
 
   if (selectedPlan && loading) {
     return (
@@ -143,7 +146,7 @@ export default function SubscriptionPage() {
           }} />
           <h2 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>Opening Secure Checkout</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-            Preparing payment for <strong>{selectedPlan.name}</strong> — ₹{selectedPlan.price.toLocaleString()}
+            Preparing payment for <strong>{selectedPlan.name}</strong> — ₹{selectedPlan.price.toLocaleString()} <span style={{fontSize:"0.8em"}}>(incl. 18% GST)</span>
           </p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -224,7 +227,7 @@ export default function SubscriptionPage() {
                 <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--success)", lineHeight: 1 }}>
                   ₹{premiumPrice.toLocaleString()}
                 </div>
-                <div style={{ fontSize: "0.72rem", color: "var(--success)", fontWeight: 500 }}>incl. GST</div>
+                <div style={{ fontSize: "0.72rem", color: "var(--success)", fontWeight: 500 }}>+ 18% GST</div>
                 {!isUpgrade && <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>Save ₹1,999 vs 6-mo</div>}
               </div>
             </div>
@@ -240,10 +243,10 @@ export default function SubscriptionPage() {
             <button
               className="btn-primary w-full"
               style={{ fontSize: "1rem", padding: "0.875rem", backgroundColor: "var(--success)", color: "#0f172a", fontWeight: 700 }}
-              onClick={() => handleSelectPlan("PGmate Premium 1 Year", premiumPrice, propertyCount)}
+              onClick={() => handleSelectPlan("PGmate Premium 1 Year", premiumTotal, propertyCount)}
               disabled={loading}
             >
-              {loading && selectedPlan?.name.includes("Premium") ? "Opening..." : `Pay ₹${premiumPrice.toLocaleString()} →`}
+              {loading && selectedPlan?.name.includes("Premium") ? "Opening..." : `Pay ₹${premiumPrice.toLocaleString()} + GST →`}
             </button>
           </div>
 
@@ -262,7 +265,7 @@ export default function SubscriptionPage() {
               </div>
               <div style={{ textAlign: "right", flexShrink: 0, marginLeft: "1rem" }}>
                 <div style={{ fontSize: "1.75rem", fontWeight: 800, lineHeight: 1 }}>₹{starterPrice.toLocaleString()}</div>
-                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>incl. GST · 6 months</div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>+ 18% GST · 6 months</div>
               </div>
             </div>
 
@@ -277,10 +280,10 @@ export default function SubscriptionPage() {
             <button
               className="btn-secondary w-full"
               style={{ fontSize: "1rem", padding: "0.875rem" }}
-              onClick={() => handleSelectPlan("PGmate Starter 6 Months", starterPrice, propertyCount)}
+              onClick={() => handleSelectPlan("PGmate Starter 6 Months", starterTotal, propertyCount)}
               disabled={loading}
             >
-              {loading && selectedPlan?.name.includes("Starter") ? "Opening..." : `Pay ₹${starterPrice.toLocaleString()} →`}
+              {loading && selectedPlan?.name.includes("Starter") ? "Opening..." : `Pay ₹${starterPrice.toLocaleString()} + GST →`}
             </button>
           </div>
         </div>
@@ -291,7 +294,7 @@ export default function SubscriptionPage() {
         </div>
 
         <p style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
-          * All prices are inclusive of 18% GST
+          * Prices shown are excluding GST. 18% GST will be added at checkout.
         </p>
         <p style={{ textAlign: "center", fontSize: "0.8rem", color: "var(--text-muted)" }}>
           Questions? <a href="mailto:v4services.in@gmail.com" style={{ color: "var(--primary)", fontWeight: 500 }}>Contact us</a>
