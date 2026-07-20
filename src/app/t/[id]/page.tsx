@@ -23,6 +23,7 @@ export default function TenantPortal() {
   const [submitting, setSubmitting] = useState(false);
 
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [utrNumber, setUtrNumber] = useState("");
   const [processingPayment, setProcessingPayment] = useState(false);
 
   const formatDate = (dateVal: any) => {
@@ -124,16 +125,6 @@ export default function TenantPortal() {
     }
   };
 
-  const loadRazorpay = () => {
-    return new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handleMakePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentAmount || isNaN(parseFloat(paymentAmount))) {
@@ -144,100 +135,34 @@ export default function TenantPortal() {
       toast("Amount must be at least ₹1", "warning");
       return;
     }
+    if (!utrNumber.trim()) {
+      toast("Please enter your UTR / Transaction number.", "warning");
+      return;
+    }
 
     setProcessingPayment(true);
-
     try {
-      const orderRes = await fetch('/api/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: Math.round(parseFloat(paymentAmount) * 100), currency: 'INR' })
+      const res = await fetch(`/api/t/${tenantId}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: paymentAmount,
+          method: "UPI",
+          reference: utrNumber.trim()
+        })
       });
-      const orderData = await orderRes.json();
-      
-      if (!orderRes.ok) {
-        toast(orderData.error || "Failed to create order.", "error");
-        setProcessingPayment(false);
-        return;
+
+      if (res.ok) {
+        toast("Payment submitted! Owner will verify shortly.", "success");
+        setUtrNumber("");
+        fetchData();
+      } else {
+        toast("Failed to submit payment. Please try again.", "error");
       }
-
-      const res = await loadRazorpay();
-      if (!res) {
-        toast("Razorpay SDK failed to load. Are you online?", "error");
-        setProcessingPayment(false);
-        return;
-      }
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "", 
-        amount: orderData.amount, 
-        currency: orderData.currency,
-        name: tenant?.property?.name || "PG Owner",
-        description: `Rent Payment for ${tenant?.name}`,
-        order_id: orderData.id, 
-        handler: async function (response: any) {
-          try {
-            const verifyRes = await fetch('/api/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature
-              })
-            });
-            const verifyData = await verifyRes.json();
-            
-            if (verifyRes.ok && verifyData.success) {
-              const finalRes = await fetch(`/api/t/${tenantId}/payments`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                  amount: paymentAmount, 
-                  method: "Razorpay", 
-                  reference: response.razorpay_payment_id 
-                })
-              });
-              
-              if (finalRes.ok) {
-                toast("Payment successful!", "success");
-                fetchData();
-              } else {
-                toast("Payment verified, but failed to save. Please contact owner.", "warning");
-              }
-            } else {
-              toast(verifyData.error || "Payment verification failed.", "error");
-            }
-          } catch (err) {
-            toast("Error verifying payment.", "error");
-          } finally {
-            setProcessingPayment(false);
-          }
-        },
-        prefill: {
-          name: tenant?.name || "",
-          email: tenant?.email || "",
-          contact: tenant?.phone || ""
-        },
-        theme: {
-          color: "#3399cc"
-        },
-        modal: {
-          ondismiss: function() {
-            setProcessingPayment(false);
-          }
-        }
-      };
-
-      const rzp1 = new (window as any).Razorpay(options);
-      rzp1.on('payment.failed', function (response: any){
-        toast(`Payment Failed: ${response.error.description}`, "error");
-        setProcessingPayment(false);
-      });
-      rzp1.open();
     } catch (e) {
       console.error(e);
       toast("An error occurred during submission.", "error");
+    } finally {
       setProcessingPayment(false);
     }
   };
@@ -361,16 +286,30 @@ export default function TenantPortal() {
 
       <div className="card mb-8">
         <h3>Make a Payment</h3>
-        <form onSubmit={handleMakePayment}>
-          <p style={{ fontSize: '0.875rem', marginBottom: '1rem', fontWeight: 500 }}>
-            Pay your rent securely with Razorpay:
+        <form onSubmit={handleMakePayment} style={{ marginTop: '1rem' }}>
+          <p style={{ fontSize: '0.875rem', marginBottom: '1rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            Pay via PhonePe / GPay / Paytm or any UPI app, then enter the transaction details below.
           </p>
           <div className="input-group">
             <label className="input-label">Amount (₹)</label>
-            <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount to pay" />
+            <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount paid" />
+          </div>
+          <div className="input-group">
+            <label className="input-label">UTR / Transaction ID <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="text"
+              className="input-field"
+              value={utrNumber}
+              onChange={e => setUtrNumber(e.target.value)}
+              required
+              placeholder="e.g. 429183746291 (from your UPI app)"
+            />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'block' }}>
+              Open your UPI app → Payments → find this transaction → copy the UTR number
+            </span>
           </div>
           <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-            {processingPayment ? "Processing..." : "Pay with Razorpay"}
+            {processingPayment ? "Submitting..." : "Submit Payment"}
           </button>
         </form>
       </div>
