@@ -44,12 +44,22 @@ export default function SubscriptionPage() {
       .catch((err) => console.error("Mount status check failed:", err));
   }, [router]);
 
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleSelectPlan = async (name: string, price: number, quantity: number) => {
     setLoading(true);
     setSelectedPlan({ name, price });
     
     try {
-      const res = await fetch("/api/payments/phonepe", {
+      const res = await fetch("/api/payments/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planName: name, price, propertyCount: quantity }),
@@ -59,12 +69,7 @@ export default function SubscriptionPage() {
       
       if (res.status === 409) {
         alert("You already have an active subscription! Redirecting to your dashboard...");
-        // Refresh session
-        await fetch("/api/auth/session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        }).catch(() => {});
+        await fetch("/api/auth/session", { method: "POST", body: JSON.stringify({}) }).catch(() => {});
         router.push("/dashboard");
         return;
       }
@@ -73,11 +78,67 @@ export default function SubscriptionPage() {
         throw new Error(data.message || "Payment initiation failed");
       }
       
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("No redirect URL returned");
+      const rzpLoaded = await loadRazorpay();
+      if (!rzpLoaded) {
+        throw new Error("Razorpay SDK failed to load. Are you online?");
       }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
+        amount: data.amount,
+        currency: data.currency,
+        name: "PGmate",
+        description: name,
+        order_id: data.id,
+        handler: async function (response: any) {
+          try {
+            const verifyRes = await fetch('/api/payments/razorpay-callback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            
+            if (verifyRes.ok && verifyData.success) {
+              await fetch("/api/auth/session", { method: "POST", body: JSON.stringify({}) }).catch(() => {});
+              router.push("/dashboard");
+            } else {
+              alert(verifyData.message || "Payment verification failed.");
+              setLoading(false);
+              setSelectedPlan(null);
+            }
+          } catch (err) {
+            alert("Error verifying payment.");
+            setLoading(false);
+            setSelectedPlan(null);
+          }
+        },
+        prefill: {
+          name: "PG Owner",
+        },
+        theme: {
+          color: "#5f259f"
+        },
+        modal: {
+          ondismiss: function() {
+            setLoading(false);
+            setSelectedPlan(null);
+          }
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (response: any){
+        alert(`Payment Failed: ${response.error.description}`);
+        setLoading(false);
+        setSelectedPlan(null);
+      });
+      rzp.open();
+
     } catch (e: any) {
       console.error(e);
       alert(e.message || "Error initiating payment. Please try again.");
@@ -99,7 +160,7 @@ export default function SubscriptionPage() {
             animation: "spin 1s linear infinite",
             marginBottom: "1.5rem"
           }} />
-          <h2>Redirecting to PhonePe</h2>
+          <h2>Initializing Secure Checkout</h2>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
             Connecting to secure checkout for the <strong>{selectedPlan.name}</strong> plan (₹{selectedPlan.price.toLocaleString()})...
           </p>

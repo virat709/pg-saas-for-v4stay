@@ -125,37 +125,120 @@ export default function TenantPortal() {
     }
   };
 
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleMakePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentAmount || isNaN(parseFloat(paymentAmount))) {
       toast("Please enter a valid amount.", "warning");
       return;
     }
+    if (parseFloat(paymentAmount) < 1) {
+      toast("Amount must be at least ₹1", "warning");
+      return;
+    }
 
     setProcessingPayment(true);
 
     try {
-      const res = await fetch(`/api/t/${tenantId}/payments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          amount: paymentAmount, 
-          method: "UPI", 
-          reference: utrNumber || "Online UPI payment" 
-        })
+      const orderRes = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: Math.round(parseFloat(paymentAmount) * 100), currency: 'INR' })
       });
-
-      if (res.ok) {
-        toast("Payment confirmation submitted to owner!", "success");
-        setUtrNumber("");
-        fetchData();
-      } else {
-        toast("Failed to submit payment confirmation. Please try again.", "error");
+      const orderData = await orderRes.json();
+      
+      if (!orderRes.ok) {
+        toast(orderData.error || "Failed to create order.", "error");
+        setProcessingPayment(false);
+        return;
       }
+
+      const res = await loadRazorpay();
+      if (!res) {
+        toast("Razorpay SDK failed to load. Are you online?", "error");
+        setProcessingPayment(false);
+        return;
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "", 
+        amount: orderData.amount, 
+        currency: orderData.currency,
+        name: tenant?.property?.name || "PG Owner",
+        description: `Rent Payment for ${tenant?.name}`,
+        order_id: orderData.id, 
+        handler: async function (response: any) {
+          try {
+            const verifyRes = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            
+            if (verifyRes.ok && verifyData.success) {
+              const finalRes = await fetch(`/api/t/${tenantId}/payments`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                  amount: paymentAmount, 
+                  method: "Razorpay", 
+                  reference: response.razorpay_payment_id 
+                })
+              });
+              
+              if (finalRes.ok) {
+                toast("Payment successful!", "success");
+                fetchData();
+              } else {
+                toast("Payment verified, but failed to save. Please contact owner.", "warning");
+              }
+            } else {
+              toast(verifyData.error || "Payment verification failed.", "error");
+            }
+          } catch (err) {
+            toast("Error verifying payment.", "error");
+          } finally {
+            setProcessingPayment(false);
+          }
+        },
+        prefill: {
+          name: tenant?.name || "",
+          email: tenant?.email || "",
+          contact: tenant?.phone || ""
+        },
+        theme: {
+          color: "#3399cc"
+        },
+        modal: {
+          ondismiss: function() {
+            setProcessingPayment(false);
+          }
+        }
+      };
+
+      const rzp1 = new (window as any).Razorpay(options);
+      rzp1.on('payment.failed', function (response: any){
+        toast(`Payment Failed: ${response.error.description}`, "error");
+        setProcessingPayment(false);
+      });
+      rzp1.open();
     } catch (e) {
       console.error(e);
       toast("An error occurred during submission.", "error");
-    } finally {
       setProcessingPayment(false);
     }
   };
@@ -279,70 +362,18 @@ export default function TenantPortal() {
 
       <div className="card mb-8">
         <h3>Make a Payment</h3>
-
-        {tenant?.property?.upi_id ? (
-          <>
-            {/* ── UPI QR Code ─────────────────────────────────────── */}
-            <div style={{ marginTop: '1rem', marginBottom: '1.5rem', padding: '1.25rem', backgroundColor: 'var(--bg-color)', borderRadius: '12px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontWeight: 500 }}>
-                📷 Scan QR to Pay Directly
-              </p>
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=10&data=${encodeURIComponent(`upi://pay?pa=${tenant.property.upi_id}&pn=${encodeURIComponent(tenant.property.name || 'PG Owner')}&am=${paymentAmount || tenant.rent_amount}&cu=INR`)}`}
-                alt="UPI QR Code for rent payment"
-                style={{ width: '180px', height: '180px', borderRadius: '8px', display: 'block', margin: '0 auto' }}
-              />
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.6rem', wordBreak: 'break-all' }}>
-                UPI: <strong style={{ color: 'var(--primary)' }}>{tenant.property.upi_id}</strong>
-              </p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                Open any UPI app → Scan → Pay ₹{paymentAmount || tenant.rent_amount}
-              </p>
-            </div>
-
-            <form onSubmit={handleMakePayment}>
-              <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                Confirm Your Payment
-              </p>
-              <div className="input-group" style={{ marginBottom: '0.75rem' }}>
-                <label className="input-label">Amount Paid (₹)</label>
-                <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount paid" />
-              </div>
-              <div className="input-group" style={{ marginBottom: '0.75rem' }}>
-                <label className="input-label">Transaction ID / UTR / Reference (Required)</label>
-                <input type="text" className="input-field" value={utrNumber} onChange={e => setUtrNumber(e.target.value)} required placeholder="e.g. UTR 2345678901 or UPI Ref" />
-              </div>
-              <div className="input-group" style={{ marginBottom: '1.25rem', opacity: 0.6 }}>
-                <label className="input-label">📸 Upload Screenshot (Locked)</label>
-                <input type="text" className="input-field" disabled value="Coming Soon" style={{ cursor: 'not-allowed', color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }} />
-              </div>
-              <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-                {processingPayment ? "Submitting..." : "Submit Payment Details"}
-              </button>
-            </form>
-          </>
-        ) : (
-          <form onSubmit={handleMakePayment}>
-            <p style={{ fontSize: '0.875rem', marginBottom: '1rem', fontWeight: 500 }}>
-              Submit your payment details:
-            </p>
-            <div className="input-group">
-              <label className="input-label">Amount Paid (₹)</label>
-              <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount paid" />
-            </div>
-            <div className="input-group">
-              <label className="input-label">Transaction ID / UTR / Reference (Required)</label>
-              <input type="text" className="input-field" value={utrNumber} onChange={e => setUtrNumber(e.target.value)} required placeholder="e.g. UTR 2345678901 or UPI Ref" />
-            </div>
-            <div className="input-group" style={{ opacity: 0.6 }}>
-              <label className="input-label">📸 Upload Screenshot (Locked)</label>
-              <input type="text" className="input-field" disabled value="Coming Soon" style={{ cursor: 'not-allowed', color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }} />
-            </div>
-            <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-              {processingPayment ? "Submitting..." : "Submit Payment Details"}
-            </button>
-          </form>
-        )}
+        <form onSubmit={handleMakePayment}>
+          <p style={{ fontSize: '0.875rem', marginBottom: '1rem', fontWeight: 500 }}>
+            Pay your rent securely with Razorpay:
+          </p>
+          <div className="input-group">
+            <label className="input-label">Amount (₹)</label>
+            <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount to pay" />
+          </div>
+          <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+            {processingPayment ? "Processing..." : "Pay with Razorpay"}
+          </button>
+        </form>
       </div>
 
       <div className="card mb-8">
