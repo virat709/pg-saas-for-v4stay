@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 /**
- * Next.js Edge Middleware — runs on every matching request BEFORE the page renders.
+ * Next.js Edge Proxy — runs on every matching request BEFORE the page renders.
  *
  * Protection rules:
  *   /dashboard/*  — must be authenticated AND have subscription_status === "active"
@@ -22,7 +22,7 @@ export const config = {
   matcher: ["/dashboard/:path*"],
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── Must be authenticated ──────────────────────────────────────────────
@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
       }
     }
   } catch (err) {
-    console.error("[middleware] Subscription status check failed:", err);
+    console.error("[proxy] Subscription status check failed:", err);
     // Fail open on fetch errors to prevent routing lockouts on serverless platforms (like Vercel self-calls)
     return NextResponse.next();
   }

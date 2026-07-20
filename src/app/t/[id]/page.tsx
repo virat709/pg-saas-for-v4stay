@@ -23,7 +23,6 @@ export default function TenantPortal() {
   const [submitting, setSubmitting] = useState(false);
 
   const [paymentAmount, setPaymentAmount] = useState("");
-  const [utrNumber, setUtrNumber] = useState("");
   const [processingPayment, setProcessingPayment] = useState(false);
 
   const formatDate = (dateVal: any) => {

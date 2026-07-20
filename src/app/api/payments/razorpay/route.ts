@@ -65,8 +65,6 @@ export async function POST(req: Request) {
 
     const key_id = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID;
     const key_secret = process.env.RAZORPAY_KEY_SECRET;
-    
-    console.log("Razorpay Keys config: ID length=", key_id?.length, "Secret length=", key_secret?.length);
 
     if (!key_id || !key_secret) {
       return NextResponse.json({ message: "Razorpay credentials not configured" }, { status: 500 });

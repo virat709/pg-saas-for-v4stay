@@ -85,14 +85,10 @@ export async function GET(req: Request) {
     // Optionally check the transaction record for context
     let transactionStatus = "unknown";
     if (transactionId) {
-      // payments are stored per-property, search across owner's properties
-      const pSnap2 = await adminDb.collection("properties").where("ownerId", "==", ownerId).get();
-      for (const pDoc of pSnap2.docs) {
-        const payDoc = await adminDb.collection("properties").doc(pDoc.id).collection("payments").doc(transactionId).get();
-        if (payDoc.exists) {
-          transactionStatus = (payDoc.data()?.status as string) || "unknown";
-          break;
-        }
+      // Subscription payments are stored in the top-level `payments` collection
+      const payDoc = await adminDb.collection("payments").doc(transactionId).get();
+      if (payDoc.exists) {
+        transactionStatus = (payDoc.data()?.status as string) || "unknown";
       }
     }
 
