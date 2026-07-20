@@ -224,7 +224,8 @@ export default function SubscriptionPage() {
                 <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--success)", lineHeight: 1 }}>
                   ₹{premiumPrice.toLocaleString()}
                 </div>
-                {!isUpgrade && <div style={{ fontSize: "0.75rem", color: "var(--success)", fontWeight: 500 }}>Save ₹1,999 vs 6-mo</div>}
+                <div style={{ fontSize: "0.72rem", color: "var(--success)", fontWeight: 500 }}>incl. GST</div>
+                {!isUpgrade && <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>Save ₹1,999 vs 6-mo</div>}
               </div>
             </div>
 
@@ -261,7 +262,7 @@ export default function SubscriptionPage() {
               </div>
               <div style={{ textAlign: "right", flexShrink: 0, marginLeft: "1rem" }}>
                 <div style={{ fontSize: "1.75rem", fontWeight: 800, lineHeight: 1 }}>₹{starterPrice.toLocaleString()}</div>
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>6 months</div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>incl. GST · 6 months</div>
               </div>
             </div>
 
@@ -289,6 +290,9 @@ export default function SubscriptionPage() {
           🔒 Secured by Razorpay &nbsp;•&nbsp; UPI · Cards · Netbanking · Wallets
         </div>
 
+        <p style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
+          * All prices are inclusive of 18% GST
+        </p>
         <p style={{ textAlign: "center", fontSize: "0.8rem", color: "var(--text-muted)" }}>
           Questions? <a href="mailto:v4services.in@gmail.com" style={{ color: "var(--primary)", fontWeight: 500 }}>Contact us</a>
         </p>

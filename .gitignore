@@ -48,3 +48,6 @@ npm_install.log
 test-firebase.mjs
 cors.json
 set-cors.js
+
+.vercel
+.env*
