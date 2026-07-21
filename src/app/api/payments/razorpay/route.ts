@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { planName, price, propertyCount } = await req.json();
+    const { planName, propertyCount } = await req.json();
 
     const count = parseInt(propertyCount) || 1;
     if (count < 1) {
@@ -38,10 +38,7 @@ export async function POST(req: Request) {
       } else if (planName === "PGmate Premium 1 Year") {
         basePrice = additionalCount * 6999;
       } else {
-        return NextResponse.json(
-          { message: "Invalid plan name." },
-          { status: 400 }
-        );
+        return NextResponse.json({ message: "Invalid plan name." }, { status: 400 });
       }
     } else {
       if (planName === "PGmate Starter 6 Months") {
@@ -49,21 +46,12 @@ export async function POST(req: Request) {
       } else if (planName === "PGmate Premium 1 Year") {
         basePrice = 11999 + (count - 1) * 6999;
       } else {
-        return NextResponse.json(
-          { message: "Invalid plan name." },
-          { status: 400 }
-        );
+        return NextResponse.json({ message: "Invalid plan name." }, { status: 400 });
       }
     }
 
     const expectedTotal = Math.floor(basePrice * 1.18);
-
-    if (typeof price !== "number" || price !== expectedTotal) {
-      return NextResponse.json(
-        { message: `Price mismatch. Expected ₹${expectedTotal} but received ₹${price}` },
-        { status: 400 }
-      );
-    }
+    // Backend is the sole source of truth for pricing — no client-sent price needed.
 
     const key_id = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID;
     const key_secret = process.env.RAZORPAY_KEY_SECRET;
