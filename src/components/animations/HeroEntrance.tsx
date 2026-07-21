@@ -1,18 +1,17 @@
 /**
  * HeroEntrance — staggered fade+slide-up for hero elements on page load.
  *
- * Uses Framer Motion for smooth GPU-accelerated entrance.
+ * Uses a CSS @keyframes animation (no framer-motion dependency).
  * Each child receives an `index` prop to compute its stagger delay:
- *   delay = index * 100ms, so elements arrive one after another.
+ *   delay = 80ms + index * 100ms, so elements arrive one after another.
  *
- * Respects prefers-reduced-motion: skips translateY, only fades.
+ * Respects prefers-reduced-motion via the CSS media query in globals.css.
  *
  * Usage:
  *   <HeroEntrance index={0}><Badge /></HeroEntrance>
  *   <HeroEntrance index={1}><h1>Headline</h1></HeroEntrance>
  */
 "use client";
-import { motion, useReducedMotion } from "framer-motion";
 import { ReactNode, CSSProperties } from "react";
 
 interface HeroEntranceProps {
@@ -28,37 +27,41 @@ export function HeroEntrance({
   className,
   style,
 }: HeroEntranceProps) {
-  const shouldReduce = useReducedMotion();
-
-  // Stagger: 100ms per element; first element enters at 80ms (feels immediate)
-  const delay = 0.08 + index * 0.10;
-
-  const variants = {
-    hidden: {
-      opacity: 0,
-      // If reduced motion: skip the translateY, only animate opacity
-      y: shouldReduce ? 0 : 22,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-    },
-  };
+  // 80ms head-start + 100ms per element, matching previous framer-motion timing
+  const delayMs = 80 + index * 100;
 
   return (
-    <motion.div
-      className={className}
-      style={{ willChange: "opacity, transform", ...style }}
-      initial="hidden"
-      animate="visible"
-      variants={variants}
-      transition={{
-        duration: shouldReduce ? 0.15 : 0.52,
-        delay,
-        ease: "easeOut",
-      }}
-    >
-      {children}
-    </motion.div>
+    <>
+      <style>{`
+        @keyframes hero-entrance {
+          from { opacity: 0; transform: translateY(22px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-entrance-el {
+            animation-duration: 0.15s !important;
+            animation-name: hero-entrance-reduced !important;
+          }
+        }
+        @keyframes hero-entrance-reduced {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+      `}</style>
+      <div
+        className={`hero-entrance-el${className ? ` ${className}` : ""}`}
+        style={{
+          animationName: "hero-entrance",
+          animationDuration: "0.52s",
+          animationTimingFunction: "ease-out",
+          animationFillMode: "both",
+          animationDelay: `${delayMs}ms`,
+          ...style,
+        }}
+      >
+        {children}
+      </div>
+    </>
   );
 }
+

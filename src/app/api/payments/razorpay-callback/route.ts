@@ -63,11 +63,18 @@ export async function POST(req: Request) {
     const finalTier = paymentData.planName;
     const propertyLimit = paymentData.propertyCount || 1;
 
+    // Only reset activation date if the plan tier is actually changing.
+    // Property-count-only upgrades (same plan) keep the original start date
+    // so the subscription duration is not unfairly shortened.
+    const ownerDoc = await adminDb.collection("owners").doc(ownerId).get();
+    const existingTier = ownerDoc.data()?.plan_tier;
+    const planTierChanged = existingTier !== finalTier;
+
     // Activate subscription
     await adminDb.collection("owners").doc(ownerId).update({
       plan_tier: finalTier,
       subscription_status: "active",
-      subscription_activated_at: new Date(),
+      ...(planTierChanged ? { subscription_activated_at: new Date() } : {}),
       property_limit: propertyLimit,
       updated_at: new Date(),
     });

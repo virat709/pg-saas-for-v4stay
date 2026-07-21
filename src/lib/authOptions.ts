@@ -185,11 +185,10 @@ export const authOptions: AuthOptions = {
                 const expiresAt = new Date(activatedAt);
                 expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
                 if (Date.now() > expiresAt.getTime()) {
-                  status = "inactive"; // plan completed / expired
+                  status = "inactive"; // plan expired
                 }
-              } else {
-                status = "inactive"; // no active paid plan
               }
+              // If we can't determine duration/start date, keep status as active (benefit of doubt)
             }
 
             token.subscriptionStatus = status;

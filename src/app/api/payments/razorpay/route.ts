@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const isUpgrade = ownerDoc?.exists && ownerData?.subscription_status === "active";
     const currentLimit = isUpgrade ? (ownerData?.property_limit || 1) : 0;
 
-    let expectedPrice = 0;
+    let basePrice = 0;
     if (isUpgrade) {
       if (count <= currentLimit) {
         return NextResponse.json(
@@ -34,9 +34,9 @@ export async function POST(req: Request) {
       }
       const additionalCount = count - currentLimit;
       if (planName === "PGmate Starter 6 Months") {
-        expectedPrice = additionalCount * 4999;
+        basePrice = additionalCount * 4999;
       } else if (planName === "PGmate Premium 1 Year") {
-        expectedPrice = additionalCount * 6999;
+        basePrice = additionalCount * 6999;
       } else {
         return NextResponse.json(
           { message: "Invalid plan name." },
@@ -45,9 +45,9 @@ export async function POST(req: Request) {
       }
     } else {
       if (planName === "PGmate Starter 6 Months") {
-        expectedPrice = 6999 + (count - 1) * 4999;
+        basePrice = 6999 + (count - 1) * 4999;
       } else if (planName === "PGmate Premium 1 Year") {
-        expectedPrice = 11999 + (count - 1) * 6999;
+        basePrice = 11999 + (count - 1) * 6999;
       } else {
         return NextResponse.json(
           { message: "Invalid plan name." },
@@ -56,9 +56,11 @@ export async function POST(req: Request) {
       }
     }
 
-    if (typeof price !== "number" || price !== expectedPrice) {
+    const expectedTotal = Math.floor(basePrice * 1.18);
+
+    if (typeof price !== "number" || price !== expectedTotal) {
       return NextResponse.json(
-        { message: `Price mismatch. Expected ₹${expectedPrice} but received ₹${price}` },
+        { message: `Price mismatch. Expected ₹${expectedTotal} but received ₹${price}` },
         { status: 400 }
       );
     }
@@ -74,7 +76,7 @@ export async function POST(req: Request) {
     
     // Create Razorpay Order
     const orderOptions = {
-      amount: expectedPrice * 100, // in paise
+      amount: expectedTotal * 100, // in paise
       currency: "INR",
       receipt: `sub_${Date.now()}`
     };
@@ -88,7 +90,7 @@ export async function POST(req: Request) {
       .set({
         ownerId: session.user.id,
         transactionId: order.id,
-        amount: expectedPrice,
+        amount: expectedTotal,
         planName,
         propertyCount: count,
         status: "pending",

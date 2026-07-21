@@ -82,7 +82,9 @@ export function AnimatedSection({
         transition: prefersReduced
           ? "opacity 0.2s ease-out"
           : "opacity 0.6s ease-out, transform 0.6s ease-out",
-        willChange: "opacity, transform",
+        // willChange only while waiting to animate — freed after reveal to avoid
+        // keeping unnecessary GPU compositing layers alive for every card.
+        willChange: visible ? "auto" : "opacity, transform",
         ...style,
       }}
     >

@@ -13,6 +13,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!amount || isNaN(parseFloat(amount))) {
       return NextResponse.json({ message: "Invalid amount" }, { status: 400 });
     }
+    if (!reference || !reference.toString().trim()) {
+      return NextResponse.json({ message: "UTR / Transaction reference is required" }, { status: 400 });
+    }
 
     const result = await getTenantAndProperty(tenantId);
     if (!result) return NextResponse.json({ message: "Tenant not found" }, { status: 404 });

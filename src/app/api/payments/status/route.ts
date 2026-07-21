@@ -79,7 +79,8 @@ export async function GET(req: Request) {
         subscriptionStatus = "inactive"; // plan completed
       }
     } else if (subscriptionStatus === "active") {
-      subscriptionStatus = "inactive"; // no active paid plan
+      // Can't determine expiry — keep as active (benefit of doubt)
+      // The plan tier is unrecognized; don't lock out the user
     }
 
     // Optionally check the transaction record for context
