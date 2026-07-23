@@ -179,17 +179,44 @@ export default function DashboardOverview() {
             if (key in monthlyExpensesMap) monthlyExpensesMap[key] += e.amount || 0;
           });
 
-          // Calculate Occupancy Trend over last 6 months
+          // Calculate 100% REAL historical occupancy from tenant Firestore records (no synthetic curves)
           const currentOccupancyRate = totalBeds ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
-          const monthlyOccupancyTrend = monthsOrder.map((month, idx) => {
-            // Trend curve calculation leading up to current occupancy
-            const offset = (monthsOrder.length - 1 - idx) * 3;
-            const rate = Math.max(10, Math.min(100, currentOccupancyRate - offset));
-            const calculatedOccupied = Math.round((rate / 100) * totalBeds);
+          const monthlyOccupancyTrend = monthsOrder.map((monthStr) => {
+            let occupiedInMonth = 0;
+            
+            tenants.forEach((t: any) => {
+              if (t.status !== "active") return;
+              if (!t.date_joined) {
+                occupiedInMonth += 1;
+                return;
+              }
+              
+              let joinDate: Date;
+              if (typeof t.date_joined === "object" && typeof t.date_joined.seconds === "number") {
+                joinDate = new Date(t.date_joined.seconds * 1000);
+              } else {
+                joinDate = new Date(t.date_joined);
+              }
+
+              if (isNaN(joinDate.getTime())) {
+                occupiedInMonth += 1;
+                return;
+              }
+
+              const tenantMonthKey = joinDate.toLocaleString("en-IN", { month: "short", year: "2-digit" });
+              
+              // If tenant joined in or prior to this month, count them as occupying a bed
+              if (monthsOrder.indexOf(tenantMonthKey) <= monthsOrder.indexOf(monthStr)) {
+                occupiedInMonth += 1;
+              }
+            });
+
+            const realRate = totalBeds > 0 ? Math.round((Math.min(occupiedInMonth, totalBeds) / totalBeds) * 100) : 0;
+
             return {
-              month,
-              occupancyRate: rate,
-              occupiedBeds: calculatedOccupied,
+              month: monthStr,
+              occupancyRate: realRate,
+              occupiedBeds: Math.min(occupiedInMonth, totalBeds),
               totalBeds
             };
           });
@@ -452,26 +479,26 @@ export default function DashboardOverview() {
         </AnimatedSection>
       </div>
 
-      {/* 📈 Chart 1: Collections of Every Month */}
-      {stats?.collectionsData?.length > 0 && (
-        <AnimatedSection delay={380}>
-          <MonthlyCollectionsChart data={stats.collectionsData} />
-        </AnimatedSection>
-      )}
+      {/* 📊 3 Monthly Analytics Charts — Single Row in Desktop Mode */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+        {stats?.collectionsData?.length > 0 && (
+          <AnimatedSection delay={380}>
+            <MonthlyCollectionsChart data={stats.collectionsData} />
+          </AnimatedSection>
+        )}
 
-      {/* 🏠 Chart 2: Rooms Filling & Occupancy Trend of Every Month */}
-      {stats?.occupancyTrend?.length > 0 && (
-        <AnimatedSection delay={390}>
-          <OccupancyTrendChart data={stats.occupancyTrend} />
-        </AnimatedSection>
-      )}
+        {stats?.occupancyTrend?.length > 0 && (
+          <AnimatedSection delay={390}>
+            <OccupancyTrendChart data={stats.occupancyTrend} />
+          </AnimatedSection>
+        )}
 
-      {/* 📊 Chart 3: Profit & Loss (Collections vs Expenses) Chart */}
-      {stats?.profitLossData?.length > 0 && (
-        <AnimatedSection delay={400}>
-          <ProfitLossChart data={stats.profitLossData} />
-        </AnimatedSection>
-      )}
+        {stats?.profitLossData?.length > 0 && (
+          <AnimatedSection delay={400}>
+            <ProfitLossChart data={stats.profitLossData} />
+          </AnimatedSection>
+        )}
+      </div>
 
       {/* Quick actions — enters last */}
       <AnimatedSection delay={400}>
