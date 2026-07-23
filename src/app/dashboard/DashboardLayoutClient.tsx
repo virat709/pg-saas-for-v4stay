@@ -356,9 +356,12 @@ function DashboardLayoutContent({
           padding: 1.5rem;
           display: flex;
           flex-direction: column;
-          position: sticky;
+          position: fixed;
           top: 0;
+          left: 0;
+          bottom: 0;
           height: 100vh;
+          z-index: 30;
           overflow-y: auto;
         }
         /* Mobile top bar */
@@ -401,10 +404,10 @@ function DashboardLayoutContent({
         }
         .dashboard-main {
           flex: 1;
+          margin-left: 250px;
           min-width: 0;
           padding: 2rem;
           overflow-x: hidden;
-          overflow-y: auto;
         }
         /* Hamburger button */
         .hamburger-btn {
@@ -443,7 +446,7 @@ function DashboardLayoutContent({
           .dashboard-sidebar { display: none; }
           .dashboard-topbar { display: flex; }
           .drawer-overlay { display: block; }
-          .dashboard-main { padding: 1rem; }
+          .dashboard-main { margin-left: 0; padding: 1rem; }
         }
       `}</style>
 
