@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { SkeletonStatGrid } from "@/components/SkeletonCard";
-import RevenueChart from "@/components/RevenueChart";
-import { useProperties } from "@/context/PropertyContext";
+import CollectionAnalyticsBoard from "@/components/CollectionAnalyticsBoard";
+import RecentTransactionsBoard from "@/components/RecentTransactionsBoard";
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any>(null);
@@ -46,6 +46,23 @@ export default function DashboardOverview() {
           const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
           const totalPaidThisMonth = new Map<string, number>();
+
+          let collectedAmountThisMonth = 0;
+          let upiSum = 0;
+          let cashSum = 0;
+          let bankSum = 0;
+          let otherSum = 0;
+
+          const tenantMapForPayments: Record<string, string> = {};
+          tenants.forEach((t: any) => {
+            tenantMapForPayments[t.id] = t.name;
+          });
+
+          const enrichedPayments = payments.map((p: any) => ({
+            ...p,
+            tenantName: p.tenant ? p.tenant.name : (p.tenantId ? tenantMapForPayments[p.tenantId] || "Tenant" : (p.payer_name || "Tenant"))
+          }));
+
           payments.forEach((p: any) => {
             if (!p.payment_date || p.type !== "rent") return;
             let pDate: Date;
@@ -57,9 +74,18 @@ export default function DashboardOverview() {
               pDate = new Date(p.payment_date);
             }
             if (!isNaN(pDate.getTime()) && pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
+              const amt = p.amount_paid || 0;
+              collectedAmountThisMonth += amt;
+
+              const m = (p.method || "cash").toLowerCase();
+              if (m.includes("upi")) upiSum += amt;
+              else if (m.includes("cash")) cashSum += amt;
+              else if (m.includes("bank") || m.includes("transfer")) bankSum += amt;
+              else otherSum += amt;
+
               if (p.tenantId) {
                 const prev = totalPaidThisMonth.get(p.tenantId) || 0;
-                totalPaidThisMonth.set(p.tenantId, prev + (p.amount_paid || 0));
+                totalPaidThisMonth.set(p.tenantId, prev + amt);
               }
             }
           });
@@ -165,6 +191,9 @@ export default function DashboardOverview() {
             occupiedBeds,
             occupancyRate: totalBeds ? Math.round((occupiedBeds / totalBeds) * 100) : 0,
             expectedCollection,
+            collectedAmount: collectedAmountThisMonth,
+            paymentMethods: { upi: upiSum, cash: cashSum, bank: bankSum, other: otherSum },
+            recentPayments: enrichedPayments,
             overdueTenants,
             overdueList,
             revenueChart: Object.entries(monthlyRevenue).map(([month, amount]) => ({ month, amount })),
@@ -347,6 +376,21 @@ export default function DashboardOverview() {
           </div>
         </AnimatedSection>
       )}
+
+      {/* Analytics Boards Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+        <AnimatedSection delay={350}>
+          <CollectionAnalyticsBoard
+            collectedAmount={stats?.collectedAmount || 0}
+            expectedCollection={stats?.expectedCollection || 0}
+            paymentMethods={stats?.paymentMethods || { upi: 0, cash: 0, bank: 0, other: 0 }}
+          />
+        </AnimatedSection>
+
+        <AnimatedSection delay={370}>
+          <RecentTransactionsBoard payments={stats?.recentPayments || []} />
+        </AnimatedSection>
+      </div>
 
       {/* Revenue Chart */}
       {stats?.revenueChart?.length > 0 && (
