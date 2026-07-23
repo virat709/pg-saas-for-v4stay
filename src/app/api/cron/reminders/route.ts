@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { sendEmail, rentReminderEmail } from "@/lib/email";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   try {
     // Require cron secret authorization

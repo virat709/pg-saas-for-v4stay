@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/auth/subscription
  *

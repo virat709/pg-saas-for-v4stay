@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
 import Razorpay from "razorpay";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);

@@ -17,6 +17,7 @@ import * as authSubSec from "./sections/auth-sub.test.mjs";
 import * as crmOwnersSec from "./sections/crm-owners.test.mjs";
 import * as paymentsReceiptsSec from "./sections/payments-receipts.test.mjs";
 import * as tenantPortalSec from "./sections/tenant-portal.test.mjs";
+import { runSecurityAndBuildTests } from "./sections/security-and-build.test.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -63,6 +64,9 @@ async function runSuite() {
   currentSection = "Sec 5: Tenant Portal";
   console.log(`\n\u25b6 Running ${currentSection}...`);
   tenantPortalSec.run(test, assert);
+
+  // Run Section 6: Security & Build Verification
+  await runSecurityAndBuildTests();
 
   // Summarize
   console.log("\n========================================================");

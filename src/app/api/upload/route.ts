@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
+export const dynamic = "force-dynamic";
 import { writeFile } from "fs/promises";
 import { join, extname } from "path";
 import fs from "fs";

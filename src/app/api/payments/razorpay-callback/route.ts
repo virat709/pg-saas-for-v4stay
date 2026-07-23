@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import crypto from "crypto";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
     const { razorpay_order_id, razorpay_subscription_id, razorpay_payment_id, razorpay_signature } = await req.json();

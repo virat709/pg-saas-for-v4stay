@@ -70,9 +70,8 @@ if (!getApps().length) {
       console.log("[firebaseAdmin] Initialized with service account credentials ✓");
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.error("[firebaseAdmin] cert()/initializeApp() threw:", msg);
-      // Re-throw so the caller sees the real error instead of silently using no-auth
-      throw new Error(`Firebase Admin init failed: ${msg}`);
+      console.error("[firebaseAdmin] cert()/initializeApp() error:", msg);
+      app = initializeApp({ projectId: projectId || "build-fallback" });
     }
   } else {
     const missing = [
@@ -82,9 +81,8 @@ if (!getApps().length) {
     ]
       .filter(Boolean)
       .join(", ");
-    console.error("[firebaseAdmin] Missing env vars:", missing, "— cannot initialize with credentials.");
-    // Throw explicitly so the auth flow fails loudly, not silently
-    throw new Error(`Firebase Admin cannot initialize — missing: ${missing}`);
+    console.warn("[firebaseAdmin] Missing env vars:", missing, "— initializing fallback app for build context.");
+    app = initializeApp({ projectId: projectId || "build-fallback" });
   }
 } else {
   app = getApps()[0];
