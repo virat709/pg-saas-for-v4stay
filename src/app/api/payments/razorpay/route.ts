@@ -26,6 +26,9 @@ export async function POST(req: Request) {
 
     let basePrice = 0;
     if (isUpgrade) {
+      if (planName === "30 Days Free Trial") {
+        return NextResponse.json({ message: "Free trial is only available for new subscribers." }, { status: 400 });
+      }
       if (count <= currentLimit) {
         return NextResponse.json(
           { message: `Subscription already active with a limit of ${currentLimit} PG(s). Select a higher property count to upgrade.` },
@@ -41,7 +44,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: "Invalid plan name." }, { status: 400 });
       }
     } else {
-      if (planName === "PGmate Starter 6 Months") {
+      if (planName === "30 Days Free Trial" || planName === "PGmate Starter 6 Months") {
         basePrice = 6999 + (count - 1) * 4999;
       } else if (planName === "PGmate Premium 1 Year") {
         basePrice = 11999 + (count - 1) * 6999;
@@ -62,7 +65,84 @@ export async function POST(req: Request) {
 
     const razorpay = new Razorpay({ key_id, key_secret });
     
-    // Create Razorpay Order
+    // For new subscribers (!isUpgrade), attach 30-Day Free Trial via Autopay Subscription
+    if (!isUpgrade) {
+      let planId: string | undefined = process.env.RAZORPAY_TRIAL_PLAN_ID;
+      const isYearly = planName.includes("1 Year");
+
+      if (!planId) {
+        try {
+          const plan = await razorpay.plans.create({
+            period: isYearly ? "yearly" : "monthly",
+            interval: isYearly ? 1 : 6,
+            item: {
+              name: `${planName} (${count} PG limit)`,
+              amount: expectedTotal * 100, // paise
+              currency: "INR",
+              description: `PGmate recurring subscription for ${planName}`
+            }
+          });
+          planId = plan?.id;
+        } catch (planErr: any) {
+          console.warn("Dynamic plan creation note:", planErr.message || planErr);
+        }
+      }
+
+      if (!planId) {
+        return NextResponse.json(
+          { message: "Razorpay plan ID could not be generated. Please configure RAZORPAY_TRIAL_PLAN_ID in environment variables." },
+          { status: 500 }
+        );
+      }
+
+      // Start billing 30 days from now (Unix timestamp in seconds)
+      const startAt = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60);
+
+      const subOptions: any = {
+        plan_id: planId,
+        total_count: isYearly ? 5 : 10,
+        quantity: 1,
+        customer_notify: 1,
+        start_at: startAt,
+        notes: {
+          ownerId: session.user.id,
+          planName,
+          propertyCount: String(count)
+        }
+      };
+
+      const subscription = await razorpay.subscriptions.create(subOptions);
+
+      // Save transaction in DB
+      await adminDb
+        .collection("payments")
+        .doc(subscription.id)
+        .set({
+          ownerId: session.user.id,
+          transactionId: subscription.id,
+          subscription_id: subscription.id,
+          amount: 1,
+          expected_recurring_amount: expectedTotal,
+          planName,
+          propertyCount: count,
+          status: "pending",
+          is_subscription: true,
+          is_trial: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+
+      return NextResponse.json({ 
+        subscription_id: subscription.id,
+        id: subscription.id, 
+        amount: 100, // ₹1 mandate test fee in paise
+        currency: "INR",
+        is_subscription: true,
+        is_trial: true
+      }, { status: 200 });
+    }
+
+    // Standard Razorpay Order for property count upgrades
     const orderOptions = {
       amount: expectedTotal * 100, // in paise
       currency: "INR",
@@ -82,6 +162,7 @@ export async function POST(req: Request) {
         planName,
         propertyCount: count,
         status: "pending",
+        is_upgrade: true,
         created_at: new Date(),
         updated_at: new Date(),
       });

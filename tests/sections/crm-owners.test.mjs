@@ -25,13 +25,17 @@ export function run(test, assert) {
   }
 
   // ── Logic Under Test: Subscription expiry and days left ──────────────────────
-  function calculateSubscriptionStatus({ status, activatedAt, durationMonths, nowTime }) {
-    if (status !== "active" || !activatedAt || durationMonths <= 0) {
+  function calculateSubscriptionStatus({ status, activatedAt, durationMonths, isTrial, nowTime }) {
+    if (status !== "active" || !activatedAt || (!isTrial && durationMonths <= 0)) {
       return { expiresAt: null, daysLeft: null };
     }
 
     const expiresAt = new Date(activatedAt);
-    expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+    if (isTrial) {
+      expiresAt.setDate(expiresAt.getDate() + 30);
+    } else {
+      expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+    }
 
     const diffTime = expiresAt.getTime() - nowTime;
     const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -141,5 +145,38 @@ export function run(test, assert) {
     assert.equal(res["owner-2"], 1);
     assert.equal(res["owner-3"], 1);
     assert.equal(res["owner-4"], undefined);
+  });
+
+  test("Expiry: calculates correct trial expiry (30 days) and positive days left", () => {
+    const activatedAt = new Date("2026-07-01T12:00:00.000Z");
+    const nowTime = new Date("2026-07-15T12:00:00.000Z").getTime();
+
+    const { expiresAt, daysLeft } = calculateSubscriptionStatus({
+      status: "active",
+      activatedAt,
+      durationMonths: 0,
+      isTrial: true,
+      nowTime,
+    });
+
+    // Expiry should be exactly 30 days after July 1: July 31
+    assert.equal(expiresAt.toISOString().startsWith("2026-07-31"), true);
+    // Days between July 15 and July 31: 16 days
+    assert.equal(daysLeft, 16);
+  });
+
+  test("Expiry: returns 0 days left if trial has expired", () => {
+    const activatedAt = new Date("2026-06-01T12:00:00.000Z"); // expired July 1
+    const nowTime = new Date("2026-07-15T12:00:00.000Z").getTime();
+
+    const { daysLeft } = calculateSubscriptionStatus({
+      status: "active",
+      activatedAt,
+      durationMonths: 0,
+      isTrial: true,
+      nowTime,
+    });
+
+    assert.equal(daysLeft, 0);
   });
 }

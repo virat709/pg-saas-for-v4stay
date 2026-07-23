@@ -153,10 +153,10 @@ export async function POST(req: Request) {
     const propertyDoc = pSnap.docs.find(doc => doc.id === targetPropertyId);
     const propertyData = propertyDoc ? propertyDoc.data() : { name: "My PG" };
 
-    // Send welcome email if tenant has an email on file
+    // Send welcome email in background (non-blocking for fast UI response)
     const tenantEmail = body.email?.trim();
     if (tenantEmail) {
-      await sendEmail({
+      sendEmail({
         to: tenantEmail,
         subject: `Welcome to ${propertyData.name} — Your Tenant Portal`,
         html: welcomeTenantEmail({
@@ -164,7 +164,7 @@ export async function POST(req: Request) {
           pgName: propertyData.name,
           magicLink,
         }),
-      });
+      }).catch(err => console.error("[TENANT] Background email error:", err));
     } else {
       // Fallback: log magic link for manual sharing
       console.log(`[TENANT] Magic link for ${name} (${phone}): ${magicLink}`);

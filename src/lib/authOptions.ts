@@ -175,17 +175,26 @@ export const authOptions: AuthOptions = {
               const planTier = data?.plan_tier || data?.subscription_plan || "No Active Plan";
               const planTierLower = planTier.toLowerCase();
               let durationMonths = 0;
+              const isTrial = data?.is_trial === true || planTierLower.includes("trial");
               if (planTierLower.includes("6 months") || planTierLower.includes("starter")) {
                 durationMonths = 6;
               } else if (planTierLower.includes("1 year") || planTierLower.includes("premium")) {
                 durationMonths = 12;
               }
 
-              if (activatedAt && durationMonths > 0) {
-                const expiresAt = new Date(activatedAt);
-                expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
-                if (Date.now() > expiresAt.getTime()) {
-                  status = "inactive"; // plan expired
+              if (activatedAt) {
+                if (isTrial) {
+                  const expiresAt = new Date(activatedAt);
+                  expiresAt.setDate(expiresAt.getDate() + 30);
+                  if (Date.now() > expiresAt.getTime()) {
+                    status = "inactive"; // trial expired
+                  }
+                } else if (durationMonths > 0) {
+                  const expiresAt = new Date(activatedAt);
+                  expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+                  if (Date.now() > expiresAt.getTime()) {
+                    status = "inactive"; // plan expired
+                  }
                 }
               }
               // If we can't determine duration/start date, keep status as active (benefit of doubt)

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import { adminDb } from "@/lib/firebaseAdmin";
+import { processPendingRefunds } from "@/lib/refundHelper";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   try {
+    // Run pending refunds in background (non-blocking)
+    processPendingRefunds().catch(err => console.error("[STATUS] Background refund failed:", err));
+
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user || !session.user.id) {
@@ -59,6 +63,8 @@ export async function GET(req: Request) {
     const planTier = ownerData.plan_tier || ownerData.subscription_plan || "No Active Plan";
     const planTierLower = planTier.toLowerCase();
     let durationMonths = 0;
+    const isTrial = ownerData.is_trial === true || planTierLower.includes("trial");
+
     if (planTierLower.includes("6 months") || planTierLower.includes("starter")) {
       durationMonths = 6;
     } else if (planTierLower.includes("1 year") || planTierLower.includes("premium")) {
@@ -68,15 +74,35 @@ export async function GET(req: Request) {
     let expiresAt: Date | null = null;
     let daysLeft: number | null = null;
 
-    if (subscriptionStatus === "active" && activatedAt && durationMonths > 0) {
-      expiresAt = new Date(activatedAt);
-      expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
-      
-      const diffTime = expiresAt.getTime() - Date.now();
-      daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (daysLeft <= 0) {
-        daysLeft = 0;
-        subscriptionStatus = "inactive"; // plan completed
+    if (subscriptionStatus === "active" && activatedAt) {
+      if (isTrial) {
+        expiresAt = new Date(activatedAt);
+        expiresAt.setDate(expiresAt.getDate() + 30);
+        
+        const diffTime = expiresAt.getTime() - Date.now();
+        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 0) {
+          daysLeft = 0;
+          subscriptionStatus = "inactive"; // trial ended
+          await adminDb.collection("owners").doc(ownerId).update({
+            subscription_status: "inactive",
+            updated_at: new Date(),
+          });
+        }
+      } else if (durationMonths > 0) {
+        expiresAt = new Date(activatedAt);
+        expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+        
+        const diffTime = expiresAt.getTime() - Date.now();
+        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 0) {
+          daysLeft = 0;
+          subscriptionStatus = "inactive"; // plan completed
+          await adminDb.collection("owners").doc(ownerId).update({
+            subscription_status: "inactive",
+            updated_at: new Date(),
+          });
+        }
       }
     } else if (subscriptionStatus === "active") {
       // Can't determine expiry — keep as active (benefit of doubt)

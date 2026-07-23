@@ -65,14 +65,11 @@ export default function SubscriptionPage() {
       const rzpLoaded = await loadRazorpay();
       if (!rzpLoaded) throw new Error("Razorpay SDK failed to load. Please check your internet connection.");
 
-      const options = {
+      const options: any = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
-        amount: data.amount,
-        currency: data.currency,
         name: "PGmate",
         description: name,
         image: "/icon.svg",
-        order_id: data.id,
         handler: async function (response: any) {
           try {
             const verifyRes = await fetch("/api/payments/razorpay-callback", {
@@ -81,13 +78,15 @@ export default function SubscriptionPage() {
               body: JSON.stringify({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
+                razorpay_subscription_id: response.razorpay_subscription_id,
                 razorpay_signature: response.razorpay_signature,
               }),
             });
             const verifyData = await verifyRes.json();
 
             if (verifyRes.ok && verifyData.success) {
-              router.push("/payments/status?transactionId=" + response.razorpay_order_id);
+              const transId = response.razorpay_subscription_id || response.razorpay_order_id;
+              router.push("/payments/status?transactionId=" + transId);
             } else {
               alert(verifyData.message || "Payment verification failed. Please contact support.");
               setLoading(false);
@@ -108,6 +107,14 @@ export default function SubscriptionPage() {
           },
         },
       };
+
+      if (data.subscription_id) {
+        options.subscription_id = data.subscription_id;
+      } else {
+        options.order_id = data.id;
+        options.amount = data.amount;
+        options.currency = data.currency;
+      }
 
       const rzp = new (window as any).Razorpay(options);
       rzp.on("payment.failed", (response: any) => {
@@ -146,7 +153,8 @@ export default function SubscriptionPage() {
           }} />
           <h2 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>Opening Secure Checkout</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-            Preparing payment for <strong>{selectedPlan.name}</strong> — ₹{selectedPlan.price.toLocaleString()} <span style={{fontSize:"0.8em"}}>(incl. 18% GST)</span>
+            Preparing payment for <strong>{selectedPlan.name}</strong> — ₹{selectedPlan.price.toLocaleString()}
+            {selectedPlan.name === "30 Days Free Trial" ? " (auto-refunded)" : " (incl. 18% GST)"}
           </p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -204,36 +212,46 @@ export default function SubscriptionPage() {
         {/* Plan Cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
 
-          {/* Premium Plan — shown first, highlighted */}
+          {/* Premium Plan — 1 Year */}
           <div className="card" style={{ border: "2px solid var(--success)", position: "relative", overflow: "visible" }}>
             <div style={{
               position: "absolute", top: "-13px", left: "50%", transform: "translateX(-50%)",
               background: "var(--success)", color: "#0f172a", padding: "3px 14px",
               borderRadius: "99px", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.05em", whiteSpace: "nowrap"
-            }}>BEST VALUE</div>
+            }}>
+              {!isUpgrade ? "30-DAY FREE TRIAL INCLUDED" : "BEST VALUE"}
+            </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
               <div>
                 <h3 style={{ fontSize: "1.05rem", marginBottom: "0.25rem" }}>
                   {isUpgrade ? "Upgrade — 1 Year" : "PGmate Premium — 1 Year"}
                 </h3>
-                {!isUpgrade && propertyCount > 1 && (
-                  <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                    ₹11,999 base + {propertyCount - 1} × ₹6,999 addons
+                {!isUpgrade ? (
+                  <span style={{ fontSize: "0.78rem", color: "var(--success)", fontWeight: 600 }}>
+                    🎁 First 30 Days Free • Auto-bills ₹{premiumPrice.toLocaleString()} + GST on Day 30
                   </span>
+                ) : (
+                  propertyCount > 1 && (
+                    <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                      ₹11,999 base + {propertyCount - 1} × ₹6,999 addons
+                    </span>
+                  )
                 )}
               </div>
               <div style={{ textAlign: "right", flexShrink: 0, marginLeft: "1rem" }}>
                 <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--success)", lineHeight: 1 }}>
-                  ₹{premiumPrice.toLocaleString()}
+                  {!isUpgrade ? "₹1" : `₹${premiumPrice.toLocaleString()}`}
                 </div>
-                <div style={{ fontSize: "0.72rem", color: "var(--success)", fontWeight: 500 }}>+ 18% GST</div>
+                <div style={{ fontSize: "0.72rem", color: "var(--success)", fontWeight: 500 }}>
+                  {!isUpgrade ? "Refunded in 24h" : "+ 18% GST"}
+                </div>
                 {!isUpgrade && <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>Save ₹1,999 vs 6-mo</div>}
               </div>
             </div>
 
             <ul style={{ listStyle: "none", padding: 0, margin: "0.75rem 0 1rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-              {["Unlimited Tenants & Rooms", "Payment Tracking & Receipts", "Tenant Portal (Magic Link)", "Complaints & Notice Board", "Meal Menu Management", "Rent Reminder Emails", "Revenue Analytics", "CSV Export", "Priority Support"].map(f => (
+              {["30 Days Full Access Included", "Unlimited Tenants & Rooms", "Payment Tracking & Receipts", "Tenant Portal (Magic Link)", "Complaints & Notice Board", "Meal Menu Management", "Rent Reminder Emails", "Revenue Analytics", "CSV Export", "Priority Support"].map(f => (
                 <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", fontSize: "0.875rem" }}>
                   <span style={{ color: "var(--success)", flexShrink: 0, fontWeight: 700 }}>✓</span> {f}
                 </li>
@@ -246,31 +264,53 @@ export default function SubscriptionPage() {
               onClick={() => handleSelectPlan("PGmate Premium 1 Year", premiumTotal, propertyCount)}
               disabled={loading}
             >
-              {loading && selectedPlan?.name.includes("Premium") ? "Opening..." : `Pay ₹${premiumPrice.toLocaleString()} + GST →`}
+              {loading && selectedPlan?.name.includes("Premium")
+                ? "Opening..."
+                : !isUpgrade
+                ? "Start 30-Day Free Trial →"
+                : `Pay ₹${premiumPrice.toLocaleString()} + GST →`}
             </button>
           </div>
 
-          {/* Starter Plan */}
-          <div className="card" style={{ border: "1px solid var(--border-color)" }}>
+          {/* Starter Plan — 6 Months */}
+          <div className="card" style={{ border: "1px solid var(--border-color)", position: "relative", overflow: "visible" }}>
+            {!isUpgrade && (
+              <div style={{
+                position: "absolute", top: "-13px", left: "50%", transform: "translateX(-50%)",
+                background: "var(--primary)", color: "#ffffff", padding: "3px 14px",
+                borderRadius: "99px", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.05em", whiteSpace: "nowrap"
+              }}>30-DAY FREE TRIAL INCLUDED</div>
+            )}
+
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
               <div>
                 <h3 style={{ fontSize: "1.05rem", marginBottom: "0.25rem" }}>
                   {isUpgrade ? "Upgrade — 6 Months" : "PGmate Starter — 6 Months"}
                 </h3>
-                {!isUpgrade && propertyCount > 1 && (
-                  <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                    ₹6,999 base + {propertyCount - 1} × ₹4,999 addons
+                {!isUpgrade ? (
+                  <span style={{ fontSize: "0.78rem", color: "var(--primary)", fontWeight: 600 }}>
+                    🎁 First 30 Days Free • Auto-bills ₹{starterPrice.toLocaleString()} + GST on Day 30
                   </span>
+                ) : (
+                  propertyCount > 1 && (
+                    <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                      ₹6,999 base + {propertyCount - 1} × ₹4,999 addons
+                    </span>
+                  )
                 )}
               </div>
               <div style={{ textAlign: "right", flexShrink: 0, marginLeft: "1rem" }}>
-                <div style={{ fontSize: "1.75rem", fontWeight: 800, lineHeight: 1 }}>₹{starterPrice.toLocaleString()}</div>
-                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>+ 18% GST · 6 months</div>
+                <div style={{ fontSize: "1.75rem", fontWeight: 800, lineHeight: 1 }}>
+                  {!isUpgrade ? "₹1" : `₹${starterPrice.toLocaleString()}`}
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                  {!isUpgrade ? "Refunded in 24h" : "+ 18% GST · 6 months"}
+                </div>
               </div>
             </div>
 
             <ul style={{ listStyle: "none", padding: 0, margin: "0.75rem 0 1rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-              {["Unlimited Tenants & Rooms", "Payment Tracking & Receipts", "Tenant Portal (Magic Link)", "Complaints & Notice Board", "Priority Support"].map(f => (
+              {["30 Days Full Access Included", "Unlimited Tenants & Rooms", "Payment Tracking & Receipts", "Tenant Portal (Magic Link)", "Complaints & Notice Board", "Priority Support"].map(f => (
                 <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", fontSize: "0.875rem" }}>
                   <span style={{ color: "var(--text-muted)", flexShrink: 0, fontWeight: 700 }}>✓</span> {f}
                 </li>
@@ -283,7 +323,11 @@ export default function SubscriptionPage() {
               onClick={() => handleSelectPlan("PGmate Starter 6 Months", starterTotal, propertyCount)}
               disabled={loading}
             >
-              {loading && selectedPlan?.name.includes("Starter") ? "Opening..." : `Pay ₹${starterPrice.toLocaleString()} + GST →`}
+              {loading && selectedPlan?.name.includes("Starter")
+                ? "Opening..."
+                : !isUpgrade
+                ? "Start 30-Day Free Trial →"
+                : `Pay ₹${starterPrice.toLocaleString()} + GST →`}
             </button>
           </div>
         </div>
