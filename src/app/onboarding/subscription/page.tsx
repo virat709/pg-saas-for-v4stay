@@ -241,7 +241,7 @@ export default function SubscriptionPage() {
               </div>
               <div style={{ textAlign: "right", flexShrink: 0, marginLeft: "1rem" }}>
                 <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--success)", lineHeight: 1 }}>
-                  {!isUpgrade ? "₹1" : `₹${premiumPrice.toLocaleString()}`}
+                  {!isUpgrade ? "₹5" : `₹${premiumPrice.toLocaleString()}`}
                 </div>
                 <div style={{ fontSize: "0.72rem", color: "var(--success)", fontWeight: 500 }}>
                   {!isUpgrade ? "Refunded in 24h" : "+ 18% GST"}
@@ -301,7 +301,7 @@ export default function SubscriptionPage() {
               </div>
               <div style={{ textAlign: "right", flexShrink: 0, marginLeft: "1rem" }}>
                 <div style={{ fontSize: "1.75rem", fontWeight: 800, lineHeight: 1 }}>
-                  {!isUpgrade ? "₹1" : `₹${starterPrice.toLocaleString()}`}
+                  {!isUpgrade ? "₹5" : `₹${starterPrice.toLocaleString()}`}
                 </div>
                 <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
                   {!isUpgrade ? "Refunded in 24h" : "+ 18% GST · 6 months"}

@@ -123,7 +123,7 @@ export async function POST(req: Request) {
           ownerId: session.user.id,
           transactionId: subscription.id,
           subscription_id: subscription.id,
-          amount: 1,
+          amount: 5,
           expected_recurring_amount: expectedTotal,
           planName,
           propertyCount: count,
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ 
         subscription_id: subscription.id,
         id: subscription.id, 
-        amount: 100, // ₹1 mandate test fee in paise
+        amount: 500, // ₹5 mandate token fee in paise
         currency: "INR",
         is_subscription: true,
         is_trial: true
