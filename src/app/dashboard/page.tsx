@@ -6,6 +6,8 @@ import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { SkeletonStatGrid } from "@/components/SkeletonCard";
 import CollectionAnalyticsBoard from "@/components/CollectionAnalyticsBoard";
 import RecentTransactionsBoard from "@/components/RecentTransactionsBoard";
+import RevenueChart from "@/components/RevenueChart";
+import { useProperties } from "@/context/PropertyContext";
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any>(null);

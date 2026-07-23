@@ -53,7 +53,7 @@ export default function RecentTransactionsBoard({ payments }: RecentTransactions
                 key={p.id}
                 style={{
                   display: "flex",
-                  justify: "space-between",
+                  justifyContent: "space-between",
                   alignItems: "center",
                   padding: "0.75rem 1rem",
                   backgroundColor: "var(--bg-color)",
