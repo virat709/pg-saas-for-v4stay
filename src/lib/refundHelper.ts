@@ -35,9 +35,12 @@ export async function processPendingRefunds() {
       }
 
       try {
-        console.log(`[REFUND] Triggering refund for payment ${paymentId} (${doc.id})...`);
+        console.log(`[REFUND] Fetching payment details and triggering refund for payment ${paymentId} (${doc.id})...`);
+        const paymentObj = await razorpay.payments.fetch(paymentId);
+        const refundAmount = paymentObj?.amount || 500; // full charged amount in paise (e.g., ₹5 = 500 paise)
+
         const refund = await razorpay.payments.refund(paymentId, {
-          amount: 100, // ₹1 in paise
+          amount: refundAmount,
           notes: {
             reason: "30-day free trial verification refund",
             ownerId: pData.ownerId,
