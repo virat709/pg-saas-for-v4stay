@@ -15,6 +15,14 @@ export const metadata: Metadata = {
   title: "PGmate - Paying Guest (PG) Management System & Software",
   description: "Scale and monetize your PG accommodation with PGmate. Automate rent tracking, generate digital receipts, offer a premium tenant portal, and manage complaints.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon.svg?v=3", type: "image/svg+xml" },
+      { url: "/favicon.ico?v=3" },
+    ],
+    shortcut: "/icon.svg?v=3",
+    apple: "/icon.svg?v=3",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
