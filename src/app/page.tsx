@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import SplineBackground from "@/components/SplineBackground";
-import Logo from "@/components/Logo";
+import Logo, { LogoConcept } from "@/components/Logo";
 import { HeroEntrance } from "@/components/animations/HeroEntrance";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { useScrollyNav } from "@/hooks/useScrollyNav";
@@ -15,6 +15,7 @@ export default function Home() {
   const [propertyCount, setPropertyCount] = useState(1);
   const [crmOpen, setCrmOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedLogo, setSelectedLogo] = useState<LogoConcept>(1);
 
   return (
     <div
@@ -63,7 +64,7 @@ export default function Home() {
             transition: "box-shadow 0.35s ease",
           }}
         >
-          <Logo size={30} variant="light" showTagline={false} />
+          <Logo size={34} variant="light" concept={1} showTagline={false} />
           
           {/* Desktop Nav Items (Hidden on Mobile) */}
           <div className="desktop-nav" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
