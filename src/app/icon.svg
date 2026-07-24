@@ -1,37 +1,34 @@
 <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="pgGrad" x1="20" y1="20" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stopColor="#00c49f" />
-      <stop offset="50%" stopColor="#1e6091" />
-      <stop offset="100%" stopColor="#154c75" />
+    <linearGradient id="icon_amberGrad" x1="10" y1="10" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#fef08a" />
+      <stop offset="50%" stopColor="#f59e0b" />
+      <stop offset="100%" stopColor="#ea580c" />
+    </linearGradient>
+    <linearGradient id="icon_greenGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#4ade80" />
+      <stop offset="100%" stopColor="#16a34a" />
     </linearGradient>
   </defs>
 
-  <!-- Solid white background with rounded corners for visibility on dark tabs/home screens -->
-  <rect width="120" height="120" rx="24" fill="#ffffff" />
+  <!-- Dark Obsidian Container with Gold Border -->
+  <rect width="120" height="120" rx="28" fill="#0d1117" />
+  <rect x="2" y="2" width="116" height="116" rx="26" fill="none" stroke="rgba(245, 158, 11, 0.4)" stroke-width="3" />
 
-  <!-- Building outline -->
-  <rect
-    x="25" y="35" width="70" height="60" rx="6"
-    stroke="url(#pgGrad)" strokeWidth="5" fill="none"
-  />
-  <!-- Roof / top -->
-  <path
-    d="M20 38 L60 15 L100 38"
-    stroke="url(#pgGrad)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"
-  />
-  <!-- Door -->
-  <rect
-    x="48" y="65" width="24" height="30" rx="3"
-    stroke="url(#pgGrad)" strokeWidth="4" fill="none"
-  />
-  <!-- Windows -->
-  <rect
-    x="35" y="47" width="16" height="12" rx="2"
-    stroke="url(#pgGrad)" strokeWidth="3.5" fill="none"
-  />
-  <rect
-    x="69" y="47" width="16" height="12" rx="2"
-    stroke="url(#pgGrad)" strokeWidth="3.5" fill="none"
-  />
+  {/* Architectural Roof Silhouette */}
+  <path d="M30 46 L60 22 L90 46" stroke="url(#icon_amberGrad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+  
+  {/* Monogram P & G Building Structure */}
+  {/* Left Column (P stem) */}
+  <rect x="34" y="48" width="14" height="46" rx="4" fill="url(#icon_amberGrad)" />
+  {/* P Loop */}
+  <path d="M48 48 H68 C76 48 82 54 82 62 C82 70 76 76 68 76 H48 V48 Z" fill="url(#icon_amberGrad)" opacity="0.95" />
+  {/* Inner P Cutout */}
+  <path d="M48 56 H66 C70 56 74 59 74 62 C74 65 70 68 66 68 H48 V56 Z" fill="#0d1117" />
+
+  {/* G Accent Base */}
+  <rect x="52" y="80" width="32" height="14" rx="4" fill="url(#icon_amberGrad)" />
+  
+  {/* Glowing Green Balcony Plant Dot */}
+  <circle cx="86" cy="34" r="6" fill="url(#icon_greenGrad)" />
 </svg>
