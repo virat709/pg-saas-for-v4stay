@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import SplineBackground from "@/components/SplineBackground";
 import Logo from "@/components/Logo";
 import { HeroEntrance } from "@/components/animations/HeroEntrance";
@@ -21,7 +22,7 @@ export default function Home() {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#0f172a",
+        backgroundColor: "#0d1117",
         color: "#f8fafc",
         overflow: "hidden",
         fontFamily: "system-ui, -apple-system, sans-serif",
@@ -38,7 +39,7 @@ export default function Home() {
           zIndex: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.15), transparent 60%), radial-gradient(circle at -20% 50%, rgba(56, 189, 248, 0.1), transparent 50%)",
+            "radial-gradient(circle at 50% -20%, rgba(245, 158, 11, 0.15), transparent 60%), radial-gradient(circle at -20% 50%, rgba(234, 88, 12, 0.1), transparent 50%)",
         }}
       />
 
@@ -52,13 +53,12 @@ export default function Home() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            padding: "1.5rem 5%",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
-            backgroundColor: "rgba(15, 23, 42, 0.85)",
+            padding: "1.25rem 5%",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            backgroundColor: "rgba(13, 17, 23, 0.85)",
             backdropFilter: "blur(16px)",
-            // Scroll-aware shadow — transitions smoothly via CSS
             boxShadow: isScrolled
-              ? "0 4px 24px rgba(0,0,0,0.35)"
+              ? "0 4px 24px rgba(0,0,0,0.5)"
               : "none",
             transition: "box-shadow 0.35s ease",
           }}
@@ -73,7 +73,7 @@ export default function Home() {
                 padding: "0.6rem 1rem",
                 borderRadius: "8px",
                 textDecoration: "none",
-                color: "#e2e8f0",
+                color: "#cbd5e1",
                 fontWeight: 500,
                 fontSize: "0.9rem",
                 transition: "color 0.2s",
@@ -87,7 +87,7 @@ export default function Home() {
                 padding: "0.6rem 1rem",
                 borderRadius: "8px",
                 textDecoration: "none",
-                color: "#e2e8f0",
+                color: "#cbd5e1",
                 fontWeight: 500,
                 fontSize: "0.9rem",
                 transition: "color 0.2s",
@@ -101,7 +101,7 @@ export default function Home() {
                 padding: "0.6rem 1rem",
                 borderRadius: "8px",
                 textDecoration: "none",
-                color: "#e2e8f0",
+                color: "#cbd5e1",
                 fontWeight: 500,
                 fontSize: "0.9rem",
                 transition: "color 0.2s",
@@ -118,7 +118,7 @@ export default function Home() {
                 border: "none",
                 cursor: "pointer",
                 padding: "0.6rem",
-                color: "#e2e8f0",
+                color: "#cbd5e1",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -126,7 +126,7 @@ export default function Home() {
                 transition: "background 0.2s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.07)";
+                e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "transparent";
@@ -140,11 +140,11 @@ export default function Home() {
                 padding: "0.6rem 1.25rem",
                 borderRadius: "8px",
                 textDecoration: "none",
-                color: "#e2e8f0",
+                color: "#f8fafc",
                 fontWeight: 500,
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
                 transition: "all 0.2s",
-                backgroundColor: "rgba(255,255,255,0.03)",
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
               }}
             >
               Login
@@ -155,10 +155,10 @@ export default function Home() {
                 padding: "0.6rem 1.25rem",
                 borderRadius: "8px",
                 textDecoration: "none",
-                color: "#0f172a",
+                color: "#ffffff",
                 fontWeight: 600,
-                backgroundColor: "#00c49f",
-                boxShadow: "0 0 15px rgba(0,196,159,0.4)",
+                backgroundColor: "#ea580c",
+                boxShadow: "0 4px 14px rgba(234, 88, 12, 0.4)",
                 transition: "all 0.2s",
               }}
             >
@@ -228,13 +228,13 @@ export default function Home() {
               gap: "0.5rem",
               marginBottom: "2rem",
               padding: "8px 16px",
-              backgroundColor: "rgba(0, 196, 159, 0.1)",
-              border: "1px solid rgba(0, 196, 159, 0.2)",
-              color: "#00c49f",
+              backgroundColor: "rgba(245, 158, 11, 0.14)",
+              border: "1px solid rgba(245, 158, 11, 0.3)",
+              color: "#fbbf24",
               borderRadius: "30px",
               fontSize: "0.875rem",
               fontWeight: 600,
-              boxShadow: "0 0 20px rgba(0,196,159,0.1)",
+              boxShadow: "0 0 20px rgba(245, 158, 11, 0.12)",
             }}
           >
             <span
@@ -243,8 +243,8 @@ export default function Home() {
                 width: "8px",
                 height: "8px",
                 borderRadius: "50%",
-                backgroundColor: "#00c49f",
-                boxShadow: "0 0 8px #00c49f",
+                backgroundColor: "#f59e0b",
+                boxShadow: "0 0 8px #f59e0b",
               }}
             />
             Smart PG Management System
@@ -260,7 +260,7 @@ export default function Home() {
               maxWidth: "950px",
               lineHeight: 1.15,
               marginBottom: "1.5rem",
-              color: "#fff",
+              color: "#ffffff",
               letterSpacing: "-1px",
             }}
           >
@@ -270,7 +270,7 @@ export default function Home() {
                 color: "transparent",
                 backgroundClip: "text",
                 WebkitBackgroundClip: "text",
-                backgroundImage: "linear-gradient(90deg, #1e6091, #00c49f)",
+                backgroundImage: "linear-gradient(90deg, #fef08a, #f59e0b)",
               }}
             >
               Scale Your Property Business
@@ -283,7 +283,7 @@ export default function Home() {
           <p
             style={{
               fontSize: "clamp(0.95rem, 2vw, 1.15rem)",
-              color: "#94a3b8",
+              color: "#cbd5e1",
               maxWidth: "800px",
               marginBottom: "3.5rem",
               lineHeight: 1.65,
@@ -311,12 +311,12 @@ export default function Home() {
                 fontSize: "1.125rem",
                 fontWeight: 600,
                 borderRadius: "12px",
-                backgroundColor: "#00c49f",
-                color: "#0f172a",
+                backgroundColor: "#ea580c",
+                color: "#ffffff",
                 textDecoration: "none",
                 boxShadow:
-                  "0 10px 25px -5px rgba(0, 196, 159, 0.4), 0 8px 10px -6px rgba(0, 196, 159, 0.1)",
-                transition: "transform 0.2s",
+                  "0 10px 25px -5px rgba(234, 88, 12, 0.4), 0 8px 10px -6px rgba(234, 88, 12, 0.1)",
+                transition: "transform 0.2s, background-color 0.2s",
               }}
             >
               Start Scaling Today
@@ -328,8 +328,8 @@ export default function Home() {
                 fontSize: "1.125rem",
                 fontWeight: 500,
                 borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.1)",
-                backgroundColor: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                backgroundColor: "rgba(255,255,255,0.05)",
                 color: "#f8fafc",
                 textDecoration: "none",
                 backdropFilter: "blur(10px)",
@@ -341,15 +341,130 @@ export default function Home() {
           </div>
         </HeroEntrance>
 
+        {/* ── Framer Motion Hero Interactive Motion Graphic Showcase ────── */}
+        <HeroEntrance index={4}>
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+            style={{
+              position: "relative",
+              maxWidth: "1000px",
+              width: "100%",
+              margin: "4.5rem auto 0 auto",
+              padding: "2rem",
+              borderRadius: "28px",
+              background: "linear-gradient(135deg, rgba(22, 27, 34, 0.95), rgba(13, 17, 23, 0.98))",
+              border: "1px solid rgba(245, 158, 11, 0.25)",
+              boxShadow: "0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 40px rgba(245, 158, 11, 0.15)",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            {/* Top Bar Window Decorator */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem", paddingBottom: "1rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <span style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: "#ff5f56", display: "inline-block" }} />
+                <span style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: "#ffbd2e", display: "inline-block" }} />
+                <span style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: "#27c93f", display: "inline-block" }} />
+              </div>
+              <div style={{ fontSize: "0.8rem", color: "#94a3b8", fontWeight: 500, letterSpacing: "0.05em" }}>
+                HABITAT CO-LIVING DASHBOARD LIVE PREVIEW
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", color: "#f59e0b", background: "rgba(245,158,11,0.14)", padding: "4px 10px", borderRadius: "20px", fontWeight: 600 }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#f59e0b" }} /> Live Sync
+              </div>
+            </div>
+
+            {/* Hero 3D Graphic + Metrics Row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem", alignItems: "center" }}>
+              {/* 3D Smart Building Graphic (User's Habitat Co-Living Photo) */}
+              <motion.div
+                whileHover={{ scale: 1.03, rotateY: 5 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                style={{ overflow: "hidden", borderRadius: "20px", border: "1px solid rgba(245, 158, 11, 0.3)", boxShadow: "0 12px 30px rgba(245, 158, 11, 0.15)", backgroundColor: "#0d1117" }}
+              >
+                <img
+                  src="/images/hero_3d_property.png"
+                  alt="Habitat Co-Living HSR Layout"
+                  style={{ width: "100%", height: "360px", objectFit: "contain", display: "block" }}
+                />
+              </motion.div>
+
+              {/* Floating Framer Motion Metrics Pills */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", textAlign: "left" }}>
+                <motion.div
+                  whileHover={{ x: 6, scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  style={{
+                    padding: "1rem 1.25rem",
+                    borderRadius: "16px",
+                    background: "rgba(22, 27, 34, 0.7)",
+                    border: "1px solid rgba(22, 163, 74, 0.3)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Total Occupancy</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#16a34a" }}>96.8%</div>
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "#22c55e", background: "rgba(34, 197, 94, 0.12)", padding: "4px 8px", borderRadius: "12px", fontWeight: 600 }}>↑ +12%</div>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ x: 6, scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  style={{
+                    padding: "1rem 1.25rem",
+                    borderRadius: "16px",
+                    background: "rgba(22, 27, 34, 0.7)",
+                    border: "1px solid rgba(245, 158, 11, 0.3)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Monthly Rent Collected</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fbbf24" }}>₹4,85,000</div>
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "#fbbf24", background: "rgba(245, 158, 11, 0.14)", padding: "4px 8px", borderRadius: "12px", fontWeight: 600 }}>Automated</div>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ x: 6, scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  style={{
+                    padding: "1rem 1.25rem",
+                    borderRadius: "16px",
+                    background: "rgba(22, 27, 34, 0.7)",
+                    border: "1px solid rgba(234, 88, 12, 0.3)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "0.8rem", color: "#94a3b8", fontWeight: 500 }}>Pending Reminders</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#f97316" }}>0 Overdue</div>
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "#f97316", background: "rgba(234, 88, 12, 0.14)", padding: "4px 8px", borderRadius: "12px", fontWeight: 600 }}>WhatsApp Sent</div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        </HeroEntrance>
+
         {/* ── Feature Cards — scroll-revealed, staggered ────────────────── */}
         <section id="features" style={{ scrollMarginTop: "100px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", marginTop: "8rem" }}>
-          <div style={{ display: "inline-block", padding: "0.35rem 1rem", borderRadius: "99px", backgroundColor: "rgba(0,196,159,0.12)", border: "1px solid rgba(0,196,159,0.25)", color: "#00c49f", fontSize: "0.8rem", fontWeight: 600, marginBottom: "1.25rem", letterSpacing: "0.05em", textAlign: "center" }}>
+          <div style={{ display: "inline-block", padding: "0.35rem 1rem", borderRadius: "99px", backgroundColor: "rgba(254, 243, 199, 0.9)", border: "1px solid rgba(245, 158, 11, 0.4)", color: "#b45309", fontSize: "0.8rem", fontWeight: 600, marginBottom: "1.25rem", letterSpacing: "0.05em", textAlign: "center" }}>
             FEATURES
           </div>
-          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.75rem)", fontWeight: 800, color: "#f8fafc", marginBottom: "0.75rem", letterSpacing: "-0.5px", textAlign: "center" }}>
+          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.75rem)", fontWeight: 800, color: "#1e293b", marginBottom: "0.75rem", letterSpacing: "-0.5px", textAlign: "center" }}>
             Everything You Need to Manage Your PG
           </h2>
-          <p style={{ color: "#94a3b8", fontSize: "1.05rem", maxWidth: "550px", margin: "0 auto 3rem auto", lineHeight: 1.6, textAlign: "center" }}>
+          <p style={{ color: "#475569", fontSize: "1.05rem", maxWidth: "550px", margin: "0 auto 3rem auto", lineHeight: 1.6, textAlign: "center" }}>
             Ditch the spreadsheets. Automate collections, track room availability, and support tenants in one platform.
           </p>
           <div
@@ -364,140 +479,165 @@ export default function Home() {
           >
           {/* Card 1 — Occupancy */}
           <AnimatedSection delay={0}>
-            <div
+            <motion.div
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
               style={{
                 height: "100%",
-                padding: "2.5rem",
-                background:
-                  "linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9))",
+                padding: "2rem",
+                background: "#ffffff",
                 borderRadius: "24px",
-                border: "1px solid rgba(255,255,255,0.05)",
-                boxShadow: "0 20px 40px -10px rgba(0,0,0,0.5)",
-                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(234, 88, 12, 0.15)",
+                boxShadow: "0 10px 30px rgba(234, 88, 12, 0.06)",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column"
               }}
             >
+              <div style={{ overflow: "hidden", borderRadius: "16px", marginBottom: "1.5rem", border: "1px solid rgba(22, 163, 74, 0.25)" }}>
+                <img
+                  src="/images/feature_3d_occupancy.png"
+                  alt="3D Occupancy Illustration"
+                  style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }}
+                />
+              </div>
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "16px",
-                  background: "rgba(0, 196, 159, 0.1)",
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "14px",
+                  background: "rgba(22, 163, 74, 0.1)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  marginBottom: "1.5rem",
-                  color: "#00c49f",
-                  border: "1px solid rgba(0,196,159,0.2)",
+                  marginBottom: "1rem",
+                  color: "#16a34a",
+                  border: "1px solid rgba(22, 163, 74, 0.2)",
                 }}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                   <polyline points="9 22 9 12 15 12 15 22" />
                 </svg>
               </div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#f8fafc", marginBottom: "0.75rem" }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.75rem" }}>
                 Maximize Occupancy
               </h3>
-              <p style={{ color: "#94a3b8", lineHeight: 1.6, fontSize: "0.95rem" }}>
+              <p style={{ color: "#475569", lineHeight: 1.6, fontSize: "0.95rem" }}>
                 Get a bird's-eye view of your property. Instantly identify vacant beds, optimize room
                 allocations, and reduce revenue leakage.
               </p>
-            </div>
+            </motion.div>
           </AnimatedSection>
 
           {/* Card 2 — Cash Flow */}
           <AnimatedSection delay={90}>
-            <div
+            <motion.div
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
               style={{
                 height: "100%",
-                padding: "2.5rem",
-                background:
-                  "linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9))",
+                padding: "2rem",
+                background: "#ffffff",
                 borderRadius: "24px",
-                border: "1px solid rgba(255,255,255,0.05)",
-                boxShadow: "0 20px 40px -10px rgba(0,0,0,0.5)",
-                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(234, 88, 12, 0.15)",
+                boxShadow: "0 10px 30px rgba(234, 88, 12, 0.06)",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column"
               }}
             >
+              <div style={{ overflow: "hidden", borderRadius: "16px", marginBottom: "1.5rem", border: "1px solid rgba(245, 158, 11, 0.25)" }}>
+                <img
+                  src="/images/feature_3d_cashflow.png"
+                  alt="3D Cash Flow Illustration"
+                  style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }}
+                />
+              </div>
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "16px",
-                  background: "rgba(56, 189, 248, 0.1)",
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "14px",
+                  background: "rgba(245, 158, 11, 0.12)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  marginBottom: "1.5rem",
-                  color: "#38bdf8",
-                  border: "1px solid rgba(56,189,248,0.2)",
+                  marginBottom: "1rem",
+                  color: "#d97706",
+                  border: "1px solid rgba(245, 158, 11, 0.25)",
                 }}
               >
-                {/* Banknote / cash diagram icon */}
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {/* Outer banknote rectangle */}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="6" width="20" height="12" rx="2" />
-                  {/* Centre denomination circle */}
                   <circle cx="12" cy="12" r="2" />
-                  {/* Left inner column — decorative bill detail */}
                   <path d="M6 6v12" />
-                  {/* Right inner column */}
                   <path d="M18 6v12" />
                 </svg>
               </div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#f8fafc", marginBottom: "0.75rem" }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.75rem" }}>
                 Automated Cash Flow
               </h3>
-              <p style={{ color: "#94a3b8", lineHeight: 1.6, fontSize: "0.95rem" }}>
+              <p style={{ color: "#475569", lineHeight: 1.6, fontSize: "0.95rem" }}>
                 Track dues with precision. Record partial payments, monitor expected monthly
                 collections, and automatically generate digital receipts.
               </p>
-            </div>
+            </motion.div>
           </AnimatedSection>
 
           {/* Card 3 — Tenant Portal */}
           <AnimatedSection delay={180}>
-            <div
+            <motion.div
+              whileHover={{ y: -8, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
               style={{
                 height: "100%",
-                padding: "2.5rem",
-                background:
-                  "linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9))",
+                padding: "2rem",
+                background: "#ffffff",
                 borderRadius: "24px",
-                border: "1px solid rgba(255,255,255,0.05)",
-                boxShadow: "0 20px 40px -10px rgba(0,0,0,0.5)",
-                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(234, 88, 12, 0.15)",
+                boxShadow: "0 10px 30px rgba(234, 88, 12, 0.06)",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column"
               }}
             >
+              <div style={{ overflow: "hidden", borderRadius: "16px", marginBottom: "1.5rem", border: "1px solid rgba(234, 88, 12, 0.25)" }}>
+                <img
+                  src="/images/feature_3d_tenant_portal.png"
+                  alt="3D Tenant Portal Illustration"
+                  style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }}
+                />
+              </div>
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "16px",
-                  background: "rgba(168, 85, 247, 0.1)",
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "14px",
+                  background: "rgba(234, 88, 12, 0.1)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  marginBottom: "1.5rem",
-                  color: "#a855f7",
-                  border: "1px solid rgba(168,85,247,0.2)",
+                  marginBottom: "1rem",
+                  color: "#ea580c",
+                  border: "1px solid rgba(234, 88, 12, 0.2)",
                 }}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
               </div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#f8fafc", marginBottom: "0.75rem" }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.75rem" }}>
                 Premium Tenant Portal
               </h3>
-              <p style={{ color: "#94a3b8", lineHeight: 1.6, fontSize: "0.95rem" }}>
+              <p style={{ color: "#475569", lineHeight: 1.6, fontSize: "0.95rem" }}>
                 Provide a professional experience. Tenants get a secure magic link to view their
                 rent status and instantly raise maintenance tickets.
               </p>
-            </div>
+            </motion.div>
           </AnimatedSection>
         </div>
           
@@ -506,7 +646,7 @@ export default function Home() {
             <a
               href="#pricing"
               style={{
-                color: "#00c49f",
+                color: "#ea580c",
                 textDecoration: "none",
                 fontWeight: 600,
                 fontSize: "1.05rem",
@@ -531,13 +671,13 @@ export default function Home() {
             textAlign: "center",
           }}
         >
-          <div style={{ display: "inline-block", padding: "0.35rem 1rem", borderRadius: "99px", backgroundColor: "rgba(0,196,159,0.12)", border: "1px solid rgba(0,196,159,0.25)", color: "#00c49f", fontSize: "0.8rem", fontWeight: 600, marginBottom: "1.25rem", letterSpacing: "0.05em" }}>
+          <div style={{ display: "inline-block", padding: "0.35rem 1rem", borderRadius: "99px", backgroundColor: "rgba(254, 243, 199, 0.9)", border: "1px solid rgba(245, 158, 11, 0.4)", color: "#b45309", fontSize: "0.8rem", fontWeight: 600, marginBottom: "1.25rem", letterSpacing: "0.05em" }}>
             PRICING
           </div>
-          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.75rem)", fontWeight: 800, color: "#f8fafc", marginBottom: "0.75rem", letterSpacing: "-0.5px" }}>
+          <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.75rem)", fontWeight: 800, color: "#1e293b", marginBottom: "0.75rem", letterSpacing: "-0.5px" }}>
             Simple, Transparent Pricing
           </h2>
-          <p style={{ color: "#94a3b8", fontSize: "1.05rem", maxWidth: "480px", margin: "0 auto 3rem", lineHeight: 1.6 }}>
+          <p style={{ color: "#475569", fontSize: "1.05rem", maxWidth: "480px", margin: "0 auto 3rem", lineHeight: 1.6 }}>
             One plan. Every feature included. No hidden fees, no per-tenant charges.
           </p>
 
@@ -547,19 +687,20 @@ export default function Home() {
               maxWidth: "400px",
               margin: "0 auto 3rem auto",
               padding: "1.5rem",
-              background: "rgba(30, 41, 59, 0.5)",
+              background: "#ffffff",
               borderRadius: "20px",
-              border: "1px dashed rgba(0, 196, 159, 0.4)",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-              backdropFilter: "blur(8px)",
+              border: "1px dashed rgba(234, 88, 12, 0.4)",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.04)",
               textAlign: "center"
             }}
           >
-            <label style={{ fontSize: "0.95rem", fontWeight: 600, display: "block", marginBottom: "0.75rem", color: "#f8fafc" }}>
+            <label style={{ fontSize: "0.95rem", fontWeight: 600, display: "block", marginBottom: "0.75rem", color: "#1e293b" }}>
               How many properties do you want to manage?
             </label>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5rem" }}>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.85 }}
                 type="button"
                 onClick={() => setPropertyCount(prev => Math.max(1, prev - 1))}
                 style={{
@@ -571,17 +712,27 @@ export default function Home() {
                   alignItems: "center",
                   justifyContent: "center",
                   borderRadius: "50%",
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "#f8fafc",
+                  backgroundColor: "rgba(0,0,0,0.04)",
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  color: "#1e293b",
                   cursor: "pointer",
                   transition: "all 0.2s"
                 }}
               >
                 -
-              </button>
-              <span style={{ fontSize: "1.75rem", fontWeight: 800, color: "#00c49f" }}>{propertyCount}</span>
-              <button
+              </motion.button>
+              <motion.span
+                key={propertyCount}
+                initial={{ scale: 1.3, opacity: 0.5 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                style={{ fontSize: "1.75rem", fontWeight: 800, color: "#ea580c" }}
+              >
+                {propertyCount}
+              </motion.span>
+              <motion.button
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.85 }}
                 type="button"
                 onClick={() => setPropertyCount(prev => prev + 1)}
                 style={{
@@ -593,17 +744,17 @@ export default function Home() {
                   alignItems: "center",
                   justifyContent: "center",
                   borderRadius: "50%",
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "#f8fafc",
+                  backgroundColor: "rgba(0,0,0,0.04)",
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  color: "#1e293b",
                   cursor: "pointer",
                   transition: "all 0.2s"
                 }}
               >
                 +
-              </button>
+              </motion.button>
             </div>
-            <p style={{ fontSize: "0.8rem", color: "#94a3b8", marginTop: "0.75rem", marginBottom: 0 }}>
+            <p style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.75rem", marginBottom: 0 }}>
               {propertyCount === 1 ? "Standard Single Property Plan" : `Enterprise Option: 1 Base PG + ${propertyCount - 1} Additional PG Addon(s)`}
             </p>
           </div>
@@ -616,24 +767,24 @@ export default function Home() {
               style={{
                 position: "relative",
                 width: "100%",
-                background: "rgba(30,41,59,0.6)",
+                background: "#ffffff",
                 borderRadius: "24px",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid rgba(0,0,0,0.1)",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.04)",
                 padding: "2.5rem",
-                backdropFilter: "blur(12px)",
                 display: "flex",
                 flexDirection: "column",
               }}
             >
-              <h3 style={{ color: "#f8fafc", fontSize: "1.3rem", marginBottom: "0.25rem" }}>PGmate Starter — 6 Months</h3>
-              <div style={{ color: "#cbd5e1", fontSize: "0.85rem", marginTop: "0.25rem" }}>
+              <h3 style={{ color: "#1e293b", fontSize: "1.3rem", marginBottom: "0.25rem" }}>PGmate Starter — 6 Months</h3>
+              <div style={{ color: "#64748b", fontSize: "0.85rem", marginTop: "0.25rem" }}>
                 Up to {propertyCount} propert{propertyCount === 1 ? "y" : "ies"} limit
               </div>
-              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#f8fafc", lineHeight: 1, margin: "1rem 0" }}>
+              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#1e293b", lineHeight: 1, margin: "1rem 0" }}>
                 ₹{(6999 + (propertyCount - 1) * 4999).toLocaleString()}
               </div>
               {propertyCount > 1 && (
-                <div style={{ color: "#cbd5e1", fontSize: "0.8rem", marginBottom: "1.5rem", marginTop: "-0.5rem" }}>
+                <div style={{ color: "#64748b", fontSize: "0.8rem", marginBottom: "1.5rem", marginTop: "-0.5rem" }}>
                   ₹6,999 base + {propertyCount - 1} × ₹4,999 addons
                 </div>
               )}
@@ -647,8 +798,8 @@ export default function Home() {
                   "Priority Support",
                 ].map((f) => (
                   <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", fontSize: "0.9rem" }}>
-                    <span style={{ color: "#cbd5e1", fontWeight: 700, marginTop: "1px", flexShrink: 0 }}>✓</span>
-                    <span style={{ color: "#cbd5e1" }}>{f}</span>
+                    <span style={{ color: "#ea580c", fontWeight: 700, marginTop: "1px", flexShrink: 0 }}>✓</span>
+                    <span style={{ color: "#334155" }}>{f}</span>
                   </li>
                 ))}
               </ul>
@@ -661,12 +812,12 @@ export default function Home() {
                   textAlign: "center",
                   padding: "0.9rem",
                   borderRadius: "12px",
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  color: "#f8fafc",
+                  backgroundColor: "rgba(0,0,0,0.04)",
+                  color: "#1e293b",
                   fontWeight: 600,
                   fontSize: "1rem",
                   textDecoration: "none",
-                  border: "1px solid rgba(255,255,255,0.2)",
+                  border: "1px solid rgba(0,0,0,0.1)",
                   transition: "background 0.2s",
                 }}
               >
@@ -679,34 +830,33 @@ export default function Home() {
               style={{
                 position: "relative",
                 width: "100%",
-                background: "linear-gradient(145deg, rgba(30,41,59,0.85), rgba(15,23,42,0.95))",
+                background: "linear-gradient(145deg, #ffffff, #fff7ed)",
                 borderRadius: "24px",
-                border: "2px solid #00c49f",
-                boxShadow: "0 0 60px rgba(0,196,159,0.12), 0 20px 40px rgba(0,0,0,0.4)",
+                border: "2px solid #ea580c",
+                boxShadow: "0 15px 40px rgba(234, 88, 12, 0.18)",
                 padding: "2.5rem",
-                backdropFilter: "blur(12px)",
                 display: "flex",
                 flexDirection: "column",
               }}
             >
               {/* Popular badge */}
-              <div style={{ position: "absolute", top: "-14px", left: "50%", transform: "translateX(-50%)", background: "linear-gradient(90deg, #00c49f, #38bdf8)", color: "#0f172a", padding: "5px 20px", borderRadius: "99px", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.08em", whiteSpace: "nowrap" }}>
+              <div style={{ position: "absolute", top: "-14px", left: "50%", transform: "translateX(-50%)", background: "linear-gradient(90deg, #ea580c, #f59e0b)", color: "#ffffff", padding: "5px 20px", borderRadius: "99px", fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.08em", whiteSpace: "nowrap" }}>
                 BEST VALUE
               </div>
 
-              <h3 style={{ color: "#f8fafc", fontSize: "1.3rem", marginBottom: "0.25rem" }}>PGmate Premium — 1 Year</h3>
-              <div style={{ color: "#00c49f", fontSize: "0.85rem", marginTop: "0.25rem" }}>
+              <h3 style={{ color: "#1e293b", fontSize: "1.3rem", marginBottom: "0.25rem" }}>PGmate Premium — 1 Year</h3>
+              <div style={{ color: "#ea580c", fontSize: "0.85rem", marginTop: "0.25rem", fontWeight: 600 }}>
                 Up to {propertyCount} propert{propertyCount === 1 ? "y" : "ies"} limit
               </div>
-              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#00c49f", lineHeight: 1, margin: "1rem 0" }}>
+              <div style={{ fontSize: "2.75rem", fontWeight: 900, color: "#ea580c", lineHeight: 1, margin: "1rem 0" }}>
                 ₹{(11999 + (propertyCount - 1) * 6999).toLocaleString()}
               </div>
               {propertyCount > 1 ? (
-                <div style={{ color: "#00c49f", fontSize: "0.8rem", fontWeight: 600, marginBottom: "1.5rem", marginTop: "-0.5rem" }}>
+                <div style={{ color: "#ea580c", fontSize: "0.8rem", fontWeight: 600, marginBottom: "1.5rem", marginTop: "-0.5rem" }}>
                   ₹11,999 base + {propertyCount - 1} × ₹6,999 addons
                 </div>
               ) : (
-                <div style={{ color: "#00c49f", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>Save ₹1,999 compared to 6-month plan</div>
+                <div style={{ color: "#ea580c", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.5rem" }}>Save ₹1,999 compared to 6-month plan</div>
               )}
 
               <ul style={{ listStyle: "none", padding: 0, marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.8rem", flex: 1 }}>
@@ -722,8 +872,8 @@ export default function Home() {
                   "Priority Support",
                 ].map((f) => (
                   <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", fontSize: "0.9rem" }}>
-                    <span style={{ color: "#00c49f", fontWeight: 700, marginTop: "1px", flexShrink: 0 }}>✓</span>
-                    <span style={{ color: "#cbd5e1" }}>{f}</span>
+                    <span style={{ color: "#ea580c", fontWeight: 700, marginTop: "1px", flexShrink: 0 }}>✓</span>
+                    <span style={{ color: "#334155" }}>{f}</span>
                   </li>
                 ))}
               </ul>
@@ -736,12 +886,12 @@ export default function Home() {
                   textAlign: "center",
                   padding: "0.9rem",
                   borderRadius: "12px",
-                  backgroundColor: "#00c49f",
-                  color: "#0f172a",
+                  backgroundColor: "#ea580c",
+                  color: "#ffffff",
                   fontWeight: 700,
                   fontSize: "1rem",
                   textDecoration: "none",
-                  boxShadow: "0 0 25px rgba(0,196,159,0.35)",
+                  boxShadow: "0 0 25px rgba(234,88,12,0.35)",
                   transition: "transform 0.2s, box-shadow 0.2s",
                 }}
               >
@@ -752,9 +902,9 @@ export default function Home() {
           
           {/* Pricing -> Contact Link */}
           <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
-            <span style={{ color: "#94a3b8", fontSize: "0.95rem" }}>
+            <span style={{ color: "#64748b", fontSize: "0.95rem" }}>
               Need a plan for more properties or custom enterprise setup?{" "}
-              <a href="#contact" style={{ color: "#00c49f", textDecoration: "none", fontWeight: 600 }}>
+              <a href="#contact" style={{ color: "#ea580c", textDecoration: "none", fontWeight: 600 }}>
                 Contact our sales team
               </a>
             </span>
@@ -770,19 +920,18 @@ export default function Home() {
             scrollMarginTop: "100px",
             margin: "6rem auto 4rem auto",
             padding: "3rem",
-            background: "rgba(15, 23, 42, 0.6)",
+            background: "#ffffff",
             borderRadius: "24px",
-            border: "1px solid rgba(255,255,255,0.05)",
+            border: "1px solid rgba(234, 88, 12, 0.15)",
             textAlign: "center",
             maxWidth: "800px",
-            boxShadow: "0 20px 40px -10px rgba(0,0,0,0.5)",
-            backdropFilter: "blur(10px)",
+            boxShadow: "0 15px 35px rgba(0,0,0,0.04)",
           }}
         >
-          <h2 style={{ fontSize: "2rem", fontWeight: 700, color: "#f8fafc", marginBottom: "1rem" }}>
+          <h2 style={{ fontSize: "2rem", fontWeight: 700, color: "#1e293b", marginBottom: "1rem" }}>
             Get in Touch
           </h2>
-          <p style={{ color: "#94a3b8", fontSize: "1.125rem", marginBottom: "2rem" }}>
+          <p style={{ color: "#475569", fontSize: "1.125rem", marginBottom: "2rem" }}>
             Have questions or need help setting up your PG? We're here to help.
           </p>
           <a
@@ -795,9 +944,9 @@ export default function Home() {
               fontSize: "1.125rem",
               fontWeight: 600,
               borderRadius: "12px",
-              backgroundColor: "rgba(0, 196, 159, 0.1)",
-              color: "#00c49f",
-              border: "1px solid rgba(0, 196, 159, 0.2)",
+              backgroundColor: "rgba(234, 88, 12, 0.1)",
+              color: "#ea580c",
+              border: "1px solid rgba(234, 88, 12, 0.2)",
               textDecoration: "none",
               transition: "all 0.2s",
             }}

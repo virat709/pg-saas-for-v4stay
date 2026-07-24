@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import NotificationBell from "@/components/NotificationBell";
 import { useToast } from "@/context/ToastContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import MotionBackground from "@/components/MotionBackground";
 
 export default function TenantPortal() {
   const params = useParams();
@@ -196,8 +197,10 @@ export default function TenantPortal() {
   );
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem', paddingBottom: '4rem' }}>
-      <header style={{ marginBottom: '2rem', paddingTop: '1rem' }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#0d1117", position: "relative" }}>
+      <MotionBackground />
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem', paddingBottom: '4rem', position: "relative", zIndex: 10 }}>
+        <header style={{ marginBottom: '2rem', paddingTop: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
           <ThemeToggle />
           <NotificationBell role="tenant" tenantId={tenantId} />
@@ -465,6 +468,7 @@ export default function TenantPortal() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { sendPasswordResetEmail } from "firebase/auth";
 import Logo from "@/components/Logo";
+import MotionBackground from "@/components/MotionBackground";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -26,12 +27,13 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex items-center justify-center w-full" style={{ minHeight: "100vh", padding: "1rem" }}>
-      <div className="card animate-fade-in" style={{ maxWidth: "400px", width: "100%" }}>
+    <div className="flex items-center justify-center w-full relative" style={{ minHeight: "100vh", padding: "1rem", backgroundColor: "#0d1117" }}>
+      <MotionBackground />
+      <div className="card animate-fade-in relative z-10" style={{ maxWidth: "400px", width: "100%", background: 'rgba(22, 27, 34, 0.95)', border: '1px solid rgba(255, 255, 255, 0.12)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', backdropFilter: 'blur(16px)' }}>
         <div className="text-center mb-8" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-          <Logo size={42} variant="auto" showTagline={false} />
-          <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>Forgot Password?</h1>
-          <p style={{ margin: 0, fontSize: "0.9rem" }}>
+          <Logo size={42} variant="light" showTagline={false} />
+          <h1 style={{ fontSize: "1.5rem", marginBottom: 0, color: "#f8fafc" }}>Forgot Password?</h1>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#cbd5e1" }}>
             Enter your email and we'll send you a link to reset your password.
           </p>
         </div>

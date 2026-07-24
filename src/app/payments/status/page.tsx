@@ -118,23 +118,29 @@ function PaymentStatusContent() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#f4f3f8",
+        backgroundColor: "#0d1117",
+        color: "#f8fafc",
         fontFamily: "system-ui, -apple-system, sans-serif",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: "1rem",
+        position: "relative",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: "420px",
-          backgroundColor: "white",
-          borderRadius: "16px",
+          backgroundColor: "rgba(22, 27, 34, 0.95)",
+          borderRadius: "20px",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
           padding: "3rem 2rem",
-          boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
+          backdropFilter: "blur(16px)",
           textAlign: "center",
+          position: "relative",
+          zIndex: 10,
         }}
       >
         {/* Status icon */}
@@ -144,7 +150,7 @@ function PaymentStatusContent() {
             height: "80px",
             borderRadius: "50%",
             backgroundColor: state === "verifying" ? "transparent" : icon.color + "22",
-            border: state === "verifying" ? `4px solid #e2e8f0` : `3px solid ${icon.color}`,
+            border: state === "verifying" ? `4px solid rgba(255,255,255,0.15)` : `3px solid ${icon.color}`,
             borderTopColor: state === "verifying" ? icon.color : undefined,
             display: "flex",
             alignItems: "center",
@@ -161,7 +167,7 @@ function PaymentStatusContent() {
 
         <h2
           style={{
-            color: "#1a202c",
+            color: "#f8fafc",
             margin: "0 0 0.75rem",
             fontSize: "1.4rem",
           }}
@@ -172,7 +178,7 @@ function PaymentStatusContent() {
           {state === "timeout" && "Still Verifying…"}
         </h2>
 
-        <p style={{ color: "#718096", margin: "0 0 2rem", fontSize: "0.95rem", lineHeight: 1.6 }}>
+        <p style={{ color: "#cbd5e1", margin: "0 0 2rem", fontSize: "0.95rem", lineHeight: 1.6 }}>
           {message}
         </p>
 

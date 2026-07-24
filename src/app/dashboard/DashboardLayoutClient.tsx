@@ -156,8 +156,8 @@ function DashboardLayoutContent({
               style={{
                 padding: "0.75rem 1rem",
                 borderRadius: "var(--radius-md)",
-                backgroundColor: isActive ? "rgba(30, 96, 145, 0.1)" : "transparent",
-                color: isActive ? "var(--primary)" : "var(--text-main)",
+                backgroundColor: isActive ? "rgba(234, 88, 12, 0.15)" : "transparent",
+                color: isActive ? "#ea580c" : "var(--text-main)",
                 fontWeight: isActive ? 600 : 400,
                 transition: "var(--transition)",
                 display: "flex",

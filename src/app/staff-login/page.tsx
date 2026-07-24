@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
+import MotionBackground from "@/components/MotionBackground";
 
 export default function StaffLoginPage() {
   const router = useRouter();
@@ -63,12 +64,14 @@ export default function StaffLoginPage() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "var(--bg-color)",
+      backgroundColor: "#0d1117",
       padding: "1rem",
+      position: "relative",
     }}>
-      <div style={{ width: "100%", maxWidth: "400px" }}>
-        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <Logo />
+      <MotionBackground />
+      <div style={{ width: "100%", maxWidth: "400px", position: "relative", zIndex: 10 }}>
+        <div style={{ textAlign: "center", marginBottom: "2rem", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <Logo variant="light" />
           <div style={{
             marginTop: "1rem",
             display: "inline-flex",
@@ -76,18 +79,18 @@ export default function StaffLoginPage() {
             gap: "0.4rem",
             padding: "0.35rem 0.85rem",
             borderRadius: "99px",
-            backgroundColor: "rgba(139, 92, 246, 0.1)",
-            color: "#8b5cf6",
+            backgroundColor: "rgba(245, 158, 11, 0.14)",
+            color: "#fbbf24",
             fontSize: "0.8rem",
             fontWeight: 600,
-            border: "1px solid rgba(139, 92, 246, 0.3)"
+            border: "1px solid rgba(245, 158, 11, 0.3)"
           }}>
             👷 Staff Login
           </div>
         </div>
 
-        <div className="card">
-          <h2 style={{ marginBottom: "0.5rem" }}>Staff Access</h2>
+        <div className="card" style={{ background: 'rgba(22, 27, 34, 0.95)', border: '1px solid rgba(255, 255, 255, 0.12)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', backdropFilter: 'blur(16px)' }}>
+          <h2 style={{ marginBottom: "0.5rem", color: "#f8fafc" }}>Staff Access</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
             Enter your credentials provided by the PG owner.
           </p>

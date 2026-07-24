@@ -8,6 +8,7 @@ import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { useIsReturningUser } from "@/hooks/useIsReturningUser";
 import Logo from "@/components/Logo";
+import MotionBackground from "@/components/MotionBackground";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -73,11 +74,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center w-full" style={{ minHeight: '100vh', padding: '1rem' }}>
-      <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%' }}>
+    <div className="flex items-center justify-center w-full relative" style={{ minHeight: '100vh', padding: '1rem', backgroundColor: '#0d1117' }}>
+      <MotionBackground />
+      <div className="card animate-fade-in relative z-10" style={{ maxWidth: '400px', width: '100%', background: 'rgba(22, 27, 34, 0.95)', border: '1px solid rgba(255, 255, 255, 0.12)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', backdropFilter: 'blur(16px)' }}>
         <div className="text-center mb-8" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-          <Logo size={42} variant="auto" showTagline={true} />
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 600, marginTop: '0.5rem', color: 'var(--text-main)' }}>Login to PGmate</h1>
+          <Logo size={42} variant="light" showTagline={true} />
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 600, marginTop: '0.5rem', color: '#f8fafc' }}>Login to PGmate</h1>
         </div>
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: '1rem', textAlign: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: 'var(--radius-md)' }}>{error}</div>}
