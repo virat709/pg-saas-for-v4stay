@@ -1311,7 +1311,6 @@ export default function TenantsPage() {
               </div>
             </form>
           </div>
-        </div>
 
 
       {/* ── Change Room Modal ───────────────────────────────────── */}
