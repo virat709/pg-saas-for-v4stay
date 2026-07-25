@@ -712,7 +712,7 @@ export default function RoomsPage() {
                                     </span>
                                   ) : (
                                     <Link
-                                      href="/dashboard/tenants"
+                                      href={`/dashboard/tenants?propertyId=${room.propertyId || activePropertyId}&floor=${encodeURIComponent(room.floor)}&roomNumber=${encodeURIComponent(room.room_number)}&bedId=${room.id}_${bed.id}`}
                                       style={{
                                         color: "#d97706",
                                         textDecoration: "none",

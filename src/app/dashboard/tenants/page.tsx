@@ -269,7 +269,33 @@ export default function TenantsPage() {
           });
         });
         setAvailableBeds(vacantBeds);
-        if (vacantBeds.length > 0) {
+        
+        // Check if coming from "+ Assign Bed" in Rooms page with URL parameters
+        let params: URLSearchParams | null = null;
+        if (typeof window !== "undefined") {
+          params = new URLSearchParams(window.location.search);
+        }
+        const urlBedId = params?.get("bedId");
+        const urlPropId = params?.get("propertyId");
+        const urlFloor = params?.get("floor");
+        const urlRoomNum = params?.get("roomNumber");
+
+        if (urlBedId || urlPropId || urlFloor || urlRoomNum) {
+          setShowAddForm(true);
+          const targetBed = vacantBeds.find(b => b.id === urlBedId);
+          if (targetBed) {
+            setFormPropertyId(targetBed.propertyId);
+            setFormFloor(targetBed.floor);
+            setFormRoomNumber(targetBed.roomNumber);
+            setBedId(targetBed.id);
+            if (targetBed.propertyId) setSelectedFormPropertyId(targetBed.propertyId);
+          } else {
+            if (urlPropId) setFormPropertyId(urlPropId);
+            if (urlFloor) setFormFloor(urlFloor);
+            if (urlRoomNum) setFormRoomNumber(urlRoomNum);
+            if (urlBedId) setBedId(urlBedId);
+          }
+        } else if (vacantBeds.length > 0) {
           setBedId(vacantBeds[0].id);
           if (vacantBeds[0].propertyId) {
             setSelectedFormPropertyId(vacantBeds[0].propertyId);
@@ -299,7 +325,7 @@ export default function TenantsPage() {
 
     // 1. Property selector sync
     let targetProp = formPropertyId;
-    if (activePropertyId && activePropertyId !== "all") {
+    if (activePropertyId && activePropertyId !== "all" && !formPropertyId) {
       targetProp = activePropertyId;
     } else {
       const props = Array.from(new Set(availableBeds.map(b => b.propertyId)));
