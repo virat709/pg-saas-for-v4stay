@@ -105,14 +105,6 @@ export default function TenantsPage() {
   const [offlinePayPersonName, setOfflinePayPersonName] = useState("");
   const [submittingOfflinePay, setSubmittingOfflinePay] = useState(false);
 
-  // Edit Tenant State
-  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editRent, setEditRent] = useState("");
-  const [editBillingDay, setEditBillingDay] = useState("1");
-  const [editSaving, setEditSaving] = useState(false);
-
   const openEditModal = (t: Tenant) => {
     setEditTenantData(t);
     setEditName(t.name || "");
@@ -121,41 +113,10 @@ export default function TenantsPage() {
     setEditBillingCycleDay(t.billing_cycle_day?.toString() || "5");
   };
 
-  const handleEditTenantSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editTenantData) return;
-    setUploading(true);
-    try {
-      const res = await fetch(`/api/tenants/${editTenantData.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editName,
-          phone: editPhone,
-          rent_amount: parseFloat(editRentAmount),
-          billing_cycle_day: parseInt(editBillingCycleDay),
-        }),
-      });
-      if (res.ok) {
-        toast("Tenant details updated successfully!", "success");
-        setEditTenantData(null);
-        fetchData();
-      } else {
-        const data = await res.json();
-        toast(data.message || "Failed to update tenant.", "error");
-      }
-    } catch (e) {
-      console.error(e);
-      toast("Error updating tenant.", "error");
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const getWhatsAppReminderUrl = (t: Tenant) => {
     const cleanPhone = (t.phone || "").replace(/\D/g, "");
     const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-    const pgName = t.property?.name || t.propertyName || "our PG";
+    const pgName = (t as any).property?.name || (t as any).propertyName || "our PG";
     const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
     const link = `${origin}/t/${t.id}`;
     const text = `Hi ${t.name}, your monthly rent of ₹${t.rent_amount} for ${pgName} is due. Please review & pay here: ${link}`;
@@ -1312,6 +1273,7 @@ export default function TenantsPage() {
             </form>
           </div>
         </div>
+      )}
 
 
       {/* ── Change Room Modal ───────────────────────────────────── */}

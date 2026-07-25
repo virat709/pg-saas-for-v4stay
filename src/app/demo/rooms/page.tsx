@@ -14,6 +14,14 @@ export default function DemoRoomsPage() {
     return true;
   });
 
+  const roomsByFloor = filteredRooms.reduce<Record<number, typeof DEMO_ROOMS>>((acc, r) => {
+    if (!acc[r.floor]) acc[r.floor] = [];
+    acc[r.floor].push(r);
+    return acc;
+  }, {});
+
+  const sortedFloors = Object.keys(roomsByFloor).map(Number).sort((a, b) => a - b);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {/* Header Bar */}

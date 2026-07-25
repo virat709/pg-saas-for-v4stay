@@ -172,7 +172,7 @@ export default function RoomsPage() {
 
   // Group filtered rooms by floor
   const standardFloors = ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor", "5th Floor"];
-  const roomsByFloor = filteredRooms.reduce<Record<string, RoomWithBeds[]>>((acc, room) => {
+  const roomsByFloor = filteredRooms.reduce<Record<string, Room[]>>((acc, room) => {
     const f = room.floor || "Other Floor";
     if (!acc[f]) acc[f] = [];
     acc[f].push(room);

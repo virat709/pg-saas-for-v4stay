@@ -5,7 +5,7 @@ import { useProperties } from "@/context/PropertyContext";
 import Link from "next/link";
 import { useToast } from "@/context/ToastContext";
 
-type Tenant = { id: string; name: string; rent_amount: number; propertyId?: string; status?: string };
+type Tenant = { id: string; name: string; phone?: string; rent_amount: number; propertyId?: string; status?: string };
 type Payment = {
   id: string;
   tenantId?: string;
