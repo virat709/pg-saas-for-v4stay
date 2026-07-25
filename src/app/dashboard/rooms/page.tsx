@@ -159,6 +159,24 @@ export default function RoomsPage() {
     return true;
   });
 
+  // Group filtered rooms by floor
+  const standardFloors = ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor", "5th Floor"];
+  const roomsByFloor = filteredRooms.reduce<Record<string, RoomWithBeds[]>>((acc, room) => {
+    const f = room.floor || "Other Floor";
+    if (!acc[f]) acc[f] = [];
+    acc[f].push(room);
+    return acc;
+  }, {});
+
+  const sortedFloorKeys = Object.keys(roomsByFloor).sort((a, b) => {
+    const idxA = standardFloors.indexOf(a);
+    const idxB = standardFloors.indexOf(b);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {/* Header Bar */}
@@ -530,154 +548,193 @@ export default function RoomsPage() {
           </button>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
-          {filteredRooms.map((room) => {
-            const occupiedCount = room.beds.filter((b) => b.status === "occupied").length;
-            const isFullyOccupied = room.beds.length > 0 && occupiedCount === room.beds.length;
-
+        <div style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }}>
+          {sortedFloorKeys.map((floorName) => {
+            const floorRooms = roomsByFloor[floorName];
             return (
-              <div
-                key={room.id}
-                style={{
-                  backgroundColor: "var(--card-bg)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "14px",
-                  padding: "1.25rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1rem",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                  transition: "transform 0.15s ease, box-shadow 0.15s ease",
-                }}
-              >
-                {/* Room Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>Room {room.room_number}</div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
-                      {room.floor} • {room.sharing_type} Sharing
-                      {activePropertyId === "all" && room.propertyName && ` • ${room.propertyName}`}
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.4rem" }}>
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
-                        padding: "0.25rem 0.6rem",
-                        borderRadius: "12px",
-                        backgroundColor: isFullyOccupied ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)",
-                        color: isFullyOccupied ? "#ef4444" : "#10b981",
-                      }}
-                    >
-                      {occupiedCount} / {room.beds.length} Occupied
-                    </span>
-
-                    <div style={{ display: "flex", gap: "0.35rem" }}>
-                      <button
-                        onClick={() => {
-                          setEditRoomData(room);
-                          setEditRoomNumber(room.room_number);
-                          setEditFloor(
-                            ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor"].includes(room.floor)
-                              ? room.floor
-                              : "custom"
-                          );
-                          setEditCustomFloor(
-                            ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor"].includes(room.floor)
-                              ? ""
-                              : room.floor
-                          );
-                        }}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          color: "#ea580c",
-                          cursor: "pointer",
-                          fontSize: "0.78rem",
-                          fontWeight: 600,
-                          padding: "0.15rem 0.35rem",
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteRoom(room.id)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          color: "#ef4444",
-                          cursor: "pointer",
-                          fontSize: "0.78rem",
-                          fontWeight: 600,
-                          padding: "0.15rem 0.35rem",
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Beds Allocation Section */}
-                <div>
-                  <div
+              <div key={floorName}>
+                {/* Floor Section Header */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    marginBottom: "1rem",
+                    paddingBottom: "0.5rem",
+                    borderBottom: "1px solid var(--border-color)",
+                  }}
+                >
+                  <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    🏢 {floorName}
+                  </h3>
+                  <span
                     style={{
                       fontSize: "0.78rem",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
                       color: "var(--text-muted)",
-                      marginBottom: "0.5rem",
+                      backgroundColor: "var(--surface-color)",
+                      border: "1px solid var(--border-color)",
+                      padding: "0.15rem 0.65rem",
+                      borderRadius: "12px",
+                      fontWeight: 600,
                     }}
                   >
-                    Beds Allocation
-                  </div>
+                    {floorRooms.length} {floorRooms.length === 1 ? "Room" : "Rooms"}
+                  </span>
+                </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                    {room.beds.map((bed) => {
-                      const isOccupied = bed.status === "occupied";
-                      return (
-                        <div
-                          key={bed.id}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "0.5rem 0.75rem",
-                            borderRadius: "8px",
-                            border: "1px solid var(--border-color)",
-                            backgroundColor: isOccupied ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)",
-                            fontSize: "0.85rem",
-                          }}
-                        >
-                          <span style={{ fontWeight: 600 }}>{bed.bed_label}</span>
-                          {isOccupied ? (
-                            <span style={{ color: "#10b981", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                              👤 {bed.tenant?.name || "Occupied"}
-                            </span>
-                          ) : (
-                            <Link
-                              href="/dashboard/tenants"
+                {/* Rooms Grid for this floor */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
+                  {floorRooms.map((room) => {
+                    const occupiedCount = room.beds.filter((b) => b.status === "occupied").length;
+                    const isFullyOccupied = room.beds.length > 0 && occupiedCount === room.beds.length;
+
+                    return (
+                      <div
+                        key={room.id}
+                        style={{
+                          backgroundColor: "var(--card-bg)",
+                          border: "1px solid var(--border-color)",
+                          borderRadius: "14px",
+                          padding: "1.25rem",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "1rem",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                          transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                        }}
+                      >
+                        {/* Room Header */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div>
+                            <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>Room {room.room_number}</div>
+                            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
+                              {room.floor} • {room.sharing_type} Sharing
+                              {activePropertyId === "all" && room.propertyName && ` • ${room.propertyName}`}
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.4rem" }}>
+                            <span
                               style={{
-                                color: "#d97706",
-                                textDecoration: "none",
-                                padding: "0.2rem 0.55rem",
-                                borderRadius: "6px",
-                                fontSize: "0.78rem",
-                                fontWeight: 600,
-                                border: "1px dashed rgba(217, 119, 6, 0.5)",
-                                backgroundColor: "rgba(245, 158, 11, 0.1)",
+                                fontSize: "0.75rem",
+                                fontWeight: 700,
+                                padding: "0.25rem 0.6rem",
+                                borderRadius: "12px",
+                                backgroundColor: isFullyOccupied ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)",
+                                color: isFullyOccupied ? "#ef4444" : "#10b981",
                               }}
                             >
-                              + Assign Bed
-                            </Link>
-                          )}
+                              {occupiedCount} / {room.beds.length} Occupied
+                            </span>
+
+                            <div style={{ display: "flex", gap: "0.35rem" }}>
+                              <button
+                                onClick={() => {
+                                  setEditRoomData(room);
+                                  setEditRoomNumber(room.room_number);
+                                  setEditFloor(
+                                    ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor"].includes(room.floor)
+                                      ? room.floor
+                                      : "custom"
+                                  );
+                                  setEditCustomFloor(
+                                    ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor"].includes(room.floor)
+                                      ? ""
+                                      : room.floor
+                                  );
+                                }}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#ea580c",
+                                  cursor: "pointer",
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  padding: "0.15rem 0.35rem",
+                                }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRoom(room.id)}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#ef4444",
+                                  cursor: "pointer",
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  padding: "0.15rem 0.35rem",
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* Beds Allocation Section */}
+                        <div>
+                          <div
+                            style={{
+                              fontSize: "0.78rem",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                              color: "var(--text-muted)",
+                              marginBottom: "0.5rem",
+                            }}
+                          >
+                            Beds Allocation
+                          </div>
+
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                            {room.beds.map((bed) => {
+                              const isOccupied = bed.status === "occupied";
+                              return (
+                                <div
+                                  key={bed.id}
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    padding: "0.5rem 0.75rem",
+                                    borderRadius: "8px",
+                                    border: "1px solid var(--border-color)",
+                                    backgroundColor: isOccupied ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)",
+                                    fontSize: "0.85rem",
+                                  }}
+                                >
+                                  <span style={{ fontWeight: 600 }}>{bed.bed_label}</span>
+                                  {isOccupied ? (
+                                    <span style={{ color: "#10b981", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                                      👤 {bed.tenant?.name || "Occupied"}
+                                    </span>
+                                  ) : (
+                                    <Link
+                                      href="/dashboard/tenants"
+                                      style={{
+                                        color: "#d97706",
+                                        textDecoration: "none",
+                                        padding: "0.2rem 0.55rem",
+                                        borderRadius: "6px",
+                                        fontSize: "0.78rem",
+                                        fontWeight: 600,
+                                        border: "1px dashed rgba(217, 119, 6, 0.5)",
+                                        backgroundColor: "rgba(245, 158, 11, 0.1)",
+                                      }}
+                                    >
+                                      + Assign Bed
+                                    </Link>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );

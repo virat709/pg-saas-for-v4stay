@@ -64,125 +64,164 @@ export default function DemoRoomsPage() {
         </div>
       </div>
 
-      {/* Room Cards Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
-        {filteredRooms.map((room) => {
-          const occupiedCount = room.beds.filter((b) => b.status === "occupied").length;
-          const isFullyOccupied = occupiedCount === room.beds.length;
-
+      {/* Rooms List Grouped by Floor */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }}>
+        {sortedFloors.map((floorNum) => {
+          const floorRooms = roomsByFloor[floorNum];
           return (
-            <div
-              key={room.id}
-              style={{
-                backgroundColor: "var(--card-bg)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "14px",
-                padding: "1.25rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1rem",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-              }}
-            >
-              {/* Card Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div>
-                  <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>Room {room.roomNumber}</div>
-                  <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                    Floor {room.floor} • {room.type}
-                  </div>
-                </div>
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    padding: "0.25rem 0.6rem",
-                    borderRadius: "12px",
-                    backgroundColor: isFullyOccupied ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)",
-                    color: isFullyOccupied ? "#ef4444" : "#10b981",
-                  }}
-                >
-                  {occupiedCount} / {room.beds.length} Occupied
-                </span>
-              </div>
-
-              {/* Rent Details */}
+            <div key={floorNum}>
+              {/* Floor Section Header */}
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  backgroundColor: "var(--bg-color)",
-                  padding: "0.6rem 0.85rem",
-                  borderRadius: "8px",
-                  fontSize: "0.85rem",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  marginBottom: "1rem",
+                  paddingBottom: "0.5rem",
+                  borderBottom: "1px solid var(--border-color)",
                 }}
               >
-                <span style={{ color: "var(--text-muted)" }}>Monthly Rent:</span>
-                <strong style={{ color: "#ea580c" }}>₹{room.rent.toLocaleString()} / bed</strong>
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  🏢 Floor {floorNum}
+                </h3>
+                <span
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--text-muted)",
+                    backgroundColor: "var(--surface-color)",
+                    border: "1px solid var(--border-color)",
+                    padding: "0.15rem 0.65rem",
+                    borderRadius: "12px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {floorRooms.length} {floorRooms.length === 1 ? "Room" : "Rooms"}
+                </span>
               </div>
 
-              {/* Bed List */}
-              <div>
-                <div style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
-                  Beds Allocation
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                  {room.beds.map((bed) => (
+              {/* Rooms Grid for this floor */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
+                {floorRooms.map((room) => {
+                  const occupiedCount = room.beds.filter((b) => b.status === "occupied").length;
+                  const isFullyOccupied = occupiedCount === room.beds.length;
+
+                  return (
                     <div
-                      key={bed.id}
+                      key={room.id}
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "0.45rem 0.75rem",
-                        borderRadius: "6px",
+                        backgroundColor: "var(--card-bg)",
                         border: "1px solid var(--border-color)",
-                        backgroundColor: bed.status === "occupied" ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)",
-                        fontSize: "0.85rem",
+                        borderRadius: "14px",
+                        padding: "1.25rem",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "1rem",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                       }}
                     >
-                      <span style={{ fontWeight: 600 }}>{bed.bedNumber}</span>
-                      {bed.status === "occupied" ? (
-                        <span style={{ color: "#10b981", fontWeight: 600 }}>👤 {bed.tenantName}</span>
-                      ) : (
-                        <button
-                          onClick={() => triggerReadOnlyNotice(`Assign Bed (${bed.bedNumber})`)}
+                      {/* Card Header */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div>
+                          <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>Room {room.roomNumber}</div>
+                          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                            Floor {room.floor} • {room.type}
+                          </div>
+                        </div>
+                        <span
                           style={{
-                            backgroundColor: "transparent",
-                            color: "#d97706",
-                            border: "1px border dashed #d97706",
-                            padding: "0.15rem 0.5rem",
-                            borderRadius: "4px",
                             fontSize: "0.75rem",
-                            cursor: "pointer",
-                            fontWeight: 600,
+                            fontWeight: 700,
+                            padding: "0.25rem 0.6rem",
+                            borderRadius: "12px",
+                            backgroundColor: isFullyOccupied ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)",
+                            color: isFullyOccupied ? "#ef4444" : "#10b981",
                           }}
                         >
-                          + Assign Bed
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+                          {occupiedCount} / {room.beds.length} Occupied
+                        </span>
+                      </div>
 
-              {/* Amenities */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginTop: "auto" }}>
-                {room.amenities.map((am, idx) => (
-                  <span
-                    key={idx}
-                    style={{
-                      fontSize: "0.7rem",
-                      backgroundColor: "rgba(255, 255, 255, 0.05)",
-                      border: "1px solid var(--border-color)",
-                      padding: "0.15rem 0.45rem",
-                      borderRadius: "4px",
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    {am}
-                  </span>
-                ))}
+                      {/* Rent Details */}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          backgroundColor: "var(--bg-color)",
+                          padding: "0.6rem 0.85rem",
+                          borderRadius: "8px",
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        <span style={{ color: "var(--text-muted)" }}>Monthly Rent:</span>
+                        <strong style={{ color: "#ea580c" }}>₹{room.rent.toLocaleString()} / bed</strong>
+                      </div>
+
+                      {/* Bed List */}
+                      <div>
+                        <div style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
+                          Beds Allocation
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                          {room.beds.map((bed) => (
+                            <div
+                              key={bed.id}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "0.45rem 0.75rem",
+                                borderRadius: "6px",
+                                border: "1px solid var(--border-color)",
+                                backgroundColor: bed.status === "occupied" ? "rgba(16, 185, 129, 0.05)" : "rgba(245, 158, 11, 0.05)",
+                                fontSize: "0.85rem",
+                              }}
+                            >
+                              <span style={{ fontWeight: 600 }}>{bed.bedNumber}</span>
+                              {bed.status === "occupied" ? (
+                                <span style={{ color: "#10b981", fontWeight: 600 }}>👤 {bed.tenantName}</span>
+                              ) : (
+                                <button
+                                  onClick={() => triggerReadOnlyNotice(`Assign Bed (${bed.bedNumber})`)}
+                                  style={{
+                                    backgroundColor: "transparent",
+                                    color: "#d97706",
+                                    border: "1px border dashed #d97706",
+                                    padding: "0.15rem 0.5rem",
+                                    borderRadius: "4px",
+                                    fontSize: "0.75rem",
+                                    cursor: "pointer",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  + Assign Bed
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Amenities */}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginTop: "auto" }}>
+                        {room.amenities.map((am, idx) => (
+                          <span
+                            key={idx}
+                            style={{
+                              fontSize: "0.7rem",
+                              backgroundColor: "rgba(255, 255, 255, 0.05)",
+                              border: "1px solid var(--border-color)",
+                              padding: "0.15rem 0.45rem",
+                              borderRadius: "4px",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {am}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
