@@ -38,9 +38,9 @@ export default function DashboardOverview() {
   useEffect(() => {
     let cancelled = false;
 
-    const fetchStats = async () => {
+    const fetchStats = async (isInitial = false) => {
       try {
-        if (!cancelled) setLoading(true);
+        if (isInitial && !cancelled) setLoading(true);
         const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
         const [tenantsRes, roomsRes, paymentsRes, expensesRes] = await Promise.all([
           fetch(`/api/tenants${queryParam}`),
@@ -331,9 +331,11 @@ export default function DashboardOverview() {
       }
     };
 
-    fetchStats();
-    // Auto-refresh every 30 seconds so the dashboard stays live without a manual reload
-    const interval = setInterval(fetchStats, 30000);
+    fetchStats(true);
+    // Silent background auto-refresh every 60 seconds (without resetting loading state / skeleton flickering)
+    const interval = setInterval(() => {
+      fetchStats(false);
+    }, 60000);
 
     return () => {
       cancelled = true;
