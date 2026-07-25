@@ -292,11 +292,56 @@ export default function TenantPortal() {
       <div className="card mb-8">
         <h3>Make a Payment</h3>
 
+        {/* Payment Method Switcher (only show Bank Transfer if owner configured bank details) */}
+        {tenant.property?.bank_details?.account_number ? (
+          <div className="input-group" style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+            <label className="input-label">Select Payment Method</label>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                type="button"
+                onClick={() => setPayMethod("UPI")}
+                style={{
+                  flex: 1,
+                  padding: "0.65rem 0.5rem",
+                  borderRadius: "8px",
+                  border: payMethod === "UPI" ? "2px solid #ea580c" : "1px solid var(--border-color)",
+                  backgroundColor: payMethod === "UPI" ? "rgba(234, 88, 12, 0.1)" : "var(--bg-color)",
+                  color: payMethod === "UPI" ? "#ea580c" : "var(--text-main)",
+                  fontWeight: 700,
+                  fontSize: "0.88rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                📱 Pay via UPI
+              </button>
+              <button
+                type="button"
+                onClick={() => setPayMethod("Bank Transfer")}
+                style={{
+                  flex: 1,
+                  padding: "0.65rem 0.5rem",
+                  borderRadius: "8px",
+                  border: payMethod === "Bank Transfer" ? "2px solid #3b82f6" : "1px solid var(--border-color)",
+                  backgroundColor: payMethod === "Bank Transfer" ? "rgba(59, 130, 246, 0.1)" : "var(--bg-color)",
+                  color: payMethod === "Bank Transfer" ? "#3b82f6" : "var(--text-main)",
+                  fontWeight: 700,
+                  fontSize: "0.88rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                🏦 Bank Transfer (NEFT/IMPS)
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {/* UPI QR Code Section */}
-        {tenant.property?.upi_id && (
-          <div style={{ backgroundColor: "rgba(234, 88, 12, 0.08)", border: "1px solid rgba(234, 88, 12, 0.3)", borderRadius: "10px", padding: "1.25rem", marginTop: "1rem", marginBottom: "1rem" }}>
+        {payMethod === "UPI" && tenant.property?.upi_id && (
+          <div style={{ backgroundColor: "rgba(234, 88, 12, 0.08)", border: "1px solid rgba(234, 88, 12, 0.3)", borderRadius: "10px", padding: "1.25rem", marginTop: "1rem", marginBottom: "1.25rem" }}>
             <div style={{ fontWeight: 700, color: "#ea580c", fontSize: "0.95rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span>📱 Pay via UPI / Scan QR Code</span>
+              <span>📱 Scan QR Code or Copy UPI ID</span>
               <span style={{ fontSize: "0.72rem", backgroundColor: "rgba(234, 88, 12, 0.15)", color: "#ea580c", padding: "0.15rem 0.55rem", borderRadius: "12px", fontWeight: 600 }}>GPay • PhonePe • Paytm • BHIM</span>
             </div>
 
@@ -315,12 +360,12 @@ export default function TenantPortal() {
                 </div>
               </div>
 
-              {/* UPI Details & Mobile Intent Button */}
-              <div style={{ flex: 1, minWidth: "220px", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              {/* UPI Details */}
+              <div style={{ flex: 1, minWidth: "220px", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 <div>
                   <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", display: "block" }}>Owner UPI ID:</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.15rem" }}>
-                    <strong style={{ fontSize: "1.05rem", color: "var(--text-main)" }}>{tenant.property.upi_id}</strong>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.2rem" }}>
+                    <strong style={{ fontSize: "1.1rem", color: "var(--text-main)" }}>{tenant.property.upi_id}</strong>
                     <button
                       type="button"
                       onClick={() => {
@@ -329,144 +374,95 @@ export default function TenantPortal() {
                         toast("UPI ID copied to clipboard!", "success");
                         setTimeout(() => setCopiedField(null), 2000);
                       }}
-                      style={{ background: "none", border: "1px solid rgba(234, 88, 12, 0.4)", borderRadius: "4px", color: "#ea580c", cursor: "pointer", fontSize: "0.72rem", padding: "0.15rem 0.45rem", fontWeight: 600 }}
+                      style={{ background: "none", border: "1px solid rgba(234, 88, 12, 0.4)", borderRadius: "4px", color: "#ea580c", cursor: "pointer", fontSize: "0.75rem", padding: "0.2rem 0.55rem", fontWeight: 600 }}
                     >
                       {copiedField === "upi" ? "Copied! ✓" : "Copy UPI ID"}
                     </button>
                   </div>
                 </div>
-
-                {/* 1-Click Launch UPI App Button */}
-                <a
-                  href={`upi://pay?pa=${tenant.property.upi_id.trim()}&pn=${encodeURIComponent(tenant.property.name || "PG Rent")}&am=${paymentAmount || tenant.rent_amount || 0}&cu=INR&tn=${encodeURIComponent(`Rent Payment - ${tenant.name}`)}`}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.4rem",
-                    padding: "0.6rem 1rem",
-                    backgroundColor: "#ea580c",
-                    color: "#ffffff",
-                    borderRadius: "8px",
-                    fontWeight: 700,
-                    fontSize: "0.85rem",
-                    textDecoration: "none",
-                    boxShadow: "0 2px 8px rgba(234, 88, 12, 0.3)",
-                    marginTop: "0.25rem",
-                  }}
-                >
-                  📲 Open UPI App to Pay ₹{(parseFloat(paymentAmount) || tenant.rent_amount || 0).toLocaleString()}
-                </a>
-                <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                  Or scan the QR code using Google Pay, PhonePe, Paytm, or BHIM.
-                </span>
+                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: 1.5, backgroundColor: "var(--surface-color)", padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                  💡 <strong>Instructions:</strong> Open your UPI app (Google Pay, PhonePe, Paytm, or BHIM), scan the QR code above or pay to the UPI ID, then paste the 12-digit UTR number below to submit.
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {tenant.property?.bank_details && tenant.property.bank_details.account_number && (
-          <div style={{ backgroundColor: "rgba(59, 130, 246, 0.08)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: "10px", padding: "1rem", marginTop: "1rem", marginBottom: "1rem" }}>
-            <div style={{ fontWeight: 700, color: "#3b82f6", fontSize: "0.92rem", marginBottom: "0.6rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span>🏦 Direct Bank Transfer (NEFT / IMPS / RTGS)</span>
-              <span style={{ fontSize: "0.72rem", backgroundColor: "rgba(59, 130, 246, 0.15)", color: "#3b82f6", padding: "0.15rem 0.5rem", borderRadius: "12px", fontWeight: 600 }}>0% Transaction Fee</span>
+        {/* Bank Transfer Details Section */}
+        {payMethod === "Bank Transfer" && tenant.property?.bank_details && tenant.property.bank_details.account_number && (
+          <div style={{ backgroundColor: "rgba(59, 130, 246, 0.08)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: "10px", padding: "1.25rem", marginTop: "1rem", marginBottom: "1.25rem" }}>
+            <div style={{ fontWeight: 700, color: "#3b82f6", fontSize: "0.95rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>🏦 Owner Bank Account Details</span>
+              <span style={{ fontSize: "0.72rem", backgroundColor: "rgba(59, 130, 246, 0.15)", color: "#3b82f6", padding: "0.15rem 0.55rem", borderRadius: "12px", fontWeight: 600 }}>Direct IMPS / NEFT</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", fontSize: "0.85rem" }}>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", fontSize: "0.88rem", backgroundColor: "var(--surface-color)", padding: "1rem", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
               <div>
-                <span style={{ color: "var(--text-muted)" }}>Account Name:</span>
-                <div style={{ fontWeight: 700, color: "var(--text-main)", marginTop: "0.1rem" }}>{tenant.property.bank_details.account_name}</div>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>Account Name:</span>
+                <div style={{ fontWeight: 700, color: "var(--text-main)", marginTop: "0.15rem" }}>{tenant.property.bank_details.account_name}</div>
               </div>
               <div>
-                <span style={{ color: "var(--text-muted)" }}>Account Number:</span>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.1rem" }}>
-                  <strong style={{ fontSize: "0.95rem" }}>{tenant.property.bank_details.account_number}</strong>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>Account Number:</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.15rem" }}>
+                  <strong style={{ fontSize: "1rem" }}>{tenant.property.bank_details.account_number}</strong>
                   <button
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(tenant.property.bank_details.account_number);
                       setCopiedField("acc");
-                      toast("Account Number copied to clipboard!", "success");
+                      toast("Account Number copied!", "success");
                       setTimeout(() => setCopiedField(null), 2000);
                     }}
-                    style={{ background: "none", border: "1px solid rgba(59, 130, 246, 0.4)", borderRadius: "4px", color: "#3b82f6", cursor: "pointer", fontSize: "0.72rem", padding: "0.1rem 0.4rem", fontWeight: 600 }}
+                    style={{ background: "none", border: "1px solid rgba(59, 130, 246, 0.4)", borderRadius: "4px", color: "#3b82f6", cursor: "pointer", fontSize: "0.72rem", padding: "0.15rem 0.45rem", fontWeight: 600 }}
                   >
                     {copiedField === "acc" ? "Copied! ✓" : "Copy"}
                   </button>
                 </div>
               </div>
               <div>
-                <span style={{ color: "var(--text-muted)" }}>IFSC Code:</span>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.1rem" }}>
-                  <strong style={{ fontSize: "0.95rem" }}>{tenant.property.bank_details.ifsc_code}</strong>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>IFSC Code:</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.15rem" }}>
+                  <strong style={{ fontSize: "1rem" }}>{tenant.property.bank_details.ifsc_code}</strong>
                   <button
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(tenant.property.bank_details.ifsc_code);
                       setCopiedField("ifsc");
-                      toast("IFSC Code copied to clipboard!", "success");
+                      toast("IFSC Code copied!", "success");
                       setTimeout(() => setCopiedField(null), 2000);
                     }}
-                    style={{ background: "none", border: "1px solid rgba(59, 130, 246, 0.4)", borderRadius: "4px", color: "#3b82f6", cursor: "pointer", fontSize: "0.72rem", padding: "0.1rem 0.4rem", fontWeight: 600 }}
+                    style={{ background: "none", border: "1px solid rgba(59, 130, 246, 0.4)", borderRadius: "4px", color: "#3b82f6", cursor: "pointer", fontSize: "0.72rem", padding: "0.15rem 0.45rem", fontWeight: 600 }}
                   >
                     {copiedField === "ifsc" ? "Copied! ✓" : "Copy"}
                   </button>
                 </div>
               </div>
               <div>
-                <span style={{ color: "var(--text-muted)" }}>Bank & Branch:</span>
-                <div style={{ fontWeight: 700, color: "var(--text-main)", marginTop: "0.1rem" }}>{tenant.property.bank_details.bank_name}</div>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>Bank Name:</span>
+                <div style={{ fontWeight: 700, color: "var(--text-main)", marginTop: "0.15rem" }}>{tenant.property.bank_details.bank_name || "N/A"}</div>
               </div>
+            </div>
+
+            <div style={{ marginTop: "0.85rem", fontSize: "0.82rem", color: "var(--text-muted)", lineHeight: 1.6 }}>
+              💡 <strong>How to Pay via Bank Transfer:</strong>
+              <ol style={{ margin: "0.3rem 0 0 1.2rem", padding: 0 }}>
+                <li>Copy the <strong>Account Number</strong> & <strong>IFSC Code</strong> above.</li>
+                <li>Open your Bank app or Netbanking and transfer <strong>₹{(parseFloat(paymentAmount) || tenant.rent_amount || 0).toLocaleString()}</strong> via IMPS / NEFT.</li>
+                <li>Enter the IMPS / NEFT <strong>UTR / Reference ID</strong> below and click Submit Payment.</li>
+              </ol>
             </div>
           </div>
         )}
 
-        <form onSubmit={handleMakePayment} style={{ marginTop: '1rem' }}>
-          <div className="input-group">
-            <label className="input-label">Payment Method</label>
-            <div style={{ display: "flex", gap: "0.75rem" }}>
-              <button
-                type="button"
-                onClick={() => setPayMethod("UPI")}
-                style={{
-                  flex: 1,
-                  padding: "0.5rem",
-                  borderRadius: "8px",
-                  border: payMethod === "UPI" ? "2px solid #ea580c" : "1px solid var(--border-color)",
-                  backgroundColor: payMethod === "UPI" ? "rgba(234, 88, 12, 0.1)" : "var(--bg-color)",
-                  color: payMethod === "UPI" ? "#ea580c" : "var(--text-main)",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                }}
-              >
-                📱 UPI App (GPay / PhonePe)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPayMethod("Bank Transfer")}
-                style={{
-                  flex: 1,
-                  padding: "0.5rem",
-                  borderRadius: "8px",
-                  border: payMethod === "Bank Transfer" ? "2px solid #3b82f6" : "1px solid var(--border-color)",
-                  backgroundColor: payMethod === "Bank Transfer" ? "rgba(59, 130, 246, 0.1)" : "var(--bg-color)",
-                  color: payMethod === "Bank Transfer" ? "#3b82f6" : "var(--text-main)",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                }}
-              >
-                🏦 Bank Transfer (NEFT/IMPS)
-              </button>
-            </div>
-          </div>
-
+        <form onSubmit={handleMakePayment}>
           <div className="input-group">
             <label className="input-label">Amount (₹)</label>
             <input type="number" className="input-field" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} required min="1" placeholder="Enter amount paid" />
           </div>
           <div className="input-group">
-            <label className="input-label">UTR / Transaction Ref ID <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <label className="input-label">
+              {payMethod === "UPI" ? "UTR / UPI Reference Number" : "Bank UTR / Transaction Reference ID"} <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
             <input
               type="text"
               className="input-field"
@@ -476,10 +472,12 @@ export default function TenantPortal() {
               placeholder={payMethod === "UPI" ? "e.g. 429183746291 (from UPI app)" : "e.g. UTR / IMPS Ref Number from bank"}
             />
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem', display: 'block' }}>
-              Open your UPI app → Payments → find this transaction → copy the UTR number
+              {payMethod === "UPI" 
+                ? "Open your UPI app → Payment Details → copy the 12-digit UTR / Ref No."
+                : "Open your bank app / SMS → copy the IMPS / NEFT UTR Reference Number."}
             </span>
           </div>
-          <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+          <button type="submit" className="btn-primary w-full" disabled={processingPayment} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1.25rem' }}>
             {processingPayment ? "Submitting..." : "Submit Payment"}
           </button>
         </form>
