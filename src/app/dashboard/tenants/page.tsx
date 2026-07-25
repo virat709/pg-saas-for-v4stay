@@ -1669,7 +1669,7 @@ export default function TenantsPage() {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .add-tenant-form {
           display: grid;
           grid-template-columns: 1fr 1fr;
