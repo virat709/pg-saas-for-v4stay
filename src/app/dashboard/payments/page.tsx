@@ -370,6 +370,28 @@ export default function PaymentsPage() {
               {savingUpi ? "Saving..." : "Save UPI ID"}
             </button>
           </form>
+
+          {upiId.trim() && (
+            <div style={{ marginTop: "1rem", paddingTop: "0.85rem", borderTop: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div style={{ backgroundColor: "#ffffff", padding: "0.4rem", borderRadius: "8px", border: "1px solid var(--border-color)", boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }}>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+                    `upi://pay?pa=${upiId.trim()}&pn=PG%20Rent&cu=INR`
+                  )}`}
+                  alt="UPI QR Code Preview"
+                  style={{ width: "80px", height: "80px", display: "block" }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#10b981", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                  <span>✓ Live QR Code Generated</span>
+                </div>
+                <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: "0.2rem 0 0 0", lineHeight: 1.4 }}>
+                  Tenants can scan this QR code with PhonePe, GPay, Paytm, or BHIM to pay directly into <strong style={{ color: "var(--text-main)" }}>{upiId}</strong>.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bank Account Details Box */}

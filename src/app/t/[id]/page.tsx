@@ -292,6 +292,79 @@ export default function TenantPortal() {
       <div className="card mb-8">
         <h3>Make a Payment</h3>
 
+        {/* UPI QR Code Section */}
+        {tenant.property?.upi_id && (
+          <div style={{ backgroundColor: "rgba(234, 88, 12, 0.08)", border: "1px solid rgba(234, 88, 12, 0.3)", borderRadius: "10px", padding: "1.25rem", marginTop: "1rem", marginBottom: "1rem" }}>
+            <div style={{ fontWeight: 700, color: "#ea580c", fontSize: "0.95rem", marginBottom: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>📱 Pay via UPI / Scan QR Code</span>
+              <span style={{ fontSize: "0.72rem", backgroundColor: "rgba(234, 88, 12, 0.15)", color: "#ea580c", padding: "0.15rem 0.55rem", borderRadius: "12px", fontWeight: 600 }}>GPay • PhonePe • Paytm • BHIM</span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: "1.25rem", alignItems: "center", justifyContent: "center" }}>
+              {/* QR Code Image */}
+              <div style={{ backgroundColor: "#ffffff", padding: "0.75rem", borderRadius: "12px", border: "1px solid var(--border-color)", textAlign: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                    `upi://pay?pa=${tenant.property.upi_id.trim()}&pn=${encodeURIComponent(tenant.property.name || "PG Rent")}&am=${paymentAmount || tenant.rent_amount || 0}&cu=INR&tn=${encodeURIComponent(`Rent Payment - ${tenant.name}`)}`
+                  )}`}
+                  alt="UPI QR Code"
+                  style={{ width: "160px", height: "160px", display: "block" }}
+                />
+                <div style={{ fontSize: "0.75rem", color: "#333", fontWeight: 700, marginTop: "0.4rem" }}>
+                  Scan to Pay ₹{(parseFloat(paymentAmount) || tenant.rent_amount || 0).toLocaleString()}
+                </div>
+              </div>
+
+              {/* UPI Details & Mobile Intent Button */}
+              <div style={{ flex: 1, minWidth: "220px", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                <div>
+                  <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", display: "block" }}>Owner UPI ID:</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.15rem" }}>
+                    <strong style={{ fontSize: "1.05rem", color: "var(--text-main)" }}>{tenant.property.upi_id}</strong>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(tenant.property.upi_id);
+                        setCopiedField("upi");
+                        toast("UPI ID copied to clipboard!", "success");
+                        setTimeout(() => setCopiedField(null), 2000);
+                      }}
+                      style={{ background: "none", border: "1px solid rgba(234, 88, 12, 0.4)", borderRadius: "4px", color: "#ea580c", cursor: "pointer", fontSize: "0.72rem", padding: "0.15rem 0.45rem", fontWeight: 600 }}
+                    >
+                      {copiedField === "upi" ? "Copied! ✓" : "Copy UPI ID"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 1-Click Launch UPI App Button */}
+                <a
+                  href={`upi://pay?pa=${tenant.property.upi_id.trim()}&pn=${encodeURIComponent(tenant.property.name || "PG Rent")}&am=${paymentAmount || tenant.rent_amount || 0}&cu=INR&tn=${encodeURIComponent(`Rent Payment - ${tenant.name}`)}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.4rem",
+                    padding: "0.6rem 1rem",
+                    backgroundColor: "#ea580c",
+                    color: "#ffffff",
+                    borderRadius: "8px",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    textDecoration: "none",
+                    boxShadow: "0 2px 8px rgba(234, 88, 12, 0.3)",
+                    marginTop: "0.25rem",
+                  }}
+                >
+                  📲 Open UPI App to Pay ₹{(parseFloat(paymentAmount) || tenant.rent_amount || 0).toLocaleString()}
+                </a>
+                <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                  Or scan the QR code using Google Pay, PhonePe, Paytm, or BHIM.
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {tenant.property?.bank_details && tenant.property.bank_details.account_number && (
           <div style={{ backgroundColor: "rgba(59, 130, 246, 0.08)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: "10px", padding: "1rem", marginTop: "1rem", marginBottom: "1rem" }}>
             <div style={{ fontWeight: 700, color: "#3b82f6", fontSize: "0.92rem", marginBottom: "0.6rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
