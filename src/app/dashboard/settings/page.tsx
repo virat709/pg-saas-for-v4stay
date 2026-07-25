@@ -125,6 +125,42 @@ export default function SettingsPage() {
     }
   };
 
+  const handlePgDelete = async () => {
+    if (!selectedPropId) return;
+    if (properties.length <= 1) {
+      setPgMsg({ type: "error", text: "Cannot delete your only property. You must maintain at least 1 property in your account." });
+      return;
+    }
+    const targetProp = properties.find((p) => p.id === selectedPropId);
+    if (!confirm(`Are you sure you want to PERMANENTLY DELETE "${targetProp?.name || "this PG"}"?\nAll rooms, beds, and data associated with this PG will be affected.`)) {
+      return;
+    }
+
+    setPgSaving(true);
+    setPgMsg(null);
+    try {
+      const res = await fetch(`/api/properties?propertyId=${selectedPropId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setPgMsg({ type: "success", text: "Property deleted successfully." });
+      const remaining = properties.filter((p) => p.id !== selectedPropId);
+      setProperties(remaining);
+      if (remaining.length > 0) {
+        setSelectedPropId(remaining[0].id);
+        setPgName(remaining[0].name || "");
+        setPgAddress(remaining[0].address || "");
+        setPgCity(remaining[0].city || "");
+      }
+    } catch (err: any) {
+      setPgMsg({ type: "error", text: err.message || "Failed to delete property." });
+    } finally {
+      setPgSaving(false);
+    }
+  };
+
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     setStaffSaving(true);
@@ -330,9 +366,31 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-            <button type="submit" className="btn-primary" disabled={pgSaving}>
-              {pgSaving ? "Saving PG Details..." : "Save PG Details"}
-            </button>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "1rem" }}>
+              <button type="submit" className="btn-primary" disabled={pgSaving}>
+                {pgSaving ? "Saving PG Details..." : "Save PG Details"}
+              </button>
+
+              {properties.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handlePgDelete}
+                  disabled={pgSaving}
+                  style={{
+                    padding: "0.6rem 1.1rem",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "rgba(239, 68, 68, 0.1)",
+                    color: "#ef4444",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    fontWeight: 600,
+                    fontSize: "0.88rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  🗑️ Delete This Property
+                </button>
+              )}
+            </div>
           </form>
         </div>
       </AnimatedSection>

@@ -105,6 +105,63 @@ export default function TenantsPage() {
   const [offlinePayPersonName, setOfflinePayPersonName] = useState("");
   const [submittingOfflinePay, setSubmittingOfflinePay] = useState(false);
 
+  // Edit Tenant State
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editRent, setEditRent] = useState("");
+  const [editBillingDay, setEditBillingDay] = useState("1");
+  const [editSaving, setEditSaving] = useState(false);
+
+  const openEditModal = (t: Tenant) => {
+    setEditingTenant(t);
+    setEditName(t.name || "");
+    setEditPhone(t.phone || "");
+    setEditRent(t.rent_amount?.toString() || "");
+    setEditBillingDay(t.billing_cycle_day?.toString() || "1");
+  };
+
+  const handleSaveEditTenant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTenant) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/tenants/${editingTenant.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName,
+          phone: editPhone,
+          rent_amount: parseFloat(editRent),
+          billing_cycle_day: parseInt(editBillingDay),
+        }),
+      });
+      if (res.ok) {
+        toast("Tenant details updated successfully!", "success");
+        setEditingTenant(null);
+        fetchTenants();
+      } else {
+        const data = await res.json();
+        toast(data.message || "Failed to update tenant.", "error");
+      }
+    } catch (e) {
+      console.error(e);
+      toast("Error updating tenant.", "error");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const getWhatsAppReminderUrl = (t: Tenant) => {
+    const cleanPhone = (t.phone || "").replace(/\D/g, "");
+    const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    const pgName = t.property?.name || t.propertyName || "our PG";
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+    const link = `${origin}/t/${t.id}`;
+    const text = `Hi ${t.name}, your monthly rent of ₹${t.rent_amount} for ${pgName} is due. Please review & pay here: ${link}`;
+    return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`;
+  };
+
   // Initial payment on tenant creation
   const [initPayOption, setInitPayOption] = useState<"none" | "rent" | "advance">("none");
   const [initPayAmount, setInitPayAmount] = useState("");
@@ -1135,6 +1192,49 @@ export default function TenantsPage() {
                           💵 Cash Pay
                         </button>
                       )}
+
+                      {/* 💬 WhatsApp Rent Reminder Button */}
+                      {tenant.status === "active" && (
+                        <a
+                          href={getWhatsAppReminderUrl(tenant)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            padding: '6px 10px',
+                            fontSize: '0.82rem',
+                            backgroundColor: 'rgba(37, 211, 102, 0.15)',
+                            border: '1px solid rgba(37, 211, 102, 0.4)',
+                            color: '#25D366',
+                            borderRadius: '6px',
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                          }}
+                          title="Send Rent Reminder on WhatsApp"
+                        >
+                          💬 WhatsApp
+                        </a>
+                      )}
+
+                      {/* ✏️ Edit Tenant Details Button */}
+                      <button
+                        onClick={() => openEditModal(tenant)}
+                        style={{
+                          padding: '6px 10px',
+                          fontSize: '0.82rem',
+                          backgroundColor: 'var(--bg-color)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-main)',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                        }}
+                        title="Edit Tenant Details"
+                      >
+                        ✏️ Edit
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1207,6 +1307,79 @@ export default function TenantsPage() {
                 </button>
                 <button type="submit" className="btn-primary" style={{ flex: 1, backgroundColor: '#10b981' }} disabled={submittingOfflinePay}>
                   {submittingOfflinePay ? "Saving..." : "✓ Record Payment"}
+                </button>
+              </div>
+            </form>
+          </div>
+      {/* ── Edit Tenant Modal ────────────────────────────────────────── */}
+      {editingTenant && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '440px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)' }}>✏️ Edit Tenant Details</h2>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{editingTenant.name} ({editingTenant.propertyName || "PG"})</p>
+              </div>
+              <button onClick={() => setEditingTenant(null)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', lineHeight: 1, color: 'var(--text-muted)' }}>&times;</button>
+            </div>
+
+            <form onSubmit={handleSaveEditTenant}>
+              <div className="input-group">
+                <label className="input-label">Full Name</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Phone Number</label>
+                <input
+                  type="tel"
+                  className="input-field"
+                  value={editPhone}
+                  onChange={e => setEditPhone(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div className="input-group">
+                  <label className="input-label">Rent Amount (₹)</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    value={editRent}
+                    onChange={e => setEditRent(e.target.value)}
+                    required
+                    min="1"
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Billing Cycle Day</label>
+                  <select
+                    className="input-field"
+                    value={editBillingDay}
+                    onChange={e => setEditBillingDay(e.target.value)}
+                    required
+                  >
+                    {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
+                      <option key={d} value={d}>Day {d} of month</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
+                <button type="submit" className="btn-primary" disabled={editSaving} style={{ flex: 1 }}>
+                  {editSaving ? "Saving Changes..." : "Save Changes"}
+                </button>
+                <button type="button" onClick={() => setEditingTenant(null)} className="btn-secondary">
+                  Cancel
                 </button>
               </div>
             </form>

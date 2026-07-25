@@ -124,3 +124,45 @@ export async function PUT(req: Request) {
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const isStaff = (session.user as any).role === "staff";
+    if (isStaff) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const propertyId = searchParams.get("propertyId");
+
+    if (!propertyId) {
+      return NextResponse.json({ message: "Missing propertyId parameter" }, { status: 400 });
+    }
+
+    const pDoc = await adminDb.collection("properties").doc(propertyId).get();
+    if (!pDoc.exists) {
+      return NextResponse.json({ message: "Property not found" }, { status: 404 });
+    }
+
+    if (pDoc.data()?.ownerId !== session.user.id) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    const pSnap = await adminDb.collection("properties").where("ownerId", "==", session.user.id).get();
+    if (pSnap.size <= 1) {
+      return NextResponse.json({ message: "Cannot delete your only property. You must maintain at least 1 property in your account." }, { status: 400 });
+    }
+
+    await adminDb.collection("properties").doc(propertyId).delete();
+    return NextResponse.json({ message: "Property deleted successfully", success: true });
+  } catch (error) {
+    console.error("Property delete error:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+  }
+}

@@ -710,12 +710,40 @@ export default function PaymentsPage() {
                         </button>
                       )}
                       {(payment.status === 'paid' || payment.status === 'completed') && (
-                        <button 
-                          onClick={() => setReceiptPayment(payment)}
-                          style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'var(--primary)', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none' }}
-                        >
-                          Receipt
-                        </button>
+                        <>
+                          <button 
+                            onClick={() => setReceiptPayment(payment)}
+                            style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: 'var(--primary)', color: 'white', borderRadius: '6px', cursor: 'pointer', border: 'none' }}
+                          >
+                            Receipt
+                          </button>
+
+                          {payment.tenant?.phone && (
+                            <a
+                              href={`https://wa.me/${(payment.tenant.phone.replace(/\D/g, "").length === 10 ? "91" : "") + payment.tenant.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                                `Hi ${payment.tenant.name}, thank you for your rent payment of ₹${payment.amount_paid}. Download your official payment receipt here: ${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/receipt/${payment.id}`
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                padding: '6px 10px',
+                                fontSize: '0.82rem',
+                                backgroundColor: 'rgba(37, 211, 102, 0.15)',
+                                border: '1px solid rgba(37, 211, 102, 0.4)',
+                                color: '#25D366',
+                                borderRadius: '6px',
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.2rem',
+                              }}
+                              title="Share Receipt on WhatsApp"
+                            >
+                              💬 WhatsApp
+                            </a>
+                          )}
+                        </>
                       )}
                     </div>
                   </td>
