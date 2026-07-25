@@ -26,6 +26,15 @@ export default function SettingsPage() {
   const [staffPropertyId, setStaffPropertyId] = useState("");
   const [staffSaving, setStaffSaving] = useState(false);
   const [staffMsg, setStaffMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // PG Property Edit State
+  const [selectedPropId, setSelectedPropId] = useState("");
+  const [pgName, setPgName] = useState("");
+  const [pgAddress, setPgAddress] = useState("");
+  const [pgCity, setPgCity] = useState("");
+  const [pgSaving, setPgSaving] = useState(false);
+  const [pgMsg, setPgMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   useEffect(() => {
     Promise.all([
       fetch("/api/settings").then((r) => r.json()),
@@ -41,7 +50,13 @@ export default function SettingsPage() {
         const propList = Array.isArray(propertiesData) ? propertiesData : [];
         setPropertyCount(propList.length);
         setProperties(propList);
-        if (propList.length > 0) setStaffPropertyId(propList[0].id);
+        if (propList.length > 0) {
+          setStaffPropertyId(propList[0].id);
+          setSelectedPropId(propList[0].id);
+          setPgName(propList[0].name || "");
+          setPgAddress(propList[0].address || "");
+          setPgCity(propList[0].city || "");
+        }
       })
       .catch(console.error)
       .finally(() => setProfileLoading(false));
@@ -70,6 +85,43 @@ export default function SettingsPage() {
       setProfileMsg({ type: "error", text: err.message || "Failed to update profile." });
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const handleSelectProperty = (id: string) => {
+    setSelectedPropId(id);
+    const target = properties.find((p) => p.id === id);
+    if (target) {
+      setPgName(target.name || "");
+      setPgAddress(target.address || "");
+      setPgCity(target.city || "");
+    }
+  };
+
+  const handlePgSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPgSaving(true);
+    setPgMsg(null);
+    try {
+      const res = await fetch("/api/properties", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId: selectedPropId,
+          name: pgName,
+          address: pgAddress,
+          city: pgCity,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).message);
+      setPgMsg({ type: "success", text: "PG Name & Address updated successfully!" });
+      setProperties((prev) =>
+        prev.map((p) => (p.id === selectedPropId ? { ...p, name: pgName, address: pgAddress, city: pgCity } : p))
+      );
+    } catch (err: any) {
+      setPgMsg({ type: "error", text: err.message || "Failed to update PG details." });
+    } finally {
+      setPgSaving(false);
     }
   };
 
@@ -183,6 +235,103 @@ export default function SettingsPage() {
             </div>
             <button type="submit" className="btn-primary" disabled={profileSaving}>
               {profileSaving ? "Saving..." : "Save Changes"}
+            </button>
+          </form>
+        </div>
+      </AnimatedSection>
+
+      {/* ── PG Property Details Section ────────────────── */}
+      <AnimatedSection delay={100}>
+        <div className="card" style={{ marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}>
+            <div>
+              <h2 style={{ marginBottom: "0.25rem" }}>🏢 PG Property Details</h2>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                Update your PG Accommodation Name, Address & City.
+              </p>
+            </div>
+
+            {properties.length > 1 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>Select PG:</span>
+                <select
+                  value={selectedPropId}
+                  onChange={(e) => handleSelectProperty(e.target.value)}
+                  style={{
+                    padding: "0.45rem 0.75rem",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-color)",
+                    color: "var(--text-main)",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {pgMsg && (
+            <div style={{
+              padding: "0.75rem 1rem",
+              borderRadius: "var(--radius-md)",
+              marginBottom: "1rem",
+              backgroundColor: pgMsg.type === "success" ? "rgba(0,196,159,0.1)" : "rgba(239,68,68,0.1)",
+              color: pgMsg.type === "success" ? "var(--success)" : "var(--danger)",
+              border: `1px solid ${pgMsg.type === "success" ? "rgba(0,196,159,0.3)" : "rgba(239,68,68,0.3)"}`,
+              fontSize: "0.875rem",
+            }}>
+              {pgMsg.text}
+            </div>
+          )}
+
+          <form onSubmit={handlePgSave}>
+            <div className="input-group">
+              <label className="input-label" htmlFor="settings-pg-name">PG Accommodation Name</label>
+              <input
+                id="settings-pg-name"
+                type="text"
+                className="input-field"
+                placeholder="e.g. Sunrise Luxury PG"
+                value={pgName}
+                onChange={(e) => setPgName(e.target.value)}
+                required
+              />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
+              <div className="input-group">
+                <label className="input-label" htmlFor="settings-pg-address">Address</label>
+                <input
+                  id="settings-pg-address"
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g. Plot 42, 5th Main, HSR Layout"
+                  value={pgAddress}
+                  onChange={(e) => setPgAddress(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label" htmlFor="settings-pg-city">City</label>
+                <input
+                  id="settings-pg-city"
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g. Bengaluru"
+                  value={pgCity}
+                  onChange={(e) => setPgCity(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <button type="submit" className="btn-primary" disabled={pgSaving}>
+              {pgSaving ? "Saving PG Details..." : "Save PG Details"}
             </button>
           </form>
         </div>

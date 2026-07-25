@@ -69,9 +69,9 @@ export async function POST(req: Request) {
 
     const propertiesRef = adminDb.collection("properties");
     const newPropertyRef = await propertiesRef.add({
-      name,
-      address,
-      city,
+      name: name.trim(),
+      address: address.trim(),
+      city: city.trim(),
       ownerId: session.user.id,
       created_at: new Date()
     });
@@ -79,6 +79,48 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Property added", id: newPropertyRef.id }, { status: 201 });
   } catch (error) {
     console.error("Property creation error:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const isStaff = (session.user as any).role === "staff";
+    if (isStaff) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    const { propertyId, name, address, city } = await req.json();
+
+    if (!propertyId || !name || !address) {
+      return NextResponse.json({ message: "Missing propertyId, name, or address." }, { status: 400 });
+    }
+
+    const pDoc = await adminDb.collection("properties").doc(propertyId).get();
+    if (!pDoc.exists) {
+      return NextResponse.json({ message: "Property not found" }, { status: 404 });
+    }
+
+    if (pDoc.data()?.ownerId !== session.user.id) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    await adminDb.collection("properties").doc(propertyId).update({
+      name: name.trim(),
+      address: address.trim(),
+      city: city ? city.trim() : (pDoc.data()?.city || ""),
+      updated_at: new Date(),
+    });
+
+    return NextResponse.json({ message: "Property updated successfully", success: true });
+  } catch (error) {
+    console.error("Property update error:", error);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
