@@ -1311,6 +1311,8 @@ export default function TenantsPage() {
               </div>
             </form>
           </div>
+        </div>
+
       {/* ── Edit Tenant Modal ────────────────────────────────────────── */}
       {editingTenant && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>
