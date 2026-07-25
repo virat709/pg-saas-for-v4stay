@@ -136,6 +136,21 @@ export default function Home() {
               <span style={{ fontSize: "1.1rem" }}>📌</span>
             </button>
             <Link
+              href="/demo"
+              style={{
+                padding: "0.6rem 1.25rem",
+                borderRadius: "8px",
+                textDecoration: "none",
+                color: "#f59e0b",
+                fontWeight: 600,
+                border: "1px solid rgba(245, 158, 11, 0.4)",
+                transition: "all 0.2s",
+                backgroundColor: "rgba(245, 158, 11, 0.1)",
+              }}
+            >
+              Live Demo
+            </Link>
+            <Link
               href="/login"
               style={{
                 padding: "0.6rem 1.25rem",
@@ -323,7 +338,7 @@ export default function Home() {
               Start Scaling Today
             </Link>
             <Link
-              href="/login"
+              href="/demo"
               style={{
                 padding: "1.25rem 2.5rem",
                 fontSize: "1.125rem",

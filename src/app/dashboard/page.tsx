@@ -17,6 +17,23 @@ export default function DashboardOverview() {
   const [loading, setLoading] = useState(true);
   const [showOverdueModal, setShowOverdueModal] = useState(false);
   const { activePropertyId, properties, setActivePropertyId } = useProperties();
+  const [subInfo, setSubInfo] = useState<{ isTrial: boolean; planTier: string; daysLeft: number | null } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/payments/status")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          const isTrial = data.isTrial || (data.planTier && data.planTier.toLowerCase().includes("trial")) || data.planTier === "Free Trial" || data.status === "active";
+          setSubInfo({
+            isTrial: !!isTrial,
+            planTier: data.planTier || "Free Trial",
+            daysLeft: data.daysLeft,
+          });
+        }
+      })
+      .catch((err) => console.error("Error fetching status:", err));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -270,12 +287,32 @@ export default function DashboardOverview() {
             };
           });
 
+          const currentMonthExpenses = expenses.reduce((acc: number, e: any) => {
+            if (!e.date) return acc;
+            let eDate: Date;
+            if (typeof e.date === "object" && typeof e.date.seconds === "number") {
+              eDate = new Date(e.date.seconds * 1000);
+            } else {
+              eDate = new Date(e.date);
+            }
+            if (!isNaN(eDate.getTime()) && eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear) {
+              return acc + (e.amount || 0);
+            }
+            return acc;
+          }, 0);
+
+          const pendingDuesTotal = overdueList.reduce((acc: number, item: any) => acc + (item.left_pending || 0), 0);
+          const netIncome = collectedAmountThisMonth - currentMonthExpenses;
+
           setStats({
             totalBeds,
             occupiedBeds,
             occupancyRate: currentOccupancyRate,
             expectedCollection,
             collectedAmount: collectedAmountThisMonth,
+            totalExpenses: currentMonthExpenses,
+            netIncome,
+            pendingDuesTotal,
             paymentMethods: { upi: upiSum, cash: cashSum, bank: bankSum, other: otherSum },
             recentPayments: enrichedPayments,
             overdueTenants,
@@ -312,86 +349,211 @@ export default function DashboardOverview() {
   );
 
   return (
-    <div>
-      {/* Heading — reveals first */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      {/* Top Header Bar */}
       <AnimatedSection delay={0}>
-        <h1 className="mb-8">Dashboard Overview</h1>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "1rem",
+          }}
+        >
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>Dashboard Overview</h1>
+              {subInfo?.isTrial && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    padding: "0.25rem 0.65rem",
+                    borderRadius: "20px",
+                    backgroundColor: "rgba(245, 158, 11, 0.15)",
+                    color: "#f59e0b",
+                    border: "1px solid rgba(245, 158, 11, 0.3)",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    boxShadow: "0 0 10px rgba(245, 158, 11, 0.2)",
+                  }}
+                  title="Active Free Trial"
+                >
+                  <span>🎁 Free Trial</span>
+                  {subInfo.daysLeft !== null && subInfo.daysLeft !== undefined && (
+                    <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>
+                      ({subInfo.daysLeft}d left)
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: "0.88rem", color: "var(--text-muted)", margin: "0.25rem 0 0 0" }}>
+              Real-time business performance analytics for your PG accommodation.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <Link
+              href="/dashboard/tenants"
+              style={{
+                padding: "0.55rem 1rem",
+                borderRadius: "8px",
+                backgroundColor: "#ea580c",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              ➕ Add Tenant
+            </Link>
+            <Link
+              href="/dashboard/rooms"
+              style={{
+                padding: "0.55rem 1rem",
+                borderRadius: "8px",
+                backgroundColor: "var(--card-bg)",
+                color: "var(--text-main)",
+                border: "1px solid var(--border-color)",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              🏨 Add Room
+            </Link>
+            <Link
+              href="/dashboard/payments"
+              style={{
+                padding: "0.55rem 1rem",
+                borderRadius: "8px",
+                backgroundColor: "var(--card-bg)",
+                color: "var(--text-main)",
+                border: "1px solid var(--border-color)",
+                fontWeight: 600,
+                fontSize: "0.88rem",
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              💳 Record Payment
+            </Link>
+          </div>
+        </div>
       </AnimatedSection>
 
-      {/* Stat cards — stagger in 80ms apart */}
+      {/* Top 4 Metric Boxes Grid */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "1.5rem",
-          marginBottom: "2rem",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "1.25rem",
+          marginBottom: "0.5rem",
         }}
       >
+        {/* Box 1: TOTAL OCCUPANCY */}
         <AnimatedSection delay={80}>
-          <div className="card">
-            <h3 style={{ color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 500, textTransform: "uppercase" }}>
-              Occupancy
-            </h3>
-            <div style={{ fontSize: "2rem", fontWeight: 700, margin: "0.5rem 0", color: "var(--text-main)" }}>
-              {stats?.occupancyRate}%
+          <div
+            style={{
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "14px",
+              padding: "1.25rem",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+            }}
+          >
+            <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              TOTAL OCCUPANCY
             </div>
-            <p style={{ margin: 0, fontSize: "0.875rem" }}>
-              {stats?.occupiedBeds} of {stats?.totalBeds} beds occupied
-            </p>
+            <div style={{ fontSize: "1.75rem", fontWeight: 800, marginTop: "0.4rem", color: "#ea580c" }}>
+              {stats?.occupiedBeds ?? 0} / {stats?.totalBeds ?? 0} <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-muted)" }}>beds</span>
+            </div>
+            <div style={{ fontSize: "0.82rem", color: "#10b981", marginTop: "0.4rem", fontWeight: 600 }}>
+              {stats?.occupancyRate ?? 0}% Occupied ({(stats?.totalBeds ?? 0) - (stats?.occupiedBeds ?? 0)} Vacant)
+            </div>
           </div>
         </AnimatedSection>
 
+        {/* Box 2: TOTAL RENT COLLECTED */}
         <AnimatedSection delay={160}>
-          <div className="card">
-            <h3 style={{ color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 500, textTransform: "uppercase" }}>
-              Available Beds
-            </h3>
-            <div style={{ fontSize: "2rem", fontWeight: 700, margin: "0.5rem 0", color: "var(--primary)" }}>
-              {stats ? stats.totalBeds - stats.occupiedBeds : 0}
+          <div
+            style={{
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "14px",
+              padding: "1.25rem",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+            }}
+          >
+            <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              TOTAL RENT COLLECTED
             </div>
-            <p style={{ margin: 0, fontSize: "0.875rem" }}>Beds ready for new tenants</p>
+            <div style={{ fontSize: "1.75rem", fontWeight: 800, marginTop: "0.4rem", color: "#10b981" }}>
+              ₹{(stats?.collectedAmount ?? 0).toLocaleString()}
+            </div>
+            <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "0.4rem" }}>
+              Current Month Rent Revenue
+            </div>
           </div>
         </AnimatedSection>
 
+        {/* Box 3: PENDING RENT DUES */}
         <AnimatedSection delay={240}>
-          <div className="card">
-            <h3 style={{ color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 500, textTransform: "uppercase" }}>
-              Monthly Collection
-            </h3>
-            <div style={{ fontSize: "2rem", fontWeight: 700, margin: "0.5rem 0", color: "var(--success)" }}>
-              ₹{(stats?.expectedCollection ?? 0).toLocaleString()}
+          <div
+            onClick={() => stats?.overdueTenants > 0 && setShowOverdueModal(true)}
+            style={{
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "14px",
+              padding: "1.25rem",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              cursor: stats?.overdueTenants > 0 ? "pointer" : "default",
+              borderLeft: stats?.overdueTenants > 0 ? "4px solid #ef4444" : "1px solid var(--border-color)",
+            }}
+          >
+            <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              PENDING RENT DUES
             </div>
-            <p style={{ margin: 0, fontSize: "0.875rem" }}>Expected this month</p>
+            <div style={{ fontSize: "1.75rem", fontWeight: 800, marginTop: "0.4rem", color: "#ef4444" }}>
+              ₹{(stats?.pendingDuesTotal ?? 0).toLocaleString()}
+            </div>
+            <div style={{ fontSize: "0.82rem", color: "#ef4444", marginTop: "0.4rem", fontWeight: 600 }}>
+              {stats?.overdueTenants ?? 0} Tenants with pending dues {stats?.overdueTenants > 0 && "→"}
+            </div>
           </div>
         </AnimatedSection>
 
+        {/* Box 4: NET OPERATING INCOME */}
         <AnimatedSection delay={320}>
           <div
-            className="card"
-            style={{ borderLeft: stats?.overdueTenants > 0 ? "4px solid var(--danger)" : "" }}
+            style={{
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "14px",
+              padding: "1.25rem",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+            }}
           >
-            <h3 style={{ color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 500, textTransform: "uppercase" }}>
-              Overdue Payments
-            </h3>
-            <div
-              style={{
-                fontSize: "2rem",
-                fontWeight: 700,
-                margin: "0.5rem 0",
-                color: stats?.overdueTenants > 0 ? "var(--danger)" : "var(--text-main)",
-              }}
-            >
-              {stats?.overdueTenants}
+            <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              NET OPERATING INCOME
             </div>
-            <p style={{ margin: 0, fontSize: "0.875rem" }}>Tenants behind on rent</p>
-            {stats?.overdueTenants > 0 && (
-              <button
-                onClick={() => setShowOverdueModal(true)}
-                style={{ display: "inline-block", marginTop: "0.5rem", fontSize: "0.875rem", color: "var(--primary)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-              >
-                View list &rarr;
-              </button>
-            )}
+            <div style={{ fontSize: "1.75rem", fontWeight: 800, marginTop: "0.4rem", color: "#3b82f6" }}>
+              ₹{(stats?.netIncome ?? 0).toLocaleString()}
+            </div>
+            <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "0.4rem" }}>
+              After ₹{(stats?.totalExpenses ?? 0).toLocaleString()} expenses
+            </div>
           </div>
         </AnimatedSection>
       </div>

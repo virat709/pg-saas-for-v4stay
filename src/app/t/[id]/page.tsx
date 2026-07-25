@@ -289,6 +289,21 @@ export default function TenantPortal() {
 
       <div className="card mb-8">
         <h3>Make a Payment</h3>
+
+        {tenant.property?.bank_details && tenant.property.bank_details.account_number && (
+          <div style={{ backgroundColor: "rgba(59, 130, 246, 0.08)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: "10px", padding: "1rem", marginTop: "1rem", marginBottom: "1rem" }}>
+            <div style={{ fontWeight: 700, color: "#3b82f6", fontSize: "0.92rem", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              🏦 Direct Bank Transfer (NEFT / IMPS / RTGS)
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.5rem", fontSize: "0.85rem" }}>
+              <div><span style={{ color: "var(--text-muted)" }}>Account Name:</span> <strong>{tenant.property.bank_details.account_name}</strong></div>
+              <div><span style={{ color: "var(--text-muted)" }}>Account Number:</span> <strong>{tenant.property.bank_details.account_number}</strong></div>
+              <div><span style={{ color: "var(--text-muted)" }}>IFSC Code:</span> <strong>{tenant.property.bank_details.ifsc_code}</strong></div>
+              <div><span style={{ color: "var(--text-muted)" }}>Bank & Branch:</span> <strong>{tenant.property.bank_details.bank_name}</strong></div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleMakePayment} style={{ marginTop: '1rem' }}>
           <p style={{ fontSize: '0.875rem', marginBottom: '1rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
             Pay via PhonePe / GPay / Paytm or any UPI app, then enter the transaction details below.

@@ -32,6 +32,8 @@ export default function PaymentsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [upiId, setUpiId] = useState("");
   const [savingUpi, setSavingUpi] = useState(false);
+  const [bankDetails, setBankDetails] = useState({ account_name: "", account_number: "", ifsc_code: "", bank_name: "" });
+  const [savingBank, setSavingBank] = useState(false);
   const [historyTab, setHistoryTab] = useState<"all" | "online" | "offline">("all");
   const [totalExpenses, setTotalExpenses] = useState(0);
 
@@ -71,17 +73,24 @@ export default function PaymentsPage() {
       const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
       const expQuery = activePropertyId ? `?propertyId=${activePropertyId}&month=${currentMonthStr}` : `?month=${currentMonthStr}`;
 
-      const [payRes, tenRes, upiRes, expRes] = await Promise.all([
+      const [payRes, tenRes, upiRes, expRes, bankRes] = await Promise.all([
         fetch(`/api/payments${queryParam}`),
         fetch(`/api/tenants${queryParam}`),
         fetch(`/api/property/upi${queryParam}`),
-        fetch(`/api/expenses${expQuery}`)
+        fetch(`/api/expenses${expQuery}`),
+        fetch(`/api/property/bank${queryParam}`),
       ]);
       
       if (payRes.ok) setPayments(await payRes.json());
       if (upiRes.ok) {
         const uData = await upiRes.json();
         setUpiId(uData.upi_id || "");
+      }
+      if (bankRes.ok) {
+        const bData = await bankRes.json();
+        if (bData.bank_details) {
+          setBankDetails(bData.bank_details);
+        }
       }
       if (expRes.ok) {
         const expData = await expRes.json();
@@ -203,6 +212,28 @@ export default function PaymentsPage() {
     }
   };
 
+  const handleSaveBank = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingBank(true);
+    try {
+      const res = await fetch("/api/property/bank", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...bankDetails, propertyId: selectedFormPropertyId })
+      });
+      if (res.ok) {
+        toast("Bank details saved successfully!", "success");
+      } else {
+        toast("Failed to save bank details.", "error");
+      }
+    } catch (e) {
+      console.error(e);
+      toast("Error saving bank details.", "error");
+    } finally {
+      setSavingBank(false);
+    }
+  };
+
   // Calculate summary
   const currentMonthPayments = payments.filter(p => {
     if (!p.payment_date) return false;
@@ -298,28 +329,91 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      <div className="card mb-8 animate-fade-in" style={{ padding: '1.5rem', backgroundColor: 'var(--surface-color)', borderLeft: '4px solid var(--primary)' }}>
-        <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          📱 Set Up UPI Payments
-        </h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-          Enter your UPI ID below. When tenants click "Pay Online" in their portal, it will automatically open their Google Pay / PhonePe with your UPI ID and the rent amount pre-filled.
-        </p>
-        <form onSubmit={handleSaveUpi} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div className="input-group" style={{ marginBottom: 0, flex: 1, minWidth: '250px' }}>
-            <label className="input-label">Your UPI ID (e.g. 9876543210@ybl, name@oksbi)</label>
-            <input 
-              type="text" 
-              className="input-field" 
-              value={upiId} 
-              onChange={e => setUpiId(e.target.value)} 
-              placeholder="Enter UPI ID to enable intent payments"
-            />
-          </div>
-          <button type="submit" className="btn-primary" disabled={savingUpi} style={{ height: '46px' }}>
-            {savingUpi ? "Saving..." : "Save UPI ID"}
-          </button>
-        </form>
+      {/* Payment Configuration Cards (UPI & Bank Account) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+        {/* UPI Payments Box */}
+        <div className="card" style={{ padding: "1.5rem", backgroundColor: "var(--surface-color)", borderLeft: "4px solid #ea580c" }}>
+          <h3 style={{ marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1.05rem" }}>
+            📱 Set Up UPI Payments
+          </h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1rem" }}>
+            Enter your UPI ID. When tenants click &quot;Pay via UPI&quot; in their portal, it will launch GPay/PhonePe pre-filled with your UPI ID.
+          </p>
+          <form onSubmit={handleSaveUpi} style={{ display: "flex", gap: "0.75rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+            <div className="input-group" style={{ marginBottom: 0, flex: 1, minWidth: "200px" }}>
+              <label className="input-label">UPI ID (e.g. 9876543210@ybl, name@oksbi)</label>
+              <input 
+                type="text" 
+                className="input-field" 
+                value={upiId} 
+                onChange={e => setUpiId(e.target.value)} 
+                placeholder="e.g. 9876543210@ybl"
+              />
+            </div>
+            <button type="submit" className="btn-primary" disabled={savingUpi} style={{ height: "46px" }}>
+              {savingUpi ? "Saving..." : "Save UPI ID"}
+            </button>
+          </form>
+        </div>
+
+        {/* Bank Account Details Box */}
+        <div className="card" style={{ padding: "1.5rem", backgroundColor: "var(--surface-color)", borderLeft: "4px solid #3b82f6" }}>
+          <h3 style={{ marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1.05rem" }}>
+            🏦 Set Up Bank Account Details
+          </h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1rem" }}>
+            Enter bank details for NEFT/IMPS transfers. Tenants will be able to copy these details to pay rent directly via net banking.
+          </p>
+          <form onSubmit={handleSaveBank} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem" }}>
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label className="input-label">Account Holder Name</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  value={bankDetails.account_name} 
+                  onChange={e => setBankDetails({ ...bankDetails, account_name: e.target.value })} 
+                  placeholder="e.g. Sunrise Stays"
+                />
+              </div>
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label className="input-label">Account Number</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  value={bankDetails.account_number} 
+                  onChange={e => setBankDetails({ ...bankDetails, account_number: e.target.value })} 
+                  placeholder="e.g. 918273645012"
+                />
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "0.75rem" }}>
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label className="input-label">IFSC Code</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  value={bankDetails.ifsc_code} 
+                  onChange={e => setBankDetails({ ...bankDetails, ifsc_code: e.target.value.toUpperCase() })} 
+                  placeholder="e.g. HDFC0001234"
+                />
+              </div>
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label className="input-label">Bank & Branch Name</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  value={bankDetails.bank_name} 
+                  onChange={e => setBankDetails({ ...bankDetails, bank_name: e.target.value })} 
+                  placeholder="e.g. HDFC Bank, HSR Layout"
+                />
+              </div>
+            </div>
+            <button type="submit" className="btn-primary" disabled={savingBank} style={{ height: "42px", alignSelf: "flex-end", padding: "0 1.25rem" }}>
+              {savingBank ? "Saving..." : "Save Bank Details"}
+            </button>
+          </form>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
