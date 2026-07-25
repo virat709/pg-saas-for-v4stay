@@ -119,6 +119,22 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     fetchData();
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("add") === "true") {
+        setShowAddForm(true);
+      }
+      const pId = params.get("propertyId");
+      if (pId) {
+        setSelectedFormPropertyId(pId);
+      }
+      const tId = params.get("tenantId");
+      if (tId) {
+        setShowAddForm(true);
+        setTenantId(tId);
+      }
+    }
   }, [activePropertyId]);
 
   const handleConfirmPending = async (paymentId: string, propertyId: string) => {

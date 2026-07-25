@@ -69,6 +69,17 @@ export default function RoomsPage() {
 
   useEffect(() => {
     fetchRooms();
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("add") === "true") {
+        setShowAddForm(true);
+      }
+      const pId = params.get("propertyId");
+      if (pId) {
+        setSelectedFormPropertyId(pId);
+      }
+    }
   }, [activePropertyId]);
 
   const handleAddRoom = async (e: React.FormEvent) => {

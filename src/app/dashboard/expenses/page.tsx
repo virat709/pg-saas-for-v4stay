@@ -81,7 +81,20 @@ export default function ExpensesPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchData(); }, [activePropertyId, filterMonth]);
+  useEffect(() => {
+    fetchData();
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("add") === "true") {
+        setShowForm(true);
+      }
+      const pId = params.get("propertyId");
+      if (pId) {
+        setSelectedPropId(pId);
+      }
+    }
+  }, [activePropertyId, filterMonth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

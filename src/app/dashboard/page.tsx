@@ -399,7 +399,7 @@ export default function DashboardOverview() {
 
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             <Link
-              href="/dashboard/tenants"
+              href={`/dashboard/tenants?add=true${activePropertyId && activePropertyId !== "all" ? `&propertyId=${activePropertyId}` : ""}`}
               style={{
                 padding: "0.55rem 1rem",
                 borderRadius: "8px",
@@ -416,7 +416,7 @@ export default function DashboardOverview() {
               ➕ Add Tenant
             </Link>
             <Link
-              href="/dashboard/rooms"
+              href={`/dashboard/rooms?add=true${activePropertyId && activePropertyId !== "all" ? `&propertyId=${activePropertyId}` : ""}`}
               style={{
                 padding: "0.55rem 1rem",
                 borderRadius: "8px",
@@ -434,7 +434,7 @@ export default function DashboardOverview() {
               🏨 Add Room
             </Link>
             <Link
-              href="/dashboard/payments"
+              href={`/dashboard/payments?add=true${activePropertyId && activePropertyId !== "all" ? `&propertyId=${activePropertyId}` : ""}`}
               style={{
                 padding: "0.55rem 1rem",
                 borderRadius: "8px",
