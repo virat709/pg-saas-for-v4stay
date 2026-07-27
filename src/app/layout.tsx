@@ -99,6 +99,8 @@ export const viewport: Viewport = {
   themeColor: "#ea580c",
 };
 
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -220,7 +222,10 @@ export default function RootLayout({
           `}
         </Script>
         <ThemeProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            {children}
+            <PwaInstallPrompt />
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

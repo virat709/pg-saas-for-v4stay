@@ -55,13 +55,46 @@ function ReceiptContent() {
   }, [id, tenantId]);
 
 
+  const handleWhatsAppShare = () => {
+    if (!data) return;
+    const tenantName = data.tenant?.name || "Tenant";
+    const propName = data.property?.name || "our PG";
+    const rNum = receiptNumber(data.id);
+    const amountStr = data.amount_paid ? data.amount_paid.toLocaleString("en-IN") : data.amount.toLocaleString("en-IN");
+    const receiptUrl = `${window.location.origin}/payments/receipt/${data.id}${tenantId ? `?tenantId=${tenantId}` : ""}`;
+
+    const text = `Hi ${tenantName}, here is your payment receipt ${rNum} for ₹${amountStr} from ${propName}.\n\nView digital receipt: ${receiptUrl}`;
+    const phone = data.tenant?.phone ? data.tenant.phone.replace(/[^\d]/g, "") : "";
+    const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, "_blank");
+  };
+
   if (loading) return <div style={{ padding: "2rem", textAlign: "center" }}>Loading receipt...</div>;
   if (error || !data) return <div style={{ padding: "2rem", textAlign: "center", color: "red" }}>Receipt not found or you do not have permission to view it.</div>;
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f8fafc", padding: "2rem", fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
-      {/* Print Button — hidden on print */}
-      <div className="no-print" style={{ maxWidth: "700px", margin: "0 auto 1.5rem", display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
+      {/* Print & Share Buttons — hidden on print */}
+      <div className="no-print" style={{ maxWidth: "700px", margin: "0 auto 1.5rem", display: "flex", justifyContent: "flex-end", gap: "1rem", flexWrap: "wrap" }}>
+        <button
+          onClick={handleWhatsAppShare}
+          style={{
+            padding: "0.6rem 1.4rem",
+            backgroundColor: "#25D366",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "8px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: "0.9rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            boxShadow: "0 4px 12px rgba(37,211,102,0.3)",
+          }}
+        >
+          📲 Share on WhatsApp
+        </button>
         <button
           onClick={() => window.print()}
           style={{

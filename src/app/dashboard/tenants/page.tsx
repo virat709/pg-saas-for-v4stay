@@ -61,6 +61,16 @@ export default function TenantsPage() {
   const [depositDate, setDepositDate] = useState(new Date().toISOString().slice(0, 10));
   const [savingDeposit, setSavingDeposit] = useState(false);
 
+  // Pending Tenant Applications State
+  const [applications, setApplications] = useState<any[]>([]);
+  const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [appRoomId, setAppRoomId] = useState("");
+  const [appBedId, setAppBedId] = useState("");
+  const [appRentAmount, setAppRentAmount] = useState("7000");
+  const [appDepositAmount, setAppDepositAmount] = useState("5000");
+  const [appBillingDay, setAppBillingDay] = useState("5");
+  const [approvingApp, setApprovingApp] = useState(false);
+
   useEffect(() => {
     if (activePropertyId && activePropertyId !== "all") {
       setSelectedFormPropertyId(activePropertyId);
@@ -250,14 +260,53 @@ export default function TenantsPage() {
     }
   };
 
+  const handleApproveApplication = async (action: "approve" | "reject") => {
+    if (!selectedApp) return;
+    setApprovingApp(true);
+    try {
+      const res = await fetch("/api/tenants/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          applicationId: selectedApp.id,
+          propertyId: selectedApp.propertyId,
+          roomId: appRoomId,
+          bedId: appBedId,
+          rent_amount: appRentAmount,
+          security_deposit_amount: appDepositAmount,
+          billing_cycle_day: appBillingDay,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast(data.message || "Action completed successfully!", "success");
+        setSelectedApp(null);
+        fetchData();
+      } else {
+        toast(data.message || "Failed to process application", "error");
+      }
+    } catch (e) {
+      toast("Error processing application", "error");
+    } finally {
+      setApprovingApp(false);
+    }
+  };
+
   const fetchData = async () => {
     try {
       const queryParam = activePropertyId ? `?propertyId=${activePropertyId}` : "";
-      const [tenantsRes, roomsRes, paymentsRes] = await Promise.all([
+      const [tenantsRes, roomsRes, paymentsRes, appsRes] = await Promise.all([
         fetch(`/api/tenants${queryParam}`),
         fetch(`/api/rooms${queryParam}`),
-        fetch(`/api/payments${queryParam}`)
+        fetch(`/api/payments${queryParam}`),
+        fetch("/api/tenants/applications")
       ]);
+
+      if (appsRes.ok) {
+        setApplications(await appsRes.json());
+      }
       
       if (tenantsRes.ok) {
         setTenants(await tenantsRes.json());
@@ -765,6 +814,141 @@ export default function TenantsPage() {
           <div className="card" style={{ padding: "1.25rem", borderLeft: "4px solid var(--danger)", display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ fontSize: "0.875rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 500 }}>Overdue Rent</div>
             <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--danger)", marginTop: "0.25rem" }}>{overdueCount}</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Pending Applications Banner ── */}
+      {applications.length > 0 && (
+        <div style={{ backgroundColor: "rgba(0,196,159,0.12)", border: "1px solid #00c49f", borderRadius: "16px", padding: "1.25rem 1.5rem", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "1.5rem" }}>📝</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "1rem", color: "#ffffff" }}>
+                {applications.length} Pending Tenant Join Request{applications.length > 1 ? "s" : ""}
+              </div>
+              <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+                Tenants registered via your PG QR code or Self-Join link.
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            {applications.map((app) => (
+              <button
+                key={app.id}
+                onClick={() => {
+                  setSelectedApp(app);
+                  setAppRentAmount("7000");
+                  setAppDepositAmount("5000");
+                  setAppBillingDay("5");
+                  const propBeds = availableBeds.filter(b => b.propertyId === app.propertyId);
+                  if (propBeds.length > 0) {
+                    setAppRoomId(propBeds[0].roomId);
+                    setAppBedId(propBeds[0].bedId);
+                  }
+                }}
+                style={{ backgroundColor: "#00c49f", color: "#0f172a", border: "none", borderRadius: "8px", fontWeight: 700, padding: "0.5rem 1rem", fontSize: "0.85rem", cursor: "pointer" }}
+              >
+                Review {app.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Tenant Application Approval Modal ── */}
+      {selectedApp && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.75)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ backgroundColor: "#1e293b", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.1)", padding: "2rem", width: "100%", maxWidth: "500px", color: "#ffffff" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700 }}>Review Join Request</h3>
+              <button onClick={() => setSelectedApp(null)} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}>✕</button>
+            </div>
+
+            <div style={{ backgroundColor: "#0f172a", borderRadius: "12px", padding: "1rem", marginBottom: "1.25rem", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#00c49f" }}>{selectedApp.name}</div>
+              <div style={{ fontSize: "0.85rem", color: "#94a3b8", marginTop: "0.2rem" }}>📞 {selectedApp.phone} {selectedApp.emergency_contact && `· Emergency: ${selectedApp.emergency_contact}`}</div>
+              <div style={{ fontSize: "0.8rem", color: "#cbd5e1", marginTop: "0.4rem" }}>PG: {selectedApp.propertyName}</div>
+              {selectedApp.id_proof_url && (
+                <div style={{ marginTop: "0.5rem" }}>
+                  <a href={selectedApp.id_proof_url} target="_blank" rel="noreferrer" style={{ fontSize: "0.8rem", color: "#38bdf8", textDecoration: "underline" }}>📄 View Uploaded ID Proof</a>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.4rem" }}>Assign Room &amp; Bed *</label>
+                <select
+                  value={`${appRoomId}_${appBedId}`}
+                  onChange={(e) => {
+                    const [rId, bId] = e.target.value.split("_");
+                    setAppRoomId(rId || "");
+                    setAppBedId(bId || "");
+                  }}
+                  style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", backgroundColor: "#0f172a", border: "1px solid rgba(255,255,255,0.15)", color: "#ffffff", fontSize: "0.9rem" }}
+                >
+                  <option value="">-- Select Vacant Bed --</option>
+                  {availableBeds
+                    .filter((b) => b.propertyId === selectedApp.propertyId)
+                    .map((b) => (
+                      <option key={b.id} value={`${b.roomId}_${b.bedId}`}>
+                        Room {b.roomNumber} ({b.floor}) - Bed {b.bedLabel}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.4rem" }}>Monthly Rent (₹)</label>
+                  <input
+                    type="number"
+                    value={appRentAmount}
+                    onChange={(e) => setAppRentAmount(e.target.value)}
+                    style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", backgroundColor: "#0f172a", border: "1px solid rgba(255,255,255,0.15)", color: "#ffffff" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.4rem" }}>Security Deposit (₹)</label>
+                  <input
+                    type="number"
+                    value={appDepositAmount}
+                    onChange={(e) => setAppDepositAmount(e.target.value)}
+                    style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", backgroundColor: "#0f172a", border: "1px solid rgba(255,255,255,0.15)", color: "#ffffff" }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.4rem" }}>Billing Cycle Day (1-28)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="28"
+                  value={appBillingDay}
+                  onChange={(e) => setAppBillingDay(e.target.value)}
+                  style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", backgroundColor: "#0f172a", border: "1px solid rgba(255,255,255,0.15)", color: "#ffffff" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <button
+                onClick={() => handleApproveApplication("approve")}
+                disabled={approvingApp || !appRoomId || !appBedId}
+                style={{ flex: 1, padding: "0.85rem", borderRadius: "10px", backgroundColor: "#00c49f", color: "#0f172a", fontWeight: 700, border: "none", cursor: "pointer" }}
+              >
+                {approvingApp ? "Approving..." : "✓ Approve & Assign Bed"}
+              </button>
+              <button
+                onClick={() => handleApproveApplication("reject")}
+                disabled={approvingApp}
+                style={{ padding: "0.85rem 1.25rem", borderRadius: "10px", backgroundColor: "rgba(239,68,68,0.15)", color: "#ef4444", fontWeight: 600, border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer" }}
+              >
+                Reject
+              </button>
+            </div>
           </div>
         </div>
       )}

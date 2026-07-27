@@ -541,6 +541,48 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+          {/* Tenant Self-Join QR & Link Section */}
+          {properties.length > 0 && (
+            <div style={{ marginTop: "1.5rem", paddingTop: "1.25rem", borderTop: "1px dashed var(--border-color)" }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "0.25rem" }}>📲 Tenant Self-Onboarding QR &amp; Link</h3>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+                Share this link or print the QR code at your reception desk. Tenants scan it on their phone to fill out their details!
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {properties.map(p => {
+                  const joinUrl = `${typeof window !== "undefined" ? window.location.origin : "https://pg.v4stay.com"}/join/${p.id}`;
+                  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(joinUrl)}`;
+                  return (
+                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1rem", borderRadius: "8px", backgroundColor: "var(--bg-color)", border: "1px solid var(--border-color)", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-main)" }}>{p.name}</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontFamily: "monospace" }}>{joinUrl}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(joinUrl);
+                            alert(`Self-Join Link for ${p.name} copied to clipboard!`);
+                          }}
+                          style={{ background: "rgba(0,196,159,0.15)", border: "1px solid rgba(0,196,159,0.3)", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem", color: "var(--success)", fontWeight: 600, padding: "0.4rem 0.8rem" }}
+                        >
+                          🔗 Copy Join Link
+                        </button>
+                        <a
+                          href={qrUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem", color: "#3b82f6", fontWeight: 600, padding: "0.4rem 0.8rem", textDecoration: "none" }}
+                        >
+                          📱 View/Print QR Code
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {showAddStaff && (
             <form onSubmit={handleAddStaff} style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "1rem", marginBottom: "1rem", backgroundColor: "var(--bg-color)" }}>
