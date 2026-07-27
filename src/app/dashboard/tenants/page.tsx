@@ -71,6 +71,14 @@ export default function TenantsPage() {
   const [appBillingDay, setAppBillingDay] = useState("5");
   const [approvingApp, setApprovingApp] = useState(false);
 
+  // Checkout Settlement Modal State
+  const [checkoutTenant, setCheckoutTenant] = useState<Tenant | null>(null);
+  const [checkoutDeposit, setCheckoutDeposit] = useState("0");
+  const [checkoutRentDeduction, setCheckoutRentDeduction] = useState("0");
+  const [checkoutDamageDeduction, setCheckoutDamageDeduction] = useState("0");
+  const [checkoutNote, setCheckoutNote] = useState("");
+  const [submittingCheckout, setSubmittingCheckout] = useState(false);
+
   useEffect(() => {
     if (activePropertyId && activePropertyId !== "all") {
       setSelectedFormPropertyId(activePropertyId);
@@ -291,6 +299,46 @@ export default function TenantsPage() {
       toast("Error processing application", "error");
     } finally {
       setApprovingApp(false);
+    }
+  };
+
+  const handleCheckoutSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkoutTenant) return;
+    setSubmittingCheckout(true);
+
+    const propId = checkoutTenant.propertyId || selectedFormPropertyId;
+    const depVal = Number(checkoutDeposit) || 0;
+    const rentDed = Number(checkoutRentDeduction) || 0;
+    const damDed = Number(checkoutDamageDeduction) || 0;
+    const finalRefund = Math.max(0, depVal - rentDed - damDed);
+
+    try {
+      const res = await fetch(`/api/tenants/${checkoutTenant.id}/settlement`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId: propId,
+          deposit_collected: depVal,
+          pending_rent_deduction: rentDed,
+          damage_deduction: damDed,
+          final_refund_amount: finalRefund,
+          note: checkoutNote,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast(data.message || "Tenant checkout completed!", "success");
+        setCheckoutTenant(null);
+        fetchData();
+      } else {
+        toast(data.message || "Failed to process checkout", "error");
+      }
+    } catch (err) {
+      toast("Error processing tenant checkout", "error");
+    } finally {
+      setSubmittingCheckout(false);
     }
   };
 
@@ -953,6 +1001,91 @@ export default function TenantsPage() {
         </div>
       )}
 
+      {/* ── Checkout & Vacate Settlement Modal ── */}
+      {checkoutTenant && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.75)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ backgroundColor: "#1e293b", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.1)", padding: "2rem", width: "100%", maxWidth: "500px", color: "#ffffff" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700 }}>Checkout &amp; Settlement</h3>
+              <button onClick={() => setCheckoutTenant(null)} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}>✕</button>
+            </div>
+
+            <div style={{ backgroundColor: "#0f172a", borderRadius: "12px", padding: "1rem", marginBottom: "1.25rem", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#ffffff" }}>{checkoutTenant.name}</div>
+              <div style={{ fontSize: "0.85rem", color: "#94a3b8", marginTop: "0.2rem" }}>📞 {checkoutTenant.phone} · Room: {checkoutTenant.bed?.room?.room_number || "Unassigned"}</div>
+            </div>
+
+            <form onSubmit={handleCheckoutSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.4rem" }}>Original Security Deposit (₹)</label>
+                <input
+                  type="number"
+                  value={checkoutDeposit}
+                  onChange={(e) => setCheckoutDeposit(e.target.value)}
+                  style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", backgroundColor: "#0f172a", border: "1px solid rgba(255,255,255,0.15)", color: "#ffffff" }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#f87171", marginBottom: "0.4rem" }}>Deduct Pending Rent (₹)</label>
+                  <input
+                    type="number"
+                    value={checkoutRentDeduction}
+                    onChange={(e) => setCheckoutRentDeduction(e.target.value)}
+                    style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", backgroundColor: "#0f172a", border: "1px solid rgba(239,68,68,0.3)", color: "#ffffff" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#f87171", marginBottom: "0.4rem" }}>Deduct Damages (₹)</label>
+                  <input
+                    type="number"
+                    value={checkoutDamageDeduction}
+                    onChange={(e) => setCheckoutDamageDeduction(e.target.value)}
+                    style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", backgroundColor: "#0f172a", border: "1px solid rgba(239,68,68,0.3)", color: "#ffffff" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: "rgba(0,196,159,0.12)", border: "1px solid #00c49f", borderRadius: "12px", padding: "1rem", textAlign: "center" }}>
+                <div style={{ fontSize: "0.8rem", color: "#94a3b8", textTransform: "uppercase", fontWeight: 600 }}>Final Refundable Deposit</div>
+                <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#00c49f", marginTop: "0.2rem" }}>
+                  ₹{Math.max(0, (Number(checkoutDeposit) || 0) - (Number(checkoutRentDeduction) || 0) - (Number(checkoutDamageDeduction) || 0)).toLocaleString("en-IN")}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.4rem" }}>Settlement Note / Comments</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Cleared room key & deposit refunded via UPI"
+                  value={checkoutNote}
+                  onChange={(e) => setCheckoutNote(e.target.value)}
+                  style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", backgroundColor: "#0f172a", border: "1px solid rgba(255,255,255,0.15)", color: "#ffffff" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
+                <button
+                  type="submit"
+                  disabled={submittingCheckout}
+                  style={{ flex: 1, padding: "0.85rem", borderRadius: "10px", backgroundColor: "#ef4444", color: "#ffffff", fontWeight: 700, border: "none", cursor: "pointer" }}
+                >
+                  {submittingCheckout ? "Processing Checkout..." : "✓ Confirm Checkout & Free Bed"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCheckoutTenant(null)}
+                  style={{ padding: "0.85rem 1.25rem", borderRadius: "10px", backgroundColor: "rgba(255,255,255,0.05)", color: "#94a3b8", fontWeight: 600, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showCsvUpload && (
         <div className="card mb-8 animate-fade-in">
           <h3>Upload Tenants via CSV</h3>
@@ -1335,6 +1468,29 @@ export default function TenantsPage() {
                           }}
                         >
                           💵 Cash Pay
+                        </button>
+                      )}
+                      {tenant.status === 'active' && !isStaff && (
+                        <button
+                          onClick={() => {
+                            setCheckoutTenant(tenant);
+                            setCheckoutDeposit(tenant.security_deposit_amount?.toString() || "0");
+                            setCheckoutRentDeduction("0");
+                            setCheckoutDamageDeduction("0");
+                            setCheckoutNote("");
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '0.875rem',
+                            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: '#ef4444',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                          }}
+                        >
+                          👋 Checkout
                         </button>
                       )}
 

@@ -180,6 +180,23 @@ export default function ExpensesPage() {
               className="input-field"
               style={{ padding: "0.5rem 0.75rem", maxWidth: "160px" }}
             />
+            <button
+              onClick={() => {
+                const headers = ["Month", "Total Operating Expenses", "Count"];
+                const row = [filterMonth, totalExpenses, expenses.length];
+                const csv = [headers, row].map(r => r.join(",")).join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `pnl-expenses-${filterMonth}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              style={{ padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid var(--border-color)", backgroundColor: "var(--card-bg)", color: "var(--text-main)", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}
+            >
+              📥 Export P&amp;L Report
+            </button>
             <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
               {showForm ? "Cancel" : "+ Add Expense"}
             </button>
