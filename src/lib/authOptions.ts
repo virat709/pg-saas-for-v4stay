@@ -43,6 +43,20 @@ export const authOptions: AuthOptions = {
               return null;
             }
 
+            // Verify property owner's subscription status
+            const propDoc = await adminDb.collection("properties").doc(credentials.staffPropertyId).get();
+            if (propDoc.exists) {
+              const ownerId = propDoc.data()?.ownerId;
+              if (ownerId) {
+                const ownerDoc = await adminDb.collection("owners").doc(ownerId).get();
+                const ownerData = ownerDoc.data();
+                if (ownerData?.subscription_status !== "active") {
+                  console.error("[AUTH][STAFF] Owner subscription inactive or expired");
+                  return null;
+                }
+              }
+            }
+
             return {
               id: staffDoc.id,
               name: staffData.name,

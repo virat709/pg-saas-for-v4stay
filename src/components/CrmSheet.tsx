@@ -9,6 +9,7 @@ interface OwnerCrmData {
   phone: string;
   createdAt: string | null;
   planTier: string;
+  isTrial?: boolean;
   status: string;
   activatedAt: string | null;
   expiresAt: string | null;
@@ -27,32 +28,66 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "active_paid" | "free_trial" | "expired" | "inactive">("all");
+
+  const fetchCrmData = () => {
+    setLoading(true);
+    setError(null);
+    fetch("/api/crm/owners")
+      .then(async (res) => {
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            throw new Error("Access Denied. Only for master admin.");
+          }
+          throw new Error("Failed to fetch CRM metrics.");
+        }
+        return res.json();
+      })
+      .then((resData) => {
+        setData(resData);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError(err.message || "An unexpected error occurred.");
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
     if (isOpen) {
-      setLoading(true);
-      setError(null);
-      fetch("/api/crm/owners")
-        .then(async (res) => {
-          if (!res.ok) {
-            if (res.status === 401 || res.status === 403) {
-              throw new Error("Access Denied. Only for master admin.");
-            }
-            throw new Error("Failed to fetch CRM metrics.");
-          }
-          return res.json();
-        })
-        .then((resData) => {
-          setData(resData);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error(err);
-          setError(err.message || "An unexpected error occurred.");
-          setLoading(false);
-        });
+      fetchCrmData();
     }
   }, [isOpen]);
+
+  const handleToggleStatus = async (ownerId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+    const confirmMsg = currentStatus === "active" 
+      ? "Are you sure you want to DEACTIVATE this account? The owner will be locked out of property dashboard until reactivated." 
+      : "Are you sure you want to ACTIVATE this account?";
+    
+    if (!confirm(confirmMsg)) return;
+
+    setActionLoadingId(ownerId);
+    try {
+      const res = await fetch("/api/crm/owners/toggle-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerId, status: newStatus }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Failed to update account status.");
+      }
+      // Refresh data
+      fetchCrmData();
+    } catch (err: any) {
+      alert(err.message || "Action failed.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   // Handle Escape key close
   useEffect(() => {
@@ -67,6 +102,16 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
 
   const owners = data?.owners || [];
   const filteredOwners = owners.filter((owner) => {
+    const isTrial = owner.isTrial || owner.planTier.toLowerCase().includes("trial");
+    const isExpired = owner.status === "expired" || (owner.status === "active" && owner.daysLeft !== null && owner.daysLeft <= 0);
+    const isNoPlan = owner.planTier === "No Active Plan" || owner.status === "inactive";
+    const isPaid = owner.status === "active" && !isTrial && !isExpired;
+
+    if (statusFilter === "active_paid" && !isPaid) return false;
+    if (statusFilter === "free_trial" && (!isTrial || isExpired)) return false;
+    if (statusFilter === "expired" && !isExpired) return false;
+    if (statusFilter === "inactive" && !isNoPlan && !isExpired) return false;
+
     const query = searchQuery.toLowerCase();
     return (
       owner.name.toLowerCase().includes(query) ||
@@ -78,6 +123,7 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
 
   const totalRegistered = owners.length;
   const activeSubs = owners.filter((o) => o.status === "active").length;
+  const freeTrialCount = owners.filter((o) => o.isTrial || o.planTier.toLowerCase().includes("trial")).length;
   const totalProperties = owners.reduce((acc, o) => acc + o.propertyCount, 0);
 
   const formatDate = (isoString: string | null) => {
@@ -87,6 +133,32 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const handleExportCsv = () => {
+    if (filteredOwners.length === 0) return;
+    const headers = ["Business Owner", "Email", "Phone", "Created On", "Plan Tier", "Status", "Activated At", "Expires At", "Days Left", "Properties"];
+    const rows = filteredOwners.map((o) => [
+      `"${o.name.replace(/"/g, '""')}"`,
+      `"${o.email.replace(/"/g, '""')}"`,
+      `"${o.phone.replace(/"/g, '""')}"`,
+      `"${formatDate(o.createdAt)}"`,
+      `"${o.planTier.replace(/"/g, '""')}"`,
+      `"${o.status}"`,
+      `"${formatDate(o.activatedAt)}"`,
+      `"${formatDate(o.expiresAt)}"`,
+      `"${o.daysLeft ?? '—'}"`,
+      `"${o.propertyCount} / ${o.propertyLimit}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `PGmate_CRM_Owners_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -107,7 +179,7 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
       <div
         style={{
           width: "100%",
-          maxWidth: "1100px",
+          maxWidth: "1150px",
           maxHeight: "85vh",
           backgroundColor: "var(--surface-color)",
           border: "1px solid var(--border-color)",
@@ -136,7 +208,7 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
             </h2>
             <p style={{ margin: "0.25rem 0 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
               {data?.isAdmin
-                ? "Platform-wide registered business owners and active subscriptions."
+                ? "Platform-wide registered business owners, subscriptions, and trial accounts."
                 : "Your business registration and subscription status overview."}
             </p>
           </div>
@@ -188,7 +260,7 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                   gap: "1.25rem",
                   marginBottom: "1.5rem",
                 }}
@@ -225,26 +297,95 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
                   </div>
                 </div>
 
+                {data?.isAdmin && (
+                  <div
+                    style={{
+                      padding: "1.25rem",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--border-color)",
+                      backgroundColor: "rgba(245, 158, 11, 0.05)",
+                    }}
+                  >
+                    <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
+                      Free Trial Users
+                    </div>
+                    <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#f59e0b", marginTop: "0.25rem" }}>
+                      {freeTrialCount}
+                    </div>
+                  </div>
+                )}
+
                 <div
                   style={{
                     padding: "1.25rem",
                     borderRadius: "var(--radius-md)",
                     border: "1px solid var(--border-color)",
-                    backgroundColor: "rgba(245, 158, 11, 0.05)",
+                    backgroundColor: "rgba(139, 92, 246, 0.05)",
                   }}
                 >
                   <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>
                     {data?.isAdmin ? "Total Active PG Properties" : "Created Properties"}
                   </div>
-                  <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--warning)", marginTop: "0.25rem" }}>
+                  <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#8b5cf6", marginTop: "0.25rem" }}>
                     {data?.isAdmin ? totalProperties : `${owners[0]?.propertyCount || 0} / ${owners[0]?.propertyLimit || 1}`}
                   </div>
                 </div>
               </div>
 
-              {/* Search Bar */}
+              {/* Search Bar & Controls */}
               {data?.isAdmin && (
-                <div style={{ marginBottom: "1.25rem" }}>
+                <div style={{ marginBottom: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+                    {/* Status Filter Tabs */}
+                    <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                      {[
+                        { key: "all", label: "All Owners" },
+                        { key: "active_paid", label: "Active Paid" },
+                        { key: "free_trial", label: "Free Trial" },
+                        { key: "expired", label: "Expired" },
+                        { key: "inactive", label: "Inactive" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setStatusFilter(tab.key as any)}
+                          style={{
+                            padding: "0.4rem 0.85rem",
+                            borderRadius: "var(--radius-md)",
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            border: "1px solid var(--border-color)",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            backgroundColor: statusFilter === tab.key ? "var(--primary)" : "rgba(255,255,255,0.03)",
+                            color: statusFilter === tab.key ? "#fff" : "var(--text-muted)",
+                          }}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* CSV Export Button */}
+                    <button
+                      onClick={handleExportCsv}
+                      style={{
+                        padding: "0.45rem 1rem",
+                        borderRadius: "var(--radius-md)",
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        backgroundColor: "rgba(16, 185, 129, 0.15)",
+                        color: "var(--success)",
+                        border: "1px solid rgba(16, 185, 129, 0.3)",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                      }}
+                    >
+                      📥 Export CSV
+                    </button>
+                  </div>
+
                   <input
                     type="text"
                     placeholder="Search by owner name, email, phone, or plan tier..."
@@ -276,12 +417,13 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
                       <th style={{ padding: "1rem" }}>Activated At</th>
                       <th style={{ padding: "1rem" }}>Time Left</th>
                       <th style={{ padding: "1rem" }}>Properties</th>
+                      {data?.isAdmin && <th style={{ padding: "1rem", textAlign: "center" }}>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredOwners.length === 0 ? (
                       <tr>
-                        <td colSpan={7} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
+                        <td colSpan={data?.isAdmin ? 8 : 7} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
                           No registered businesses found matching search criteria.
                         </td>
                       </tr>
@@ -289,7 +431,8 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
                       filteredOwners.map((owner) => {
                         const isExpired = owner.status === "expired" || (owner.status === "active" && owner.daysLeft !== null && owner.daysLeft <= 0);
                         const isNoPlan = owner.planTier === "No Active Plan" || owner.status === "inactive";
-                        
+                        const isTrial = owner.isTrial || owner.planTier.toLowerCase().includes("trial");
+
                         return (
                           <tr
                             key={owner.id}
@@ -313,12 +456,27 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
                             <td style={{ padding: "1rem" }}>
                               <span
                                 style={{
-                                  padding: "2px 8px",
+                                  padding: "3px 10px",
                                   borderRadius: "12px",
                                   fontSize: "0.75rem",
                                   fontWeight: 600,
-                                  backgroundColor: isNoPlan ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
-                                  color: isNoPlan ? "var(--danger)" : "var(--success)",
+                                  backgroundColor: isNoPlan 
+                                    ? "rgba(239, 68, 68, 0.1)" 
+                                    : isTrial 
+                                    ? "rgba(245, 158, 11, 0.15)" 
+                                    : "rgba(16, 185, 129, 0.1)",
+                                  color: isNoPlan 
+                                    ? "var(--danger)" 
+                                    : isTrial 
+                                    ? "#f59e0b" 
+                                    : "var(--success)",
+                                  border: `1px solid ${
+                                    isNoPlan 
+                                      ? "rgba(239, 68, 68, 0.2)" 
+                                      : isTrial 
+                                      ? "rgba(245, 158, 11, 0.3)" 
+                                      : "rgba(16, 185, 129, 0.2)"
+                                  }`,
                                 }}
                               >
                                 {owner.planTier}
@@ -334,14 +492,14 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
                                 <span
                                   style={{
                                     fontWeight: 600,
-                                    color: owner.daysLeft <= 10
+                                    color: owner.daysLeft <= 7
                                       ? "var(--danger)"
-                                      : owner.daysLeft <= 30
-                                      ? "var(--warning)"
+                                      : owner.daysLeft <= 15
+                                      ? "#f59e0b"
                                       : "var(--success)",
                                   }}
                                 >
-                                  {owner.daysLeft} days left
+                                  {owner.daysLeft} days left{isTrial ? " (Trial)" : ""}
                                 </span>
                               ) : (
                                 <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
@@ -357,6 +515,44 @@ export default function CrmSheet({ isOpen, onClose }: CrmSheetProps) {
                                 {" "}/ {owner.propertyLimit}
                               </span>
                             </td>
+                            {data?.isAdmin && (
+                              <td style={{ padding: "1rem", textAlign: "center" }}>
+                                <button
+                                  disabled={actionLoadingId === owner.id}
+                                  onClick={() => handleToggleStatus(owner.id, owner.status)}
+                                  style={{
+                                    padding: "4px 10px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                    borderRadius: "var(--radius-md)",
+                                    border: "none",
+                                    cursor: actionLoadingId === owner.id ? "not-allowed" : "pointer",
+                                    opacity: actionLoadingId === owner.id ? 0.6 : 1,
+                                    backgroundColor: owner.status === "active" ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)",
+                                    color: owner.status === "active" ? "var(--danger)" : "var(--success)",
+                                    transition: "all 0.2s ease",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (actionLoadingId !== owner.id) {
+                                      e.currentTarget.style.backgroundColor = owner.status === "active" ? "var(--danger)" : "var(--success)";
+                                      e.currentTarget.style.color = "#fff";
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (actionLoadingId !== owner.id) {
+                                      e.currentTarget.style.backgroundColor = owner.status === "active" ? "rgba(239, 68, 68, 0.15)" : "rgba(16, 185, 129, 0.15)";
+                                      e.currentTarget.style.color = owner.status === "active" ? "var(--danger)" : "var(--success)";
+                                    }
+                                  }}
+                                >
+                                  {actionLoadingId === owner.id 
+                                    ? "Updating..." 
+                                    : owner.status === "active" 
+                                    ? "Deactivate" 
+                                    : "Activate"}
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         );
                       })

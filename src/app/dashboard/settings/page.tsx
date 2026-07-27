@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const [staffName, setStaffName] = useState("");
   const [staffEmail, setStaffEmail] = useState("");
   const [staffPassword, setStaffPassword] = useState("");
+  const [showStaffPassword, setShowStaffPassword] = useState(false);
   const [staffPropertyId, setStaffPropertyId] = useState("");
   const [staffSaving, setStaffSaving] = useState(false);
   const [staffMsg, setStaffMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -166,10 +167,11 @@ export default function SettingsPage() {
     setStaffSaving(true);
     setStaffMsg(null);
     try {
+      const targetPropId = staffPropertyId || (properties.length > 0 ? properties[0].id : "");
       const res = await fetch("/api/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: staffName, email: staffEmail, password: staffPassword, propertyId: staffPropertyId }),
+        body: JSON.stringify({ name: staffName, email: staffEmail, password: staffPassword, propertyId: targetPropId }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -523,10 +525,17 @@ export default function SettingsPage() {
               <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>Staff need this Property ID to log in at <strong>/staff-login</strong>:</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
                 {properties.map(p => (
-                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0.75rem", borderRadius: "6px", backgroundColor: "var(--bg-color)", border: "1px solid var(--border-color)", fontFamily: "monospace", fontSize: "0.85rem" }}>
+                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0.75rem", borderRadius: "6px", backgroundColor: "var(--bg-color)", border: "1px solid var(--border-color)", fontFamily: "monospace", fontSize: "0.85rem", flexWrap: "wrap", gap: "0.5rem" }}>
                     <span style={{ color: "var(--text-muted)" }}>{p.name}:</span>
                     <span style={{ fontWeight: 600, color: "var(--primary)" }}>{p.id}</span>
-                    <button onClick={() => { navigator.clipboard.writeText(p.id); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", color: "var(--text-muted)", padding: "2px 6px" }}>Copy</button>
+                    <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+                      <button onClick={() => { navigator.clipboard.writeText(p.id); alert("Property ID copied to clipboard!"); }} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-color)", borderRadius: "4px", cursor: "pointer", fontSize: "0.75rem", color: "var(--text-main)", padding: "3px 8px" }}>Copy ID</button>
+                      <button onClick={() => {
+                        const link = `${window.location.origin}/staff-login?propertyId=${p.id}`;
+                        navigator.clipboard.writeText(link);
+                        alert("Direct Staff Login Link copied to clipboard!");
+                      }} style={{ background: "rgba(0, 196, 159, 0.15)", border: "1px solid rgba(0, 196, 159, 0.3)", borderRadius: "4px", cursor: "pointer", fontSize: "0.75rem", color: "var(--success)", fontWeight: 600, padding: "3px 8px" }}>🔗 Copy Direct Link</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -547,7 +556,38 @@ export default function SettingsPage() {
                 </div>
                 <div className="input-group mb-0">
                   <label className="input-label">Password (min 6 chars)</label>
-                  <input type="password" className="input-field" value={staffPassword} onChange={e => setStaffPassword(e.target.value)} minLength={6} required />
+                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <input
+                      type={showStaffPassword ? "text" : "password"}
+                      className="input-field"
+                      style={{ paddingRight: "2.5rem" }}
+                      value={staffPassword}
+                      onChange={e => setStaffPassword(e.target.value)}
+                      minLength={6}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowStaffPassword(!showStaffPassword)}
+                      style={{
+                        position: "absolute",
+                        right: "0.75rem",
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                        fontSize: "1.1rem",
+                        padding: "0.2rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      title={showStaffPassword ? "Hide password" : "Show password"}
+                      aria-label={showStaffPassword ? "Hide password" : "Show password"}
+                    >
+                      {showStaffPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </div>
                 <div className="input-group mb-0">
                   <label className="input-label">Assign to Property</label>

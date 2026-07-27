@@ -1,20 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/components/Logo";
 import MotionBackground from "@/components/MotionBackground";
 
-export default function StaffLoginPage() {
+function StaffLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [propertyId, setPropertyId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const pid = searchParams.get("propertyId");
+    if (pid) {
+      setPropertyId(pid);
+    }
+  }, [searchParams]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -135,14 +144,38 @@ export default function StaffLoginPage() {
             </div>
             <div className="input-group">
               <label className="input-label" htmlFor="staff-password">Password</label>
-              <input
-                id="staff-password"
-                type="password"
-                className="input-field"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <input
+                  id="staff-password"
+                  type={showPassword ? "text" : "password"}
+                  className="input-field"
+                  style={{ paddingRight: "2.5rem" }}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "0.75rem",
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    fontSize: "1.1rem",
+                    padding: "0.2rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  title={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
             </div>
             <button type="submit" className="btn-primary w-full" disabled={loading} style={{ marginTop: "0.5rem" }}>
               {loading ? "Signing in..." : "Sign In as Staff"}
@@ -158,5 +191,13 @@ export default function StaffLoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StaffLoginPage() {
+  return (
+    <Suspense fallback={<div style={{ background: "#0d1117", minHeight: "100vh" }} />}>
+      <StaffLoginForm />
+    </Suspense>
   );
 }

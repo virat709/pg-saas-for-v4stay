@@ -88,6 +88,27 @@ export async function GET(req: Request) {
             subscription_status: "inactive",
             updated_at: new Date(),
           });
+        } else if (daysLeft <= 3) {
+          // Send 3-day expiry warning notification once per day
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const dedupKey = `sub_remind_${ownerId}_${todayStr}`;
+          const dedupRef = adminDb.collection("cron_dedup").doc(dedupKey);
+          dedupRef.get().then((docSnap) => {
+            if (!docSnap.exists) {
+              dedupRef.set({ created_at: new Date() });
+              adminDb.collection("notifications").add({
+                title: isTrial ? "⏳ Free Trial Expiring Soon" : "⚠️ Subscription Expiring Soon",
+                message: isTrial
+                  ? `Your 30-day Free Trial expires in ${daysLeft} day(s). Upgrade your plan now to retain full access.`
+                  : `Your PGmate plan expires in ${daysLeft} day(s). Renew now to prevent service interruption.`,
+                read: false,
+                recipientRole: "owner",
+                ownerId: ownerId,
+                type: "sub_reminder",
+                created_at: new Date(),
+              }).catch((e) => console.error("Failed to add sub reminder notification:", e));
+            }
+          }).catch((e) => console.error("Dedup check error:", e));
         }
       } else if (durationMonths > 0) {
         expiresAt = new Date(activatedAt);
@@ -102,6 +123,25 @@ export async function GET(req: Request) {
             subscription_status: "inactive",
             updated_at: new Date(),
           });
+        } else if (daysLeft <= 3) {
+          // Send 3-day expiry warning notification once per day
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const dedupKey = `sub_remind_${ownerId}_${todayStr}`;
+          const dedupRef = adminDb.collection("cron_dedup").doc(dedupKey);
+          dedupRef.get().then((docSnap) => {
+            if (!docSnap.exists) {
+              dedupRef.set({ created_at: new Date() });
+              adminDb.collection("notifications").add({
+                title: "⚠️ Subscription Expiring Soon",
+                message: `Your PGmate plan expires in ${daysLeft} day(s). Renew now to prevent service interruption.`,
+                read: false,
+                recipientRole: "owner",
+                ownerId: ownerId,
+                type: "sub_reminder",
+                created_at: new Date(),
+              }).catch((e) => console.error("Failed to add sub reminder notification:", e));
+            }
+          }).catch((e) => console.error("Dedup check error:", e));
         }
       }
     } else if (subscriptionStatus === "active") {

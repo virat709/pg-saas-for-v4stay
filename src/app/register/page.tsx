@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -162,16 +163,40 @@ export default function RegisterPage() {
 
           <div className="input-group">
             <label className="input-label" htmlFor="password">Password</label>
-            <input 
-              id="password" 
-              type="password" 
-              className="input-field" 
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-              minLength={6}
-            />
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <input 
+                id="password" 
+                type={showPassword ? "text" : "password"} 
+                className="input-field" 
+                placeholder="••••••••"
+                style={{ paddingRight: "2.5rem" }}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required 
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "0.75rem",
+                  background: "none",
+                  border: "none",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                  fontSize: "1.1rem",
+                  padding: "0.2rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                title={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="btn-primary w-full mt-4" disabled={loading}>

@@ -53,11 +53,12 @@ export async function GET() {
           : new Date(data.subscription_activated_at)
         : null;
 
-      const planTier = data.plan_tier || data.subscription_plan || "No Active Plan";
+      const planTier = data.plan_tier || data.subscription_plan || (data.is_trial ? "30 Days Free Trial" : "No Active Plan");
       let status = data.subscription_status || "inactive";
 
-      // Calculate subscription duration
       const planTierLower = planTier.toLowerCase();
+      const isTrial = data.is_trial === true || planTierLower.includes("trial");
+
       let durationMonths = 0;
       if (planTierLower.includes("6 months") || planTierLower.includes("starter")) {
         durationMonths = 6;
@@ -68,20 +69,41 @@ export async function GET() {
       let expiresAt: Date | null = null;
       let daysLeft: number | null = null;
 
-      if (status === "active" && activatedAt && durationMonths > 0) {
-        expiresAt = new Date(activatedAt);
-        expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
-        
-        const diffTime = expiresAt.getTime() - Date.now();
-        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (daysLeft <= 0) {
-          daysLeft = 0;
-          status = "expired";
+      if (status === "active" && activatedAt) {
+        if (isTrial) {
+          expiresAt = new Date(activatedAt);
+          expiresAt.setDate(expiresAt.getDate() + 30);
+          
+          const diffTime = expiresAt.getTime() - Date.now();
+          daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (daysLeft <= 0) {
+            daysLeft = 0;
+            status = "expired";
+            // Persist expired trial status to DB
+            adminDb.collection("owners").doc(ownerId).update({
+              subscription_status: "inactive",
+              updated_at: new Date(),
+            }).catch(err => console.error("Error auto-deactivating expired trial:", err));
+          }
+        } else if (durationMonths > 0) {
+          expiresAt = new Date(activatedAt);
+          expiresAt.setMonth(expiresAt.getMonth() + durationMonths);
+          
+          const diffTime = expiresAt.getTime() - Date.now();
+          daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (daysLeft <= 0) {
+            daysLeft = 0;
+            status = "expired";
+            // Persist expired plan status to DB
+            adminDb.collection("owners").doc(ownerId).update({
+              subscription_status: "inactive",
+              updated_at: new Date(),
+            }).catch(err => console.error("Error auto-deactivating expired plan:", err));
+          }
         }
-      } else if (status === "active") {
-        // Active status but missing activation or duration => treat as inactive
-        status = "inactive";
       }
+
+      const displayPlanTier = isTrial && planTier === "No Active Plan" ? "30 Days Free Trial" : planTier;
 
       return {
         id: ownerId,
@@ -89,7 +111,8 @@ export async function GET() {
         email: data.email || "",
         phone: data.phone || "",
         createdAt: createdAt ? createdAt.toISOString() : null,
-        planTier,
+        planTier: displayPlanTier,
+        isTrial,
         status,
         activatedAt: activatedAt ? activatedAt.toISOString() : null,
         expiresAt: expiresAt ? expiresAt.toISOString() : null,

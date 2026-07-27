@@ -95,6 +95,7 @@ export async function POST(req: Request) {
       plan_tier: finalTier,
       subscription_status: "active",
       is_trial: isTrial,
+      ...(isTrial ? { has_used_trial: true } : {}),
       ...(planTierChanged ? { subscription_activated_at: new Date() } : {}),
       property_limit: propertyLimit,
       updated_at: new Date(),

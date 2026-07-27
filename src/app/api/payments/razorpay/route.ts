@@ -26,6 +26,14 @@ export async function POST(req: Request) {
     const isUpgrade = ownerDoc?.exists && ownerData?.subscription_status === "active";
     const currentLimit = isUpgrade ? (ownerData?.property_limit || 1) : 0;
 
+    // Reject trial reuse if trial was previously activated or used
+    if (planName === "30 Days Free Trial" && (ownerData?.has_used_trial === true || ownerData?.is_trial === true)) {
+      return NextResponse.json(
+        { message: "You have already used your 30-day Free Trial. Please select a paid subscription plan." },
+        { status: 400 }
+      );
+    }
+
     let basePrice = 0;
     if (isUpgrade) {
       if (planName === "30 Days Free Trial") {

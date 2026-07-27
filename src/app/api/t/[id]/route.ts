@@ -22,14 +22,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ message: "This tenant account has been deactivated. Please contact your PG owner." }, { status: 403 });
     }
 
-    // Fetch all related data in parallel
-    const [pSnap, paySnap, cSnap] = await Promise.all([
-      adminDb.collection("properties").doc(propertyId).get(),
+    // Fetch property & check owner subscription status
+    const pSnap = await adminDb.collection("properties").doc(propertyId).get();
+    if (!pSnap.exists) return NextResponse.json({ message: "Property not found" }, { status: 404 });
+    const propertyData = { id: propertyId, ...pSnap.data() };
+    const ownerId = pSnap.data()?.ownerId;
+
+    if (ownerId) {
+      const ownerDoc = await adminDb.collection("owners").doc(ownerId).get();
+      if (ownerDoc.exists && ownerDoc.data()?.subscription_status !== "active") {
+        return NextResponse.json({ message: "Service suspended. The PG management account is currently inactive." }, { status: 403 });
+      }
+    }
+
+    // Fetch related tenant payments and maintenance requests in parallel
+    const [paySnap, cSnap] = await Promise.all([
       adminDb.collection("properties").doc(propertyId).collection("payments").where("tenantId", "==", tenantId).get(),
       adminDb.collection("properties").doc(propertyId).collection("maintenanceRequests").where("tenantId", "==", tenantId).get(),
     ]);
-
-    const propertyData = pSnap.exists ? { id: propertyId, ...pSnap.data() } : null;
 
     // Fetch bed/room (only if tenant has an assignment)
     let bedData = null;

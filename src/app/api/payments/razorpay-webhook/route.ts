@@ -16,16 +16,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Webhook secret not configured" }, { status: 500 });
     }
 
-    if (signature) {
-      const expectedSignature = crypto
-        .createHmac("sha256", webhookSecret)
-        .update(rawBody)
-        .digest("hex");
+    if (!signature) {
+      console.error("[WEBHOOK] Missing signature header");
+      return NextResponse.json({ message: "Missing x-razorpay-signature header" }, { status: 400 });
+    }
 
-      if (expectedSignature !== signature) {
-        console.error("[WEBHOOK] Invalid signature");
-        return NextResponse.json({ message: "Invalid signature" }, { status: 400 });
-      }
+    const expectedSignature = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(rawBody)
+      .digest("hex");
+
+    if (expectedSignature !== signature) {
+      console.error("[WEBHOOK] Invalid signature");
+      return NextResponse.json({ message: "Invalid signature" }, { status: 400 });
     }
 
     const event = JSON.parse(rawBody);

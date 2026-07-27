@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
 interface ReceiptData {
@@ -34,7 +34,7 @@ function receiptNumber(id: string): string {
   return "RCP-" + id.slice(-8).toUpperCase();
 }
 
-export default function ReceiptPage() {
+function ReceiptContent() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const tenantId = searchParams.get("tenantId");
@@ -227,5 +227,13 @@ export default function ReceiptPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function ReceiptPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>Loading receipt...</div>}>
+      <ReceiptContent />
+    </Suspense>
   );
 }
