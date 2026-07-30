@@ -1470,72 +1470,6 @@ export default function TenantsPage() {
                           💵 Cash Pay
                         </button>
                       )}
-                      {tenant.status === 'active' && !isStaff && (
-                        <button
-                          onClick={() => {
-                            setCheckoutTenant(tenant);
-                            setCheckoutDeposit(tenant.security_deposit_amount?.toString() || "0");
-                            setCheckoutRentDeduction("0");
-                            setCheckoutDamageDeduction("0");
-                            setCheckoutNote("");
-                          }}
-                          style={{
-                            padding: '6px 12px',
-                            fontSize: '0.875rem',
-                            backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            color: '#ef4444',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                          }}
-                        >
-                          👋 Checkout
-                        </button>
-                      )}
-
-                      {/* 💬 WhatsApp Rent Reminder Button */}
-                      {tenant.status === "active" && (
-                        <a
-                          href={getWhatsAppReminderUrl(tenant)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            padding: '6px 10px',
-                            fontSize: '0.82rem',
-                            backgroundColor: 'rgba(37, 211, 102, 0.15)',
-                            border: '1px solid rgba(37, 211, 102, 0.4)',
-                            color: '#25D366',
-                            borderRadius: '6px',
-                            fontWeight: 600,
-                            textDecoration: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.25rem',
-                          }}
-                          title="Send Rent Reminder on WhatsApp"
-                        >
-                          💬 WhatsApp
-                        </a>
-                      )}
-
-                      {/* ✏️ Edit Tenant Details Button */}
-                      <button
-                        onClick={() => openEditModal(tenant)}
-                        style={{
-                          padding: '6px 10px',
-                          fontSize: '0.82rem',
-                          backgroundColor: 'var(--bg-color)',
-                          border: '1px solid var(--border-color)',
-                          color: 'var(--text-main)',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontWeight: 500,
-                        }}
-                        title="Edit Tenant Details"
-                      >
-                        ✏️ Edit
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1895,6 +1829,47 @@ export default function TenantsPage() {
             </div>
 
             <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {selectedTenant.status === 'active' && (
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <a
+                    href={getWhatsAppReminderUrl(selectedTenant)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      fontSize: '0.9rem',
+                      backgroundColor: 'rgba(37, 211, 102, 0.15)',
+                      border: '1px solid rgba(37, 211, 102, 0.4)',
+                      color: '#25D366',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                    }}
+                  >
+                    💬 Send WhatsApp Reminder
+                  </a>
+                  {!isStaff && (
+                    <button
+                      onClick={() => {
+                        setCheckoutTenant(selectedTenant);
+                        setCheckoutDeposit(selectedTenant.security_deposit_amount?.toString() || "0");
+                        setCheckoutRentDeduction("0");
+                        setCheckoutDamageDeduction("0");
+                        setCheckoutNote("");
+                        setSelectedTenant(null);
+                      }}
+                      style={{ flex: 1, padding: '10px', fontSize: '0.9rem', backgroundColor: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      👋 Checkout & Settlement
+                    </button>
+                  )}
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button 
                   onClick={() => { setEditTenantData(selectedTenant); setEditName(selectedTenant.name); setEditPhone(selectedTenant.phone); setEditRentAmount(selectedTenant.rent_amount?.toString() || ""); setEditBillingCycleDay(selectedTenant.billing_cycle_day?.toString() || "5"); setSelectedTenant(null); }} 
