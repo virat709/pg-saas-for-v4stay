@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
+import { DashboardVideoModal } from "@/components/DashboardVideoModal";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function SettingsPage() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
 
   // Staff management state
   const [properties, setProperties] = useState<any[]>([]);
@@ -35,6 +37,9 @@ export default function SettingsPage() {
   const [pgCity, setPgCity] = useState("");
   const [pgSaving, setPgSaving] = useState(false);
   const [pgMsg, setPgMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Custom QR Poster Modal State
+  const [qrModalProperty, setQrModalProperty] = useState<any | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -464,6 +469,23 @@ export default function SettingsPage() {
           </div>
 
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", borderTop: "1px solid var(--border-color)", paddingTop: "1rem" }}>
+            <button
+              onClick={() => setVideoModalOpen(true)}
+              className="btn-primary"
+              style={{
+                fontSize: "0.85rem",
+                padding: "0.5rem 1rem",
+                backgroundColor: "rgba(245, 158, 11, 0.15)",
+                color: "#f59e0b",
+                border: "1px solid rgba(245, 158, 11, 0.3)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              <span>▶️</span> Watch Video Tutorial
+            </button>
             <a
               href="mailto:v4services.in@gmail.com?subject=Subscription Help - PGmate"
               className="btn-primary"
@@ -568,14 +590,13 @@ export default function SettingsPage() {
                         >
                           🔗 Copy Join Link
                         </button>
-                        <a
-                          href={qrUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem", color: "#3b82f6", fontWeight: 600, padding: "0.4rem 0.8rem", textDecoration: "none" }}
+                        <button
+                          type="button"
+                          onClick={() => setQrModalProperty(p)}
+                          style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem", color: "#3b82f6", fontWeight: 600, padding: "0.4rem 0.8rem" }}
                         >
-                          📱 View/Print QR Code
-                        </a>
+                          📱 View &amp; Print QR Poster
+                        </button>
                       </div>
                     </div>
                   );
@@ -694,6 +715,9 @@ export default function SettingsPage() {
           </a>
         </div>
       </AnimatedSection>
+
+      {/* Dashboard Video Guide Modal */}
+      <DashboardVideoModal isOpen={videoModalOpen} onClose={() => setVideoModalOpen(false)} />
     </div>
   );
 }

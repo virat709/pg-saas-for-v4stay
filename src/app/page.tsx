@@ -9,6 +9,7 @@ import { HeroEntrance } from "@/components/animations/HeroEntrance";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { useScrollyNav } from "@/hooks/useScrollyNav";
 import CrmSheet from "@/components/CrmSheet";
+import { DashboardVideoSection, DashboardVideoModal } from "@/components/DashboardVideoModal";
 
 export default function Home() {
   const { isScrolled } = useScrollyNav(40);
@@ -16,6 +17,7 @@ export default function Home() {
   const [crmOpen, setCrmOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedLogo, setSelectedLogo] = useState<LogoConcept>(1);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
 
   return (
     <div
@@ -81,6 +83,23 @@ export default function Home() {
               }}
             >
               Features
+            </a>
+            <a
+              href="#dashboard-video"
+              style={{
+                padding: "0.6rem 1rem",
+                borderRadius: "8px",
+                textDecoration: "none",
+                color: "#f59e0b",
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                transition: "color 0.2s",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              <span>▶️</span> Video Guide
             </a>
             <a
               href="#pricing"
@@ -354,6 +373,28 @@ export default function Home() {
             >
               View Demo Dashboard
             </Link>
+            <button
+              onClick={() => setVideoModalOpen(true)}
+              style={{
+                padding: "1.25rem 2rem",
+                fontSize: "1.125rem",
+                fontWeight: 600,
+                borderRadius: "12px",
+                border: "1px solid rgba(245, 158, 11, 0.4)",
+                backgroundColor: "rgba(245, 158, 11, 0.12)",
+                color: "#fbbf24",
+                cursor: "pointer",
+                backdropFilter: "blur(10px)",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(245, 158, 11, 0.25)")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(245, 158, 11, 0.12)")}
+            >
+              <span>▶️</span> Watch Video (2m)
+            </button>
           </div>
         </HeroEntrance>
 
@@ -471,6 +512,9 @@ export default function Home() {
             </div>
           </motion.div>
         </HeroEntrance>
+
+        {/* ── Dashboard Video Walkthrough Section ──────────────────────── */}
+        <DashboardVideoSection />
 
         {/* ── Feature Cards — scroll-revealed, staggered ────────────────── */}
         <section id="features" style={{ scrollMarginTop: "100px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", marginTop: "8rem" }}>
@@ -1047,6 +1091,7 @@ export default function Home() {
           {/* Links list */}
           <div style={{ display: "flex", flexDirection: "column", padding: "1rem 0" }}>
             <a href="#features" className="mobile-drawer-link" onClick={() => setMobileMenuOpen(false)}>Features</a>
+            <a href="#dashboard-video" className="mobile-drawer-link" onClick={() => setMobileMenuOpen(false)}>Video Guide</a>
             <a href="#pricing" className="mobile-drawer-link" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
             <a href="#contact" className="mobile-drawer-link" onClick={() => setMobileMenuOpen(false)}>Contact</a>
             
@@ -1087,6 +1132,9 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Dashboard Video Modal */}
+      <DashboardVideoModal isOpen={videoModalOpen} onClose={() => setVideoModalOpen(false)} />
     </div>
   );
 }

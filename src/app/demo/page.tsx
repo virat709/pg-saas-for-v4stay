@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useDemoContext } from "./DemoLayoutClient";
 import { DEMO_PROPERTIES, DEMO_ROOMS, DEMO_TENANTS, DEMO_PAYMENTS, DEMO_EXPENSES } from "@/lib/demoData";
+import { DashboardVideoBannerCard } from "@/components/DashboardVideoModal";
 
 export default function DemoOverviewPage() {
   const { activePropertyId, triggerReadOnlyNotice } = useDemoContext();
@@ -140,6 +141,9 @@ export default function DemoOverviewPage() {
           </button>
         </div>
       </div>
+
+      {/* Video Tutorial Banner */}
+      <DashboardVideoBannerCard />
 
       {/* Metric Cards Grid */}
       <div

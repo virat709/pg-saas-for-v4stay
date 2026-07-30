@@ -11,6 +11,7 @@ import MonthlyCollectionsChart from "@/components/MonthlyCollectionsChart";
 import OccupancyTrendChart from "@/components/OccupancyTrendChart";
 import ProfitLossChart from "@/components/ProfitLossChart";
 import { useProperties } from "@/context/PropertyContext";
+import { DashboardVideoBannerCard } from "@/components/DashboardVideoModal";
 
 export default function DashboardOverview() {
   const [stats, setStats] = useState<any>(null);
@@ -453,6 +454,11 @@ export default function DashboardOverview() {
             </Link>
           </div>
         </div>
+      </AnimatedSection>
+
+      {/* Video Guide Banner */}
+      <AnimatedSection delay={40}>
+        <DashboardVideoBannerCard />
       </AnimatedSection>
 
       {/* Top 4 Metric Boxes Grid */}

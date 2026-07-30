@@ -33,6 +33,7 @@ export function LandingNav() {
         <div className="desktop-nav" style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
           {[
             { href: "#features", label: "Features" },
+            { href: "#dashboard-video", label: "Video Guide" },
             { href: "#pricing", label: "Pricing" },
             { href: "#contact", label: "Contact" },
           ].map(({ href, label }) => (
