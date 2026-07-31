@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: "%s | PGmate - PG Management Software",
   },
   description:
-    "PGmate is India's leading Paying Guest (PG) management software for PG owners and hostel managers. Automate rent collection, generate instant digital payment receipts, manage tenant room allocation, handle complaints, and track property expenses effortlessly.",
+    "PGmate is India's top PG management software for PG owners. Automate rent collection, track occupancy, send digital receipts, & simplify tenant operations.",
   keywords: [
     "PG",
     "PG management",
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "PGmate | #1 PG Management Software & Hostel App for PG Owners",
     description:
-      "Automate rent collection, tenant portals, digital receipts, and property operations with PGmate - India's smartest PG management software.",
+      "PGmate is India's top PG management software for PG owners. Automate rent collection, track occupancy, send digital receipts, & simplify tenant operations.",
     url: "https://pg.v4stay.com",
     siteName: "PGmate",
     locale: "en_IN",
@@ -74,9 +74,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "PGmate | #1 PG Management Software for PG Owners",
+    title: "PGmate | #1 PG Management Software & Hostel App for PG Owners",
     description:
-      "India's smartest PG management app for PG owners and hostel managers. Automate rent tracking, receipts, and tenant operations.",
+      "PGmate is India's top PG management software for PG owners. Automate rent collection, track occupancy, send digital receipts, & simplify tenant operations.",
     images: ["https://pg.v4stay.com/icon.svg"],
   },
   manifest: "/manifest.json",
@@ -126,6 +126,65 @@ export default function RootLayout({
         "publisher": {
           "@id": "https://pg.v4stay.com/#organization"
         }
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://pg.v4stay.com/#webpage",
+        "url": "https://pg.v4stay.com",
+        "name": "PGmate | #1 PG Management Software & Hostel App for PG Owners",
+        "description": "PGmate is India's top PG management software for PG owners. Automate rent collection, track occupancy, send digital receipts, & simplify tenant operations.",
+        "isPartOf": {
+          "@id": "https://pg.v4stay.com/#website"
+        },
+        "publisher": {
+          "@id": "https://pg.v4stay.com/#organization"
+        },
+        "author": {
+          "@id": "https://pg.v4stay.com/#organization"
+        },
+        "about": {
+          "@id": "https://pg.v4stay.com/#software"
+        },
+        "datePublished": "2024-01-15T00:00:00+05:30",
+        "dateModified": "2026-07-31T12:00:00+05:30"
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://pg.v4stay.com/#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pg.v4stay.com"
+          }
+        ]
+      },
+      {
+        "@type": "HowTo",
+        "@id": "https://pg.v4stay.com/#howto",
+        "name": "How to Automate PG Management with PGmate",
+        "description": "Start managing room allocations, rent collection, and tenant complaints automatically in 3 steps.",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "position": 1,
+            "name": "Register Your PG Property",
+            "text": "Sign up on PGmate and create your PG profile with total floors, room numbers, and bed capacities."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 2,
+            "name": "Onboard Tenants & Set Rent Dues",
+            "text": "Add tenant details, assign rooms, set monthly rent due dates, and generate automated digital payment receipts."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 3,
+            "name": "Automate Collections & Track Dues",
+            "text": "Send automated WhatsApp rent reminders and monitor zero-overdue real-time dashboards."
+          }
+        ]
       },
       {
         "@type": "SoftwareApplication",

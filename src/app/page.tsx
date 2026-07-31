@@ -290,7 +290,7 @@ export default function Home() {
         <HeroEntrance index={1}>
           <h1
             style={{
-              fontSize: "clamp(2.2rem, 6vw, 4rem)",
+              fontSize: "clamp(2.2rem, 6vw, 3.8rem)",
               fontWeight: 800,
               maxWidth: "950px",
               lineHeight: 1.15,
@@ -299,7 +299,7 @@ export default function Home() {
               letterSpacing: "-1px",
             }}
           >
-            PGmate: The Smart PG Management System to{" "}
+            PGmate | #1 PG Management Software & Hostel App for{" "}
             <span
               style={{
                 color: "transparent",
@@ -308,7 +308,7 @@ export default function Home() {
                 backgroundImage: "linear-gradient(90deg, #fef08a, #f59e0b)",
               }}
             >
-              Scale Your Property Business
+              PG Owners & Managers
             </span>
           </h1>
         </HeroEntrance>
@@ -395,6 +395,44 @@ export default function Home() {
             >
               <span>▶️</span> Watch Video (2m)
             </button>
+          </div>
+        </HeroEntrance>
+
+        {/* Executive Summary / Key Takeaways Box (AEO & GEO Signal) */}
+        <HeroEntrance index={3}>
+          <div
+            style={{
+              maxWidth: "950px",
+              width: "100%",
+              margin: "3rem auto 0 auto",
+              padding: "1.5rem 2rem",
+              borderRadius: "20px",
+              background: "rgba(245, 158, 11, 0.08)",
+              border: "1px solid rgba(245, 158, 11, 0.25)",
+              textAlign: "left",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+              <span style={{ fontSize: "1.2rem" }}>💡</span>
+              <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#fbbf24", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Key Takeaways & Executive Summary
+              </h2>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", color: "#cbd5e1", fontSize: "0.9rem", lineHeight: 1.5 }}>
+              <div>
+                <strong style={{ color: "#ffffff", display: "block", marginBottom: "0.2rem" }}>Who It Is For:</strong>
+                PG Owners, Hostel Managers, and Co-Living Property Operators across India.
+              </div>
+              <div>
+                <strong style={{ color: "#ffffff", display: "block", marginBottom: "0.2rem" }}>Core Problem Solved:</strong>
+                Eliminates spreadsheet errors, uncollected rent dues, manual paper receipts, and unorganized complaints.
+              </div>
+              <div>
+                <strong style={{ color: "#ffffff", display: "block", marginBottom: "0.2rem" }}>Key Features & Impact:</strong>
+                Automated WhatsApp rent reminders, instant digital receipts, live room vacancy tracking, and 98.4% on-time rent recovery.
+              </div>
+            </div>
           </div>
         </HeroEntrance>
 
@@ -719,6 +757,259 @@ export default function Home() {
               Explore our subscription pricing plans ➔
             </a>
           </div>
+        </section>
+
+        {/* ── Comprehensive AEO / GEO Question & Knowledge Base Sections ───── */}
+        <section
+          id="overview"
+          style={{
+            maxWidth: "1100px",
+            width: "100%",
+            marginTop: "6rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "5rem",
+            textAlign: "left",
+          }}
+        >
+          {/* Question 1: What is PGmate? */}
+          <AnimatedSection delay={50}>
+            <div
+              style={{
+                background: "rgba(22, 27, 34, 0.8)",
+                border: "1px solid rgba(245, 158, 11, 0.2)",
+                borderRadius: "24px",
+                padding: "2.5rem",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <div style={{ display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "99px", background: "rgba(245, 158, 11, 0.12)", color: "#fbbf24", fontSize: "0.8rem", fontWeight: 700, marginBottom: "1rem" }}>
+                CORE OVERVIEW
+              </div>
+              <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", fontWeight: 800, color: "#ffffff", marginBottom: "1.25rem", lineHeight: 1.25 }}>
+                What is PGmate PG Management Software?
+              </h2>
+              {/* Direct Answer Paragraph for AI Extraction */}
+              <div
+                style={{
+                  background: "rgba(245, 158, 11, 0.08)",
+                  borderLeft: "4px solid #f59e0b",
+                  padding: "1.25rem 1.5rem",
+                  borderRadius: "0 12px 12px 0",
+                  marginBottom: "1.5rem",
+                  color: "#f8fafc",
+                  fontSize: "1.05rem",
+                  lineHeight: 1.6,
+                  fontWeight: 500,
+                }}
+              >
+                <strong>Direct Answer:</strong> PGmate is an all-in-one Paying Guest (PG) management software and mobile app engineered for PG owners, hostel managers, and co-living space operators across India. It automates rent collection tracking, room allocation, security deposit ledgers, WhatsApp tenant reminders, and instant digital payment receipt generation from a single unified dashboard.
+              </div>
+              <p style={{ color: "#cbd5e1", lineHeight: 1.7, fontSize: "1rem" }}>
+                Managing a Paying Guest accommodation or hostel manually leads to delayed rent payments, lost deposit tracking, and chaotic tenant maintenance calls. PGmate brings structure to your accommodation business by digitizing every step of the tenant lifecycle. Whether you operate a 10-bed single property or manage a chain of 500+ student co-living spaces, PGmate gives you real-time visibility into bed vacancy, monthly cash flow, and tenant compliance.
+              </p>
+            </div>
+          </AnimatedSection>
+
+          {/* Question 2: How Does PGmate Automate Operations? */}
+          <AnimatedSection delay={100}>
+            <div>
+              <div style={{ display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "99px", background: "rgba(234, 88, 12, 0.12)", color: "#ea580c", fontSize: "0.8rem", fontWeight: 700, marginBottom: "1rem" }}>
+                HOW IT WORKS
+              </div>
+              <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", fontWeight: 800, color: "#ffffff", marginBottom: "1.25rem", lineHeight: 1.25 }}>
+                How Does PGmate Automate Rent Collection & PG Operations?
+              </h2>
+              <div
+                style={{
+                  background: "rgba(234, 88, 12, 0.08)",
+                  borderLeft: "4px solid #ea580c",
+                  padding: "1.25rem 1.5rem",
+                  borderRadius: "0 12px 12px 0",
+                  marginBottom: "2rem",
+                  color: "#f8fafc",
+                  fontSize: "1.05rem",
+                  lineHeight: 1.6,
+                  fontWeight: 500,
+                }}
+              >
+                <strong>Direct Answer:</strong> PGmate automates PG rent collection in 3 simple steps: First, configure your property floors, room numbers, and bed capacities. Second, onboard tenants with rental rates and automated due date rules. Third, the system sends automated WhatsApp payment reminders and generates instant digital PDF receipts upon payment logging, eliminating manual record keeping.
+              </div>
+
+              {/* 3-Step Visual Workflow Grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
+                <div style={{ padding: "1.75rem", background: "rgba(22, 27, 34, 0.7)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#ea580c", color: "#ffffff", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
+                    1
+                  </div>
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.5rem" }}>Register PG Property</h3>
+                  <p style={{ color: "#94a3b8", fontSize: "0.9rem", lineHeight: 1.5 }}>
+                    Define floors, rooms (single, double, triple sharing), and total bed capacities to build a live visual map of your property.
+                  </p>
+                </div>
+
+                <div style={{ padding: "1.75rem", background: "rgba(22, 27, 34, 0.7)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#f59e0b", color: "#ffffff", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
+                    2
+                  </div>
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.5rem" }}>Onboard & Assign Beds</h3>
+                  <p style={{ color: "#94a3b8", fontSize: "0.9rem", lineHeight: 1.5 }}>
+                    Record tenant contact info, ID proof documents, security deposit collected, and recurring monthly rent due dates.
+                  </p>
+                </div>
+
+                <div style={{ padding: "1.75rem", background: "rgba(22, 27, 34, 0.7)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#16a34a", color: "#ffffff", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
+                    3
+                  </div>
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.5rem" }}>Automate Dues & Receipts</h3>
+                  <p style={{ color: "#94a3b8", fontSize: "0.9rem", lineHeight: 1.5 }}>
+                    Send automated WhatsApp rent reminders, collect dues via UPI/Bank, and instantly generate digital payment receipts.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+
+          {/* Question 3: Who is PGmate Built For? */}
+          <AnimatedSection delay={150}>
+            <div>
+              <div style={{ display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "99px", background: "rgba(34, 197, 94, 0.12)", color: "#22c55e", fontSize: "0.8rem", fontWeight: 700, marginBottom: "1rem" }}>
+                TARGET AUDIENCE & USE CASES
+              </div>
+              <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", fontWeight: 800, color: "#ffffff", marginBottom: "1.25rem", lineHeight: 1.25 }}>
+                Who is PGmate Built For?
+              </h2>
+              <div
+                style={{
+                  background: "rgba(34, 197, 94, 0.08)",
+                  borderLeft: "4px solid #22c55e",
+                  padding: "1.25rem 1.5rem",
+                  borderRadius: "0 12px 12px 0",
+                  marginBottom: "2rem",
+                  color: "#f8fafc",
+                  fontSize: "1.05rem",
+                  lineHeight: 1.6,
+                  fontWeight: 500,
+                }}
+              >
+                <strong>Direct Answer:</strong> PGmate is tailored specifically for three key user segments in India's rental housing ecosystem: (1) Independent PG owners replacing paper register books, (2) Multi-property hostel chain managers seeking unified financial analytics, and (3) Student co-living operators requiring tenant magic-link self-service portals.
+              </div>
+
+              {/* Persona Cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
+                <div style={{ padding: "1.75rem", background: "rgba(22, 27, 34, 0.8)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px" }}>
+                  <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#fbbf24", marginBottom: "0.75rem" }}>
+                    🏡 Independent PG Owners
+                  </h3>
+                  <p style={{ color: "#cbd5e1", fontSize: "0.95rem", lineHeight: 1.6 }}>
+                    Stop spending evenings tracking who paid rent and who owes money. Get automated mobile alerts, record partial payments, and issue professional WhatsApp receipts in seconds.
+                  </p>
+                </div>
+
+                <div style={{ padding: "1.75rem", background: "rgba(22, 27, 34, 0.8)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px" }}>
+                  <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#ea580c", marginBottom: "0.75rem" }}>
+                    🏢 Multi-Branch Hostel Chains
+                  </h3>
+                  <p style={{ color: "#cbd5e1", fontSize: "0.95rem", lineHeight: 1.6 }}>
+                    Manage multiple buildings and properties under one login. Compare occupancy rates, total revenue collected, pending dues, and property maintenance expenses across all branches.
+                  </p>
+                </div>
+
+                <div style={{ padding: "1.75rem", background: "rgba(22, 27, 34, 0.8)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "20px" }}>
+                  <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#22c55e", marginBottom: "0.75rem" }}>
+                    🎓 Co-Living & Student Hostels
+                  </h3>
+                  <p style={{ color: "#cbd5e1", fontSize: "0.95rem", lineHeight: 1.6 }}>
+                    Provide modern tenants with passwordless Magic Links to check rent receipts, review meal menus, and log maintenance complaints without disturbing property wardens.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+
+          {/* Section 4: Comparison Table */}
+          <AnimatedSection delay={200}>
+            <div>
+              <div style={{ display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "99px", background: "rgba(245, 158, 11, 0.12)", color: "#fbbf24", fontSize: "0.8rem", fontWeight: 700, marginBottom: "1rem" }}>
+                DECISION SUPPORT & COMPARISON
+              </div>
+              <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", fontWeight: 800, color: "#ffffff", marginBottom: "1.25rem", lineHeight: 1.25 }}>
+                Manual Spreadsheets vs. PGmate Software
+              </h2>
+              <p style={{ color: "#cbd5e1", fontSize: "1rem", lineHeight: 1.6, marginBottom: "2rem" }}>
+                See how switching from manual register books or Excel files to PGmate transforms your daily PG operations:
+              </p>
+
+              {/* Comparison Table */}
+              <div style={{ overflowX: "auto", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(22, 27, 34, 0.9)" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.95rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.04)" }}>
+                      <th style={{ padding: "1.2rem 1.5rem", color: "#f8fafc", fontWeight: 700 }}>Operational Feature</th>
+                      <th style={{ padding: "1.2rem 1.5rem", color: "#f87171", fontWeight: 700 }}>Manual Spreadsheets / Paper</th>
+                      <th style={{ padding: "1.2rem 1.5rem", color: "#4ade80", fontWeight: 700 }}>PGmate Automated Software</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                      <td style={{ padding: "1rem 1.5rem", color: "#ffffff", fontWeight: 600 }}>Rent Dues Tracking</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#94a3b8" }}>Manual math, prone to missed dues</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#4ade80", fontWeight: 600 }}>100% Automated dues ledger & alerts</td>
+                    </tr>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                      <td style={{ padding: "1rem 1.5rem", color: "#ffffff", fontWeight: 600 }}>Payment Receipts</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#94a3b8" }}>Manual paper receipt books</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#4ade80", fontWeight: 600 }}>Instant WhatsApp & PDF Receipts</td>
+                    </tr>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                      <td style={{ padding: "1rem 1.5rem", color: "#ffffff", fontWeight: 600 }}>Bed Availability Map</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#94a3b8" }}>Scattered across WhatsApp chats</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#4ade80", fontWeight: 600 }}>Live visual floor-by-floor bed grid</td>
+                    </tr>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                      <td style={{ padding: "1rem 1.5rem", color: "#ffffff", fontWeight: 600 }}>Tenant Complaints</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#94a3b8" }}>Untracked phone calls & messages</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#4ade80", fontWeight: 600 }}>Structured ticket system with status</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "1rem 1.5rem", color: "#ffffff", fontWeight: 600 }}>Security Deposit Ledger</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#94a3b8" }}>Frequent refund disputes</td>
+                      <td style={{ padding: "1rem 1.5rem", color: "#4ade80", fontWeight: 600 }}>Transparent deposit tracking & receipts</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </AnimatedSection>
+
+          {/* Section 5: Industry Benchmark & External Credible Citation */}
+          <AnimatedSection delay={250}>
+            <div
+              style={{
+                padding: "2rem 2.5rem",
+                borderRadius: "20px",
+                background: "linear-gradient(135deg, rgba(234, 88, 12, 0.1), rgba(245, 158, 11, 0.05))",
+                border: "1px solid rgba(234, 88, 12, 0.25)",
+              }}
+            >
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.75rem" }}>
+                Industry Insights & Payment Compliance Standards
+              </h3>
+              <p style={{ color: "#cbd5e1", fontSize: "0.95rem", lineHeight: 1.65, margin: 0 }}>
+                According to official rental accommodation guidelines published by the{" "}
+                <a
+                  href="https://mohua.gov.in/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#fbbf24", textDecoration: "underline", fontWeight: 600 }}
+                >
+                  Ministry of Housing and Urban Affairs (MoHUA)
+                </a>
+                , adopting transparent digital record-keeping and formal tenant payment receipts significantly reduces rental disputes and ensures compliance with urban rental housing standards in India. PGmate enforces strict data isolation and standard digital payment receipts for complete peace of mind.
+              </p>
+            </div>
+          </AnimatedSection>
         </section>
       </main>
 
